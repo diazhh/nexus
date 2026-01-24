@@ -108,4 +108,8 @@ public interface UserDao extends Dao<User>, TenantEntityDao<User> {
 
     List<User> findUsersByTenantIdAndIds(UUID tenantId, List<UUID> userIds);
 
+    long countByRoleId(TenantId tenantId, UUID roleId);
+
+    PageData<User> findByRoleId(TenantId tenantId, UUID roleId, PageLink pageLink);
+
 }

@@ -98,6 +98,8 @@ export enum MenuId {
   device_profiles = 'device_profiles',
   asset_profiles = 'asset_profiles',
   customers = 'customers',
+  users = 'users',
+  roles = 'roles',
   calculated_fields = 'calculated_fields',
   rule_chains = 'rule_chains',
   edge_management = 'edge_management',
@@ -628,13 +630,33 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
     }
   ],
   [
+    MenuId.users,
+    {
+      id: MenuId.users,
+      name: 'user.tenant-users',
+      type: 'link',
+      path: '/tenant-users',
+      icon: 'people'
+    }
+  ],
+  [
+    MenuId.roles,
+    {
+      id: MenuId.roles,
+      name: 'role.roles',
+      type: 'link',
+      path: '/roles',
+      icon: 'security'
+    }
+  ],
+  [
     MenuId.calculated_fields,
     {
       id: MenuId.calculated_fields,
-      name: 'entity.type-calculated-fields',
+      name: 'calculated-field.calculated-fields',
       type: 'link',
       path: '/calculatedFields',
-      icon: 'mdi:function-variant',
+      icon: 'mdi:function-variant'
     }
   ],
   [
@@ -850,6 +872,8 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         ]
       },
       {id: MenuId.customers},
+      {id: MenuId.users},
+      {id: MenuId.roles},
       {id: MenuId.calculated_fields},
       {id: MenuId.rule_chains},
       {
@@ -979,7 +1003,7 @@ const defaultHomeSectionMap = new Map<Authority, HomeSectionReference[]>([
       },
       {
         name: 'customer.management',
-        places: [MenuId.customers]
+        places: [MenuId.customers, MenuId.users, MenuId.roles]
       },
       {
         name: 'asset.management',

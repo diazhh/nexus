@@ -1,0 +1,103 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<form>
+  <mat-toolbar color="primary">
+    <h2>{{ 'role.permission-matrix' | translate }} - {{ role.name }}</h2>
+    <span fxFlex></span>
+    <button mat-icon-button
+            (click)="cancel()"
+            type="button">
+      <mat-icon class="material-icons">close</mat-icon>
+    </button>
+  </mat-toolbar>
+  <mat-progress-bar color="warn" mode="indeterminate" *ngIf="loading">
+  </mat-progress-bar>
+  <div style="height: 4px;" *ngIf="!loading"></div>
+  <div mat-dialog-content>
+    <div class="permission-matrix-container">
+      <div class="matrix-info">
+        <span class="info-text">
+          {{ 'role.permissions-enabled-count' | translate: {count: getEnabledPermissionsCount()} }}
+        </span>
+      </div>
+      
+      <div class="matrix-table-wrapper">
+        <table class="permission-matrix-table">
+          <thead>
+            <tr>
+              <th class="resource-header">{{ 'role.resource' | translate }}</th>
+              <th *ngFor="let operation of operations" class="operation-header">
+                <div class="header-content">
+                  <span class="operation-name">{{ getOperationTranslation(operation) }}</span>
+                  <button mat-icon-button
+                          class="select-all-btn"
+                          (click)="toggleAllResourcesForOperation(operation)"
+                          [matTooltip]="'role.toggle-all-resources' | translate"
+                          type="button">
+                    <mat-icon [class.all-selected]="areAllResourcesEnabledForOperation(operation)">
+                      {{ areAllResourcesEnabledForOperation(operation) ? 'check_box' : 'check_box_outline_blank' }}
+                    </mat-icon>
+                  </button>
+                </div>
+              </th>
+              <th class="actions-header">{{ 'role.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let resource of resources" class="resource-row">
+              <td class="resource-cell">
+                <span class="resource-name">{{ getResourceTranslation(resource) }}</span>
+              </td>
+              <td *ngFor="let operation of operations" class="permission-cell">
+                <mat-checkbox
+                  [checked]="isPermissionEnabled(resource, operation)"
+                  (change)="togglePermission(resource, operation)"
+                  color="primary">
+                </mat-checkbox>
+              </td>
+              <td class="actions-cell">
+                <button mat-icon-button
+                        (click)="toggleAllOperationsForResource(resource)"
+                        [matTooltip]="'role.toggle-all-operations' | translate"
+                        type="button">
+                  <mat-icon [class.all-selected]="areAllOperationsEnabledForResource(resource)">
+                    {{ areAllOperationsEnabledForResource(resource) ? 'check_box' : 'check_box_outline_blank' }}
+                  </mat-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div mat-dialog-actions fxLayout="row" fxLayoutAlign="end center">
+    <button mat-button color="primary"
+            type="button"
+            [disabled]="loading"
+            (click)="cancel()">
+      {{ 'action.cancel' | translate }}
+    </button>
+    <button mat-raised-button color="primary"
+            type="button"
+            [disabled]="loading"
+            (click)="save()">
+      {{ 'action.save' | translate }}
+    </button>
+  </div>
+</form>

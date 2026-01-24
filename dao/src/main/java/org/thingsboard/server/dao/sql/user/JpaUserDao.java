@@ -174,4 +174,19 @@ public class JpaUserDao extends JpaAbstractDao<UserEntity, User> implements User
         return EntityType.USER;
     }
 
+    @Override
+    public long countByRoleId(TenantId tenantId, UUID roleId) {
+        return userRepository.countByTenantIdAndRoleId(tenantId.getId(), roleId);
+    }
+
+    @Override
+    public PageData<User> findByRoleId(TenantId tenantId, UUID roleId, PageLink pageLink) {
+        return DaoUtil.toPageData(
+                userRepository.findByTenantIdAndRoleId(
+                        tenantId.getId(),
+                        roleId,
+                        pageLink.getTextSearch(),
+                        DaoUtil.toPageable(pageLink)));
+    }
+
 }

@@ -102,4 +102,28 @@ export class UserService {
     return this.http.get<PageData<UserEmailInfo>>(`/api/users/info${pageLink.toQuery()}`, defaultHttpOptionsFromConfig(config));
   }
 
+  public getUsersByRole(roleId: string, pageLink: PageLink, config?: RequestConfig): Observable<PageData<User>> {
+    return this.http.get<PageData<User>>(`/api/users/role/${roleId}${pageLink.toQuery()}`,
+      defaultHttpOptionsFromConfig(config));
+  }
+
+  public changeUserRole(userId: string, roleId: string, config?: RequestConfig): Observable<void> {
+    return this.http.put<void>(`/api/user/${userId}/role/${roleId}`, null,
+      defaultHttpOptionsFromConfig(config));
+  }
+
+  public isUserTokenAccessEnabled(config?: RequestConfig): Observable<boolean> {
+    return this.http.get<boolean>('/api/user/tokenAccessEnabled', defaultHttpOptionsFromConfig(config));
+  }
+
+  public getUserToken(userId: string, config?: RequestConfig): Observable<string> {
+    return this.http.get(`/api/user/${userId}/token`,
+      {...{responseType: 'text'}, ...defaultHttpOptionsFromConfig(config)});
+  }
+
+  public findUsersByTenantId(tenantId: string, pageLink: PageLink, config?: RequestConfig): Observable<PageData<User>> {
+    return this.http.get<PageData<User>>(`/api/tenant/${tenantId}/users${pageLink.toQuery()}`,
+      defaultHttpOptionsFromConfig(config));
+  }
+
 }

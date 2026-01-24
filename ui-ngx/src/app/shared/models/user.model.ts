@@ -17,6 +17,7 @@
 import { BaseData } from './base-data';
 import { UserId } from './id/user-id';
 import { CustomerId } from './id/customer-id';
+import { RoleId } from './id/role-id';
 import { Authority } from './authority.enum';
 import { TenantId } from './id/tenant-id';
 import { HasTenantId } from '@shared/models/entity.models';
@@ -28,6 +29,7 @@ export interface User extends BaseData<UserId>, HasTenantId {
   email: string;
   phone: string;
   authority: Authority;
+  roleId?: RoleId;
   firstName: string;
   lastName: string;
   additionalInfo: Partial<UserAdditionalInfo>;
@@ -74,6 +76,7 @@ export interface AuthUser {
   customerId: string;
   isPublic: boolean;
   authority: Authority;
+  roleId?: string;
 }
 
 export interface UserEmailInfo {

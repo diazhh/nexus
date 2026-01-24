@@ -26,6 +26,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.id.CustomerId;
+import org.thingsboard.server.common.data.id.RoleId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.security.Authority;
@@ -50,6 +51,9 @@ public class UserEntity extends BaseVersionedEntity<User> {
     @Enumerated(EnumType.STRING)
     @Column(name = ModelConstants.USER_AUTHORITY_PROPERTY)
     private Authority authority;
+
+    @Column(name = "role_id")
+    private UUID roleId;
 
     @Column(name = ModelConstants.USER_EMAIL_PROPERTY, unique = true)
     private String email;
@@ -79,6 +83,9 @@ public class UserEntity extends BaseVersionedEntity<User> {
         if (user.getCustomerId() != null) {
             this.customerId = user.getCustomerId().getId();
         }
+        if (user.getRoleId() != null) {
+            this.roleId = user.getRoleId().getId();
+        }
         this.email = user.getEmail();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
@@ -97,6 +104,9 @@ public class UserEntity extends BaseVersionedEntity<User> {
         }
         if (customerId != null) {
             user.setCustomerId(new CustomerId(customerId));
+        }
+        if (roleId != null) {
+            user.setRoleId(new RoleId(roleId));
         }
         user.setEmail(email);
         user.setFirstName(firstName);

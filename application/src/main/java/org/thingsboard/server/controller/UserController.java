@@ -49,6 +49,7 @@ import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.AlarmId;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DashboardId;
+import org.thingsboard.server.common.data.id.RoleId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.mobile.MobileSessionInfo;
@@ -613,6 +614,52 @@ public class UserController extends BaseController {
         if (type.isReserved()) {
             throw new ThingsboardException("Settings with type: " + strType + " are reserved for internal use!", ThingsboardErrorCode.BAD_REQUEST_PARAMS);
         }
+    }
+
+    @ApiOperation(value = "Get users by role (getUsersByRole)",
+            notes = "Returns a page of users that have the specified role assigned. " + PAGE_DATA_PARAMETERS + TENANT_AUTHORITY_PARAGRAPH)
+    @PreAuthorize("hasAuthority('TENANT_ADMIN')")
+    @GetMapping(value = "/users/role/{roleId}", params = {"pageSize", "page"})
+    public PageData<User> getUsersByRole(
+            @Parameter(description = "Role ID", required = true)
+            @PathVariable("roleId") String strRoleId,
+            @Parameter(description = PAGE_SIZE_DESCRIPTION, required = true)
+            @RequestParam int pageSize,
+            @Parameter(description = PAGE_NUMBER_DESCRIPTION, required = true)
+            @RequestParam int page,
+            @Parameter(description = USER_TEXT_SEARCH_DESCRIPTION)
+            @RequestParam(required = false) String textSearch,
+            @Parameter(description = SORT_PROPERTY_DESCRIPTION, schema = @Schema(allowableValues = {"createdTime", "firstName", "lastName", "email"}))
+            @RequestParam(required = false) String sortProperty,
+            @Parameter(description = SORT_ORDER_DESCRIPTION, schema = @Schema(allowableValues = {"ASC", "DESC"}))
+            @RequestParam(required = false) String sortOrder) throws ThingsboardException {
+        checkParameter("roleId", strRoleId);
+        RoleId roleId = new RoleId(toUUID(strRoleId));
+        PageLink pageLink = createPageLink(pageSize, page, textSearch, sortProperty, sortOrder);
+        TenantId tenantId = getCurrentUser().getTenantId();
+        return checkNotNull(userService.findUsersByRoleId(tenantId, roleId, pageLink));
+    }
+
+    @ApiOperation(value = "Change user role (changeUserRole)",
+            notes = "Changes the role assigned to a user. " + TENANT_AUTHORITY_PARAGRAPH)
+    @PreAuthorize("hasAuthority('TENANT_ADMIN')")
+    @PutMapping(value = "/user/{userId}/role/{roleId}")
+    @ResponseStatus(HttpStatus.OK)
+    public void changeUserRole(
+            @Parameter(description = USER_ID_PARAM_DESCRIPTION, required = true)
+            @PathVariable(USER_ID) String strUserId,
+            @Parameter(description = "Role ID", required = true)
+            @PathVariable("roleId") String strRoleId) throws ThingsboardException {
+        checkParameter(USER_ID, strUserId);
+        checkParameter("roleId", strRoleId);
+        UserId userId = new UserId(toUUID(strUserId));
+        RoleId roleId = new RoleId(toUUID(strRoleId));
+        
+        SecurityUser currentUser = getCurrentUser();
+        User user = checkUserId(userId, Operation.WRITE);
+        
+        user.setRoleId(roleId);
+        userService.saveUser(currentUser.getTenantId(), user);
     }
 
 }

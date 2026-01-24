@@ -22,20 +22,29 @@ import { EntityDetailsPageComponent } from '@home/components/entity/entity-detai
 import { ConfirmOnExitGuard } from '@core/guards/confirm-on-exit.guard';
 import { entityDetailsPageBreadcrumbLabelFunction } from '@home/pages/home-pages.models';
 import { BreadCrumbConfig } from '@shared/components/breadcrumb';
+import { EntitiesTableComponent } from '@home/components/entity/entities-table.component';
+import { MenuId } from '@core/services/menu.models';
+import { TenantUsersComponent } from '@modules/home/pages/user/tenant-users.component';
 
 const routes: Routes = [
   {
     path: 'users',
     data: {
       breadcrumb: {
-        skip: true
+        menuId: MenuId.users
       }
     },
     children: [
       {
         path: '',
-        redirectTo: '/',
-        pathMatch: 'full'
+        component: EntitiesTableComponent,
+        data: {
+          auth: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN],
+          title: 'user.users'
+        },
+        resolve: {
+          entitiesTableConfig: UsersTableConfigResolver
+        }
       },
       {
         path: ':entityId',
@@ -54,6 +63,18 @@ const routes: Routes = [
         }
       }
     ]
+  },
+  {
+    path: 'tenant-users',
+    component: TenantUsersComponent,
+    data: {
+      auth: [Authority.TENANT_ADMIN],
+      title: 'user.tenant-users',
+      breadcrumb: {
+        label: 'user.tenant-users',
+        icon: 'people'
+      }
+    }
   }
 ];
 

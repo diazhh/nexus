@@ -107,31 +107,45 @@ export class UsersTableConfigResolver  {
     return this.store.pipe(select(selectAuth), take(1)).pipe(
       tap((auth) => {
         this.authUser = auth.userDetails;
-        this.authority = routeParams.tenantId ? Authority.TENANT_ADMIN : Authority.CUSTOMER_USER;
-        if (this.authority === Authority.TENANT_ADMIN) {
+        
+        // Determine authority based on route params
+        if (routeParams.tenantId) {
+          // Route: /tenants/:tenantId/users
+          this.authority = Authority.TENANT_ADMIN;
           this.tenantId = routeParams.tenantId;
           this.customerId = NULL_UUID;
           this.config.entitiesFetchFunction = pageLink => this.userService.getTenantAdmins(this.tenantId, pageLink);
-        } else {
+        } else if (routeParams.customerId) {
+          // Route: /customers/:customerId/users
+          this.authority = Authority.CUSTOMER_USER;
           this.tenantId = this.authUser.tenantId.id;
           this.customerId = routeParams.customerId;
           this.config.entitiesFetchFunction = pageLink => this.userService.getCustomerUsers(this.customerId, pageLink);
+        } else {
+          // Route: /users (all tenant users)
+          this.authority = this.authUser.authority;
+          this.tenantId = this.authUser.tenantId.id;
+          this.customerId = NULL_UUID;
+          this.config.entitiesFetchFunction = pageLink => this.userService.getTenantAdmins(this.tenantId, pageLink);
         }
+        
         this.updateActionCellDescriptors(auth);
       }),
       mergeMap(() => {
-        if (this.authority === Authority.TENANT_ADMIN) {
+        if (routeParams.tenantId) {
           return this.tenantService.getTenant(this.tenantId);
-        } else if (isDefinedAndNotNull(this.customerId)) {
+        } else if (routeParams.customerId && isDefinedAndNotNull(this.customerId)) {
           return this.customerService.getCustomer(this.customerId);
         }
-        return of({title: ''});
+        return of({title: this.translate.instant('user.users')});
       }),
       map((parentEntity) => {
-        if (this.authority === Authority.TENANT_ADMIN) {
+        if (routeParams.tenantId) {
           this.config.tableTitle = parentEntity.title + ': ' + this.translate.instant('user.tenant-admins');
-        } else {
+        } else if (routeParams.customerId) {
           this.config.tableTitle = parentEntity.title + ': ' + this.translate.instant('user.customer-users');
+        } else {
+          this.config.tableTitle = this.translate.instant('user.users');
         }
         return this.config;
       })

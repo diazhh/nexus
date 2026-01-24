@@ -129,4 +129,8 @@ public interface UserService extends EntityDaoService {
 
     List<User> findUsersByTenantIdAndIds(TenantId tenantId, List<UserId> userIds);
 
+    long countUsersByRoleId(TenantId tenantId, org.thingsboard.server.common.data.id.RoleId roleId);
+
+    PageData<User> findUsersByRoleId(TenantId tenantId, org.thingsboard.server.common.data.id.RoleId roleId, PageLink pageLink);
+
 }

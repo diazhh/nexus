@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.EntityId;
+import org.thingsboard.server.common.data.id.RoleId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.notification.targets.NotificationRecipient;
@@ -43,6 +44,7 @@ public class User extends BaseDataWithAdditionalInfo<UserId> implements HasName,
     private CustomerId customerId;
     private String email;
     private Authority authority;
+    private RoleId roleId;
     @NoXss
     @Length(fieldName = "first name")
     private String firstName;
@@ -69,6 +71,7 @@ public class User extends BaseDataWithAdditionalInfo<UserId> implements HasName,
         this.customerId = user.getCustomerId();
         this.email = user.getEmail();
         this.authority = user.getAuthority();
+        this.roleId = user.getRoleId();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.phone = user.getPhone();
@@ -132,6 +135,15 @@ public class User extends BaseDataWithAdditionalInfo<UserId> implements HasName,
 
     public void setAuthority(Authority authority) {
         this.authority = authority;
+    }
+
+    @Schema(description = "Role ID assigned to the user")
+    public RoleId getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(RoleId roleId) {
+        this.roleId = roleId;
     }
 
     @Schema(description = "First name of the user", example = "John")

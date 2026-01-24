@@ -29,6 +29,8 @@ import { ActionNotificationShow } from '@app/core/notification/notification.acti
 import { TranslateService } from '@ngx-translate/core';
 import { environment as env } from '@env/environment';
 import { UnitSystems } from '@shared/models/unit.models';
+import { MatDialog } from '@angular/material/dialog';
+import { ChangeUserRoleDialogComponent, ChangeUserRoleDialogData } from './change-user-role-dialog.component';
 
 @Component({
   selector: 'tb-user',
@@ -51,7 +53,8 @@ export class UserComponent extends EntityComponent<User>{
               @Optional() @Inject('entitiesTableConfig') protected entitiesTableConfigValue: EntityTableConfig<User>,
               public fb: UntypedFormBuilder,
               protected cd: ChangeDetectorRef,
-              protected translate: TranslateService) {
+              protected translate: TranslateService,
+              private dialog: MatDialog) {
     super(store, fb, entityValue, entitiesTableConfigValue, cd);
   }
 
@@ -125,6 +128,40 @@ export class UserComponent extends EntityComponent<User>{
         horizontalPosition: 'right'
       }
     ));
+  }
+
+  getUserRoleName(): string {
+    return this.entity?.additionalInfo?.roleName || 'N/A';
+  }
+
+  openChangeRoleDialog() {
+    const currentRoleId = this.entity?.additionalInfo?.roleId;
+    
+    this.dialog.open<ChangeUserRoleDialogComponent, ChangeUserRoleDialogData, User>(
+      ChangeUserRoleDialogComponent,
+      {
+        disableClose: true,
+        panelClass: ['tb-dialog', 'tb-fullscreen-dialog'],
+        data: {
+          user: this.entity,
+          currentRoleId
+        }
+      }
+    ).afterClosed().subscribe(
+      (result) => {
+        if (result) {
+          this.store.dispatch(new ActionNotificationShow(
+            {
+              message: this.translate.instant('user.role-changed-successfully'),
+              type: 'success',
+              duration: 2000,
+              verticalPosition: 'bottom',
+              horizontalPosition: 'right'
+            }
+          ));
+        }
+      }
+    );
   }
 
 }

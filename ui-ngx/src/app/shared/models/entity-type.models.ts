@@ -53,6 +53,8 @@ export enum EntityType {
   CALCULATED_FIELD = 'CALCULATED_FIELD',
   AI_MODEL = 'AI_MODEL',
   API_KEY = 'API_KEY',
+  ROLE = 'ROLE',
+  ROLE_PERMISSION = 'ROLE_PERMISSION',
 }
 
 export enum AliasEntityType {
@@ -520,6 +522,20 @@ export const entityTypeTranslations = new Map<EntityType | AliasEntityType, Enti
         selectedEntities: 'api-key.selected-api-keys'
       }
     ],
+    [
+      EntityType.ROLE,
+      {
+        type: 'entity.type-role',
+        typePlural: 'entity.type-roles',
+        list: 'role.list',
+        nameStartsWith: 'role.name-starts-with',
+        details: 'role.role-details',
+        add: 'role.add',
+        noEntities: 'role.no-roles-text',
+        search: 'role.search',
+        selectedEntities: 'role.selected-roles'
+      }
+    ],
   ]
 );
 
@@ -670,6 +686,12 @@ export const entityTypeResources = new Map<EntityType, EntityTypeResource<BaseDa
         helpLinkId: 'apiKeys'
       }
     ],
+    [
+      EntityType.ROLE,
+      {
+        helpLinkId: 'roles'
+      }
+    ],
   ]
 );
 
@@ -693,7 +715,8 @@ export const baseDetailsPageByEntityType = new Map<EntityType, string>([
   [EntityType.WIDGET_TYPE, '/resources/widgets-library/widget-types/details'],
   [EntityType.OAUTH2_CLIENT, '/security-settings/oauth2/clients/details'],
   [EntityType.DOMAIN, '/security-settings/oauth2/clients/details'],
-  [EntityType.MOBILE_APP, '/mobile-center/applications']
+  [EntityType.MOBILE_APP, '/mobile-center/applications'],
+  [EntityType.ROLE, '/roles']
 ]);
 
 export interface EntitySubtype {

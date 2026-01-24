@@ -85,4 +85,16 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     List<UserEntity> findUsersByTenantIdAndIdIn(UUID tenantId, List<UUID> userIds);
 
+    @Query("SELECT COUNT(u) FROM UserEntity u WHERE u.tenantId = :tenantId AND u.roleId = :roleId")
+    long countByTenantIdAndRoleId(@Param("tenantId") UUID tenantId, @Param("roleId") UUID roleId);
+
+    @Query("SELECT u FROM UserEntity u WHERE u.tenantId = :tenantId AND u.roleId = :roleId " +
+            "AND (:searchText IS NULL OR ilike(u.email, CONCAT('%', :searchText, '%')) = true " +
+            "OR ilike(u.firstName, CONCAT('%', :searchText, '%')) = true " +
+            "OR ilike(u.lastName, CONCAT('%', :searchText, '%')) = true)")
+    Page<UserEntity> findByTenantIdAndRoleId(@Param("tenantId") UUID tenantId,
+                                              @Param("roleId") UUID roleId,
+                                              @Param("searchText") String searchText,
+                                              Pageable pageable);
+
 }

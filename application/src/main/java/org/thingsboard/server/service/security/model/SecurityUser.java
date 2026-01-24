@@ -21,8 +21,13 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.id.UserId;
+import org.thingsboard.server.common.data.security.RolePermission;
+import org.thingsboard.server.common.data.security.permission.Operation;
+import org.thingsboard.server.common.data.security.permission.Resource;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,6 +43,8 @@ public class SecurityUser extends User {
     private UserPrincipal userPrincipal;
     @Getter @Setter
     private String sessionId = UUID.randomUUID().toString();
+    @Getter @Setter
+    private Set<RolePermission> permissions = new HashSet<>();
 
     public SecurityUser() {
         super();
@@ -53,6 +60,13 @@ public class SecurityUser extends User {
         this.userPrincipal = userPrincipal;
     }
 
+    public SecurityUser(User user, boolean enabled, UserPrincipal userPrincipal, Set<RolePermission> permissions) {
+        super(user);
+        this.enabled = enabled;
+        this.userPrincipal = userPrincipal;
+        this.permissions = permissions != null ? permissions : new HashSet<>();
+    }
+
     public Collection<GrantedAuthority> getAuthorities() {
         if (authorities == null) {
             authorities = Stream.of(SecurityUser.this.getAuthority())
@@ -60,6 +74,43 @@ public class SecurityUser extends User {
                     .collect(Collectors.toList());
         }
         return authorities;
+    }
+
+    public boolean hasPermission(Resource resource, Operation operation) {
+        if (permissions == null || permissions.isEmpty()) {
+            return false;
+        }
+
+        for (RolePermission permission : permissions) {
+            if (matchesResource(permission.getResource(), resource) && 
+                matchesOperation(permission.getOperation(), operation)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean hasAnyPermission(Resource resource) {
+        if (permissions == null || permissions.isEmpty()) {
+            return false;
+        }
+
+        return permissions.stream()
+                .anyMatch(p -> matchesResource(p.getResource(), resource));
+    }
+
+    private boolean matchesResource(Resource permissionResource, Resource requestedResource) {
+        if (permissionResource == Resource.ALL) {
+            return true;
+        }
+        return permissionResource == requestedResource;
+    }
+
+    private boolean matchesOperation(Operation permissionOperation, Operation requestedOperation) {
+        if (permissionOperation == Operation.ALL) {
+            return true;
+        }
+        return permissionOperation == requestedOperation;
     }
 
 }

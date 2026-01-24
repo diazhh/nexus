@@ -32,6 +32,23 @@
   <div mat-dialog-content>
     <tb-user></tb-user>
     <mat-form-field class="mat-block" appearance="outline">
+      <mat-label translate>role.role</mat-label>
+      <mat-select [ngModelOptions]="{standalone: true}" [(ngModel)]="selectedRole" required>
+        <mat-option *ngFor="let role of roles" [value]="role">
+          {{ role.name }}
+        </mat-option>
+      </mat-select>
+      <mat-hint *ngIf="loadingRoles" translate>common.loading</mat-hint>
+      <mat-error *ngIf="!selectedRole" translate>role.role-required</mat-error>
+    </mat-form-field>
+    <mat-checkbox *ngIf="allowTenantUser"
+                  class="mat-block"
+                  [ngModelOptions]="{standalone: true}"
+                  [(ngModel)]="createAsTenantUser"
+                  style="margin-bottom: 16px;">
+      <span translate>user.create-as-tenant-user</span>
+    </mat-checkbox>
+    <mat-form-field class="mat-block" appearance="outline">
       <mat-label translate>user.activation-method</mat-label>
       <mat-select [ngModelOptions]="{standalone: true}" [(ngModel)]="activationMethod">
         <mat-option *ngFor="let activationMethod of activationMethods" [value]="activationMethod">
@@ -50,7 +67,7 @@
     </button>
     <button mat-raised-button color="primary"
             type="submit"
-            [disabled]="(isLoading$ | async) || detailsForm.invalid || !detailsForm.dirty">
+            [disabled]="(isLoading$ | async) || detailsForm.invalid || !detailsForm.dirty || !selectedRole">
       {{ 'action.add' | translate }}
     </button>
   </div>

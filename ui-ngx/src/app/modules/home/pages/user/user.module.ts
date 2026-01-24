@@ -23,13 +23,17 @@ import { AddUserDialogComponent } from '@modules/home/pages/user/add-user-dialog
 import { ActivationLinkDialogComponent } from '@modules/home/pages/user/activation-link-dialog.component';
 import { HomeComponentsModule } from '@modules/home/components/home-components.module';
 import { UserTabsComponent } from '@home/pages/user/user-tabs.component';
+import { ChangeUserRoleDialogComponent } from '@modules/home/pages/user/change-user-role-dialog.component';
+import { TenantUsersComponent } from '@modules/home/pages/user/tenant-users.component';
 
 @NgModule({
   declarations: [
     UserComponent,
     UserTabsComponent,
     AddUserDialogComponent,
-    ActivationLinkDialogComponent
+    ActivationLinkDialogComponent,
+    ChangeUserRoleDialogComponent,
+    TenantUsersComponent
   ],
   imports: [
     CommonModule,

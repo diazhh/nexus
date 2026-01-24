@@ -719,4 +719,21 @@ public class UserServiceImpl extends AbstractCachedEntityService<UserCacheKey, U
         return EntityType.USER;
     }
 
+    @Override
+    public long countUsersByRoleId(TenantId tenantId, org.thingsboard.server.common.data.id.RoleId roleId) {
+        log.trace("Executing countUsersByRoleId [{}] [{}]", tenantId, roleId);
+        validateId(tenantId, id -> INCORRECT_TENANT_ID + id);
+        validateId(roleId, id -> "Incorrect roleId " + id);
+        return userDao.countByRoleId(tenantId, roleId.getId());
+    }
+
+    @Override
+    public PageData<User> findUsersByRoleId(TenantId tenantId, org.thingsboard.server.common.data.id.RoleId roleId, PageLink pageLink) {
+        log.trace("Executing findUsersByRoleId [{}] [{}] [{}]", tenantId, roleId, pageLink);
+        validateId(tenantId, id -> INCORRECT_TENANT_ID + id);
+        validateId(roleId, id -> "Incorrect roleId " + id);
+        validatePageLink(pageLink);
+        return userDao.findByRoleId(tenantId, roleId.getId(), pageLink);
+    }
+
 }

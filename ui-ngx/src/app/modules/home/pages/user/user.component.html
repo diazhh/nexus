@@ -55,6 +55,13 @@
   </button>
   <button mat-raised-button color="primary"
           [disabled]="(isLoading$ | async)"
+          (click)="openChangeRoleDialog()"
+          [class.!hidden]="isEdit || !entity?.id">
+    <mat-icon>verified_user</mat-icon>
+    <span translate>user.change-role</span>
+  </button>
+  <button mat-raised-button color="primary"
+          [disabled]="(isLoading$ | async)"
           (click)="onEntityAction($event, 'delete')"
           [class.!hidden]="hideDelete() || isEdit">
     {{'user.delete' | translate }}
@@ -98,6 +105,15 @@
                       appearance="outline"
                       formControlName="phone">
       </tb-phone-input>
+      <mat-form-field class="mat-block" appearance="outline" *ngIf="!isEdit && entity?.id">
+        <mat-label translate>role.role</mat-label>
+        <input matInput [value]="getUserRoleName()" readonly>
+        <button mat-icon-button matSuffix 
+                (click)="openChangeRoleDialog()" 
+                matTooltip="{{ 'user.change-role' | translate }}">
+          <mat-icon>edit</mat-icon>
+        </button>
+      </mat-form-field>
       <div formGroupName="additionalInfo" class="flex flex-col">
         <mat-form-field class="mat-block" floatLabel="always" appearance="outline">
           <mat-label translate>language.language</mat-label>

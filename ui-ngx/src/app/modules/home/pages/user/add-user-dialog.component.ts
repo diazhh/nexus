@@ -24,6 +24,9 @@ import { Authority } from '@shared/models/authority.enum';
 import { ActivationLinkInfo, ActivationMethod, activationMethodTranslations, User } from '@shared/models/user.model';
 import { CustomerId } from '@shared/models/id/customer-id';
 import { UserService } from '@core/http/user.service';
+import { RoleService } from '@core/http/role.service';
+import { Role } from '@shared/models/role.models';
+import { PageLink } from '@shared/models/page/page-link';
 import { Observable } from 'rxjs';
 import {
   ActivationLinkDialogComponent,
@@ -37,6 +40,7 @@ export interface AddUserDialogData {
   tenantId: string;
   customerId: string;
   authority: Authority;
+  allowTenantUser?: boolean;
 }
 
 @Component({
@@ -48,6 +52,11 @@ export class AddUserDialogComponent extends DialogComponent<AddUserDialogCompone
 
   detailsForm: UntypedFormGroup;
   user: User;
+
+  roles: Role[] = [];
+  selectedRole: Role = null;
+  createAsTenantUser = false;
+  loadingRoles = false;
 
   activationMethods = Object.keys(ActivationMethod);
   activationMethodEnum = ActivationMethod;
@@ -63,6 +72,7 @@ export class AddUserDialogComponent extends DialogComponent<AddUserDialogCompone
               @Inject(MAT_DIALOG_DATA) public data: AddUserDialogData,
               public dialogRef: MatDialogRef<AddUserDialogComponent, User>,
               private userService: UserService,
+              private roleService: RoleService,
               private dialog: MatDialog) {
     super(store, router, dialogRef);
   }
@@ -72,6 +82,20 @@ export class AddUserDialogComponent extends DialogComponent<AddUserDialogCompone
     this.userComponent.isEdit = true;
     this.userComponent.entity = this.user;
     this.detailsForm = this.userComponent.entityForm;
+    this.loadRoles();
+  }
+
+  loadRoles(): void {
+    this.loadingRoles = true;
+    this.roleService.getRoles(new PageLink(100)).subscribe(
+      (rolesPage) => {
+        this.roles = rolesPage.data;
+        this.loadingRoles = false;
+      },
+      () => {
+        this.loadingRoles = false;
+      }
+    );
   }
 
   cancel(): void {
@@ -79,36 +103,66 @@ export class AddUserDialogComponent extends DialogComponent<AddUserDialogCompone
   }
 
   add(): void {
-    if (this.detailsForm.valid) {
+    if (this.detailsForm.valid && this.isFormValid()) {
       this.user = {...this.user, ...this.userComponent.entityForm.value};
       this.user.authority = this.data.authority;
       this.user.tenantId = new TenantId(this.data.tenantId);
-      this.user.customerId = new CustomerId(this.data.customerId);
+      
+      if (this.createAsTenantUser) {
+        this.user.customerId = null;
+      } else {
+        this.user.customerId = new CustomerId(this.data.customerId);
+      }
+      
       if (!this.user.additionalInfo.lang) {
         delete this.user.additionalInfo.lang;
       }
       if (!this.user.additionalInfo.unitSystem) {
         delete this.user.additionalInfo.unitSystem;
       }
+      
       const sendActivationEmail = this.activationMethod === ActivationMethod.SEND_ACTIVATION_MAIL;
       this.userService.saveUser(this.user, sendActivationEmail).subscribe(
         (user) => {
-          if (this.activationMethod === ActivationMethod.DISPLAY_ACTIVATION_LINK) {
-            this.userService.getActivationLinkInfo(user.id.id).subscribe(
-              (activationLink) => {
-                this.displayActivationLink(activationLink).subscribe(
-                  () => {
-                    this.dialogRef.close(user);
-                  }
-                );
+          if (this.selectedRole) {
+            this.userService.changeUserRole(user.id.id, this.selectedRole.id.id).subscribe(
+              () => {
+                this.handleActivationAndClose(user);
+              },
+              () => {
+                this.handleActivationAndClose(user);
               }
             );
           } else {
-            this.dialogRef.close(user);
+            this.handleActivationAndClose(user);
           }
         }
       );
     }
+  }
+
+  private handleActivationAndClose(user: User): void {
+    if (this.activationMethod === ActivationMethod.DISPLAY_ACTIVATION_LINK) {
+      this.userService.getActivationLinkInfo(user.id.id).subscribe(
+        (activationLink) => {
+          this.displayActivationLink(activationLink).subscribe(
+            () => {
+              this.dialogRef.close(user);
+            }
+          );
+        }
+      );
+    } else {
+      this.dialogRef.close(user);
+    }
+  }
+
+  isFormValid(): boolean {
+    return this.selectedRole !== null;
+  }
+
+  get allowTenantUser(): boolean {
+    return this.data.allowTenantUser === true;
   }
 
   displayActivationLink(activationLinkInfo: ActivationLinkInfo): Observable<void> {
