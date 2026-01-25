@@ -1,0 +1,192 @@
+<div class="ct-unit-form-dialog">
+  <mat-toolbar class="dialog-toolbar">
+    <h2 mat-dialog-title>{{ isEditMode ? 'Edit Unit' : 'Create New Unit' }}</h2>
+    <span class="fill-space"></span>
+    <button mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <mat-dialog-content>
+    <form [formGroup]="unitForm" class="unit-form">
+      
+      <!-- Error Alert -->
+      <mat-error *ngIf="error" class="error-alert">
+        <mat-icon>error</mat-icon>
+        <span>{{ error }}</span>
+      </mat-error>
+
+      <!-- Basic Information -->
+      <div class="form-section">
+        <h3 class="section-title">Basic Information</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width" *ngIf="!isEditMode">
+            <mat-label>Unit Code</mat-label>
+            <input matInput formControlName="unitCode" placeholder="e.g., CT-001">
+            <mat-error *ngIf="unitForm.get('unitCode')?.invalid">
+              {{ getErrorMessage('unitCode') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Unit Name</mat-label>
+            <input matInput formControlName="unitName" placeholder="e.g., Coiled Tubing Unit #1">
+            <mat-error *ngIf="unitForm.get('unitName')?.invalid">
+              {{ getErrorMessage('unitName') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row" *ngIf="!isEditMode">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Asset ID</mat-label>
+            <input matInput formControlName="assetId" placeholder="Asset identifier">
+            <mat-error *ngIf="unitForm.get('assetId')?.invalid">
+              {{ getErrorMessage('assetId') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline">
+            <mat-label>Manufacturer</mat-label>
+            <input matInput formControlName="manufacturer" placeholder="e.g., NOV">
+            <mat-error *ngIf="unitForm.get('manufacturer')?.invalid">
+              {{ getErrorMessage('manufacturer') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Model</mat-label>
+            <input matInput formControlName="model" placeholder="e.g., CT-2000">
+            <mat-error *ngIf="unitForm.get('model')?.invalid">
+              {{ getErrorMessage('model') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-columns" *ngIf="!isEditMode">
+          <mat-form-field appearance="outline">
+            <mat-label>Serial Number</mat-label>
+            <input matInput formControlName="serialNumber" placeholder="Serial number">
+            <mat-error *ngIf="unitForm.get('serialNumber')?.invalid">
+              {{ getErrorMessage('serialNumber') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Year Manufactured</mat-label>
+            <input matInput type="number" formControlName="yearManufactured" placeholder="e.g., 2020">
+            <mat-error *ngIf="unitForm.get('yearManufactured')?.invalid">
+              {{ getErrorMessage('yearManufactured') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Technical Specifications (Create Only) -->
+      <div class="form-section" *ngIf="!isEditMode">
+        <h3 class="section-title">Technical Specifications</h3>
+        
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline">
+            <mat-label>Max Pressure (PSI)</mat-label>
+            <input matInput type="number" formControlName="maxPressureRatingPsi" placeholder="e.g., 15000">
+            <mat-error *ngIf="unitForm.get('maxPressureRatingPsi')?.invalid">
+              {{ getErrorMessage('maxPressureRatingPsi') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Max Tension (LBF)</mat-label>
+            <input matInput type="number" formControlName="maxTensionRatingLbf" placeholder="e.g., 80000">
+            <mat-error *ngIf="unitForm.get('maxTensionRatingLbf')?.invalid">
+              {{ getErrorMessage('maxTensionRatingLbf') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline">
+            <mat-label>Max Speed (FT/MIN)</mat-label>
+            <input matInput type="number" formControlName="maxSpeedRatingFtMin" placeholder="e.g., 250">
+            <mat-error *ngIf="unitForm.get('maxSpeedRatingFtMin')?.invalid">
+              {{ getErrorMessage('maxSpeedRatingFtMin') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Power Rating (HP)</mat-label>
+            <input matInput type="number" formControlName="powerRatingHp" placeholder="e.g., 500">
+            <mat-error *ngIf="unitForm.get('powerRatingHp')?.invalid">
+              {{ getErrorMessage('powerRatingHp') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Operational Information -->
+      <div class="form-section">
+        <h3 class="section-title">Operational Information</h3>
+        
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline" *ngIf="isEditMode">
+            <mat-label>Operational Status</mat-label>
+            <mat-select formControlName="operationalStatus">
+              <mat-option *ngFor="let status of unitStatuses" [value]="status">
+                {{ status.replace('_', ' ') }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="unitForm.get('operationalStatus')?.invalid">
+              {{ getErrorMessage('operationalStatus') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" [class.full-width]="!isEditMode">
+            <mat-label>Current Location</mat-label>
+            <input matInput formControlName="currentLocation" placeholder="e.g., Yard A, Bay 3">
+            <mat-error *ngIf="unitForm.get('currentLocation')?.invalid">
+              {{ getErrorMessage('currentLocation') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description" rows="3" 
+                      placeholder="Brief description of the unit"></textarea>
+            <mat-error *ngIf="unitForm.get('description')?.invalid">
+              {{ getErrorMessage('description') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row" *ngIf="isEditMode">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" 
+                      placeholder="Additional notes or comments"></textarea>
+            <mat-error *ngIf="unitForm.get('notes')?.invalid">
+              {{ getErrorMessage('notes') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()" [disabled]="isLoading">
+      Cancel
+    </button>
+    <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="isLoading || unitForm.invalid">
+      <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Update' : 'Create' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

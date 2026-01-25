@@ -1,0 +1,223 @@
+.ct-job-details-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
+
+  .details-toolbar {
+    background: white;
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+
+    h2 {
+      margin: 0 0 0 16px;
+      font-size: 24px;
+      font-weight: 500;
+    }
+
+    .fill-space {
+      flex: 1 1 auto;
+    }
+  }
+
+  .loading-state,
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    flex: 1;
+
+    mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+    }
+
+    mat-spinner {
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 16px;
+      color: rgba(0, 0, 0, 0.54);
+      margin-bottom: 16px;
+    }
+  }
+
+  .details-content {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+
+    .summary-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+
+      .summary-card {
+        mat-card-content {
+          padding: 20px;
+
+          .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            color: rgba(0, 0, 0, 0.54);
+            font-size: 14px;
+
+            mat-icon {
+              font-size: 20px;
+              width: 20px;
+              height: 20px;
+            }
+          }
+
+          .card-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: rgba(0, 0, 0, 0.87);
+
+            .status-badge {
+              display: inline-block;
+              padding: 6px 16px;
+              border-radius: 16px;
+              color: white;
+              font-size: 14px;
+              font-weight: 500;
+              text-transform: uppercase;
+            }
+
+            .priority-display {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+
+              .priority-indicator {
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .progress-card {
+      margin-bottom: 24px;
+
+      mat-card-content {
+        padding: 20px;
+
+        .progress-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+          font-size: 14px;
+          color: rgba(0, 0, 0, 0.54);
+
+          .progress-percent {
+            font-size: 18px;
+            font-weight: 600;
+            color: rgba(0, 0, 0, 0.87);
+          }
+        }
+
+        mat-progress-bar {
+          height: 8px;
+          border-radius: 4px;
+        }
+      }
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 24px;
+
+      .info-card,
+      .actions-card {
+        mat-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+
+          mat-card-title {
+            font-size: 18px;
+            font-weight: 500;
+          }
+        }
+
+        mat-card-content {
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            .info-label {
+              color: rgba(0, 0, 0, 0.54);
+              font-size: 14px;
+            }
+
+            .info-value {
+              color: rgba(0, 0, 0, 0.87);
+              font-size: 14px;
+              font-weight: 500;
+              text-align: right;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              justify-content: flex-end;
+
+              .type-badge {
+                display: inline-block;
+                padding: 4px 12px;
+                background-color: rgba(156, 39, 176, 0.1);
+                border-radius: 12px;
+                color: #9c27b0;
+                font-size: 12px;
+                font-weight: 600;
+              }
+
+              .priority-indicator {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+              }
+            }
+          }
+        }
+      }
+
+      .actions-card {
+        mat-card-content {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+
+          .action-btn {
+            width: 100%;
+            justify-content: flex-start;
+            padding: 12px 16px;
+
+            mat-icon {
+              margin-right: 12px;
+            }
+          }
+        }
+      }
+    }
+  }
+}

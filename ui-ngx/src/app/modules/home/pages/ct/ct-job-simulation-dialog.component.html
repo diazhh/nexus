@@ -1,0 +1,285 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="tb-dialog">
+  <mat-toolbar color="primary">
+    <h2>{{ data.customMode ? 'Custom Job Simulation' : 'Simulate Job: ' + data.jobName }}</h2>
+    <span fxFlex></span>
+    <button mat-icon-button (click)="close()" type="button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <div mat-dialog-content class="simulation-content">
+    
+    <!-- Custom Parameters Form -->
+    <div *ngIf="data.customMode && !simulationResult" class="parameters-form">
+      <form [formGroup]="simulationForm">
+        <div class="form-section">
+          <h3>Well Parameters</h3>
+          <mat-form-field>
+            <mat-label>Well Name</mat-label>
+            <input matInput formControlName="wellName" required>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Target Depth (ft)</mat-label>
+            <input matInput type="number" formControlName="targetDepthFt" required>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Wellbore Diameter (in)</mat-label>
+            <input matInput type="number" formControlName="wellboreDiameterInch" required>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Max Inclination (deg)</mat-label>
+            <input matInput type="number" formControlName="maxInclinationDeg" required>
+          </mat-form-field>
+        </div>
+
+        <div class="form-section">
+          <h3>Tubing Parameters</h3>
+          <mat-form-field>
+            <mat-label>Tubing OD (in)</mat-label>
+            <input matInput type="number" formControlName="tubingOdInch" required>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Tubing ID (in)</mat-label>
+            <input matInput type="number" formControlName="tubingIdInch" required>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Tubing Length (ft)</mat-label>
+            <input matInput type="number" formControlName="tubingLengthFt" required>
+          </mat-form-field>
+        </div>
+
+        <div class="form-section">
+          <h3>Operational Parameters</h3>
+          <mat-form-field>
+            <mat-label>Fluid Density (ppg)</mat-label>
+            <input matInput type="number" formControlName="fluidDensityPpg" required>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Pump Rate (bpm)</mat-label>
+            <input matInput type="number" formControlName="pumpRateBpm">
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Max Pressure (psi)</mat-label>
+            <input matInput type="number" formControlName="maxPressurePsi" required>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Max Running Speed (ft/min)</mat-label>
+            <input matInput type="number" formControlName="maxRunningSpeedFtMin" required>
+          </mat-form-field>
+        </div>
+
+        <div class="form-section">
+          <h3>Unit Limits</h3>
+          <mat-form-field>
+            <mat-label>Unit Max Pressure (psi)</mat-label>
+            <input matInput type="number" formControlName="unitMaxPressurePsi" required>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Unit Max Tension (lbf)</mat-label>
+            <input matInput type="number" formControlName="unitMaxTensionLbf" required>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Estimated Treatment Time (hrs)</mat-label>
+            <input matInput type="number" formControlName="estimatedTreatmentHours">
+          </mat-form-field>
+        </div>
+      </form>
+    </div>
+
+    <!-- Simulation Results -->
+    <div *ngIf="simulationResult" class="simulation-results">
+      
+      <!-- Feasibility -->
+      <mat-card class="result-card" [ngClass]="getFeasibilityClass()">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>{{ simulationResult.feasibility.isFeasible ? 'check_circle' : 'error' }}</mat-icon>
+            Feasibility: {{ simulationResult.feasibility.isFeasible ? 'FEASIBLE' : 'NOT FEASIBLE' }}
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="simulationResult.feasibility.limitingFactors?.length > 0">
+            <h4>Limiting Factors:</h4>
+            <ul>
+              <li *ngFor="let factor of simulationResult.feasibility.limitingFactors">{{ factor }}</li>
+            </ul>
+          </div>
+          <div *ngIf="simulationResult.feasibility.warnings?.length > 0">
+            <h4>Warnings:</h4>
+            <ul>
+              <li *ngFor="let warning of simulationResult.feasibility.warnings">{{ warning }}</li>
+            </ul>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Force Analysis -->
+      <mat-card class="result-card" *ngIf="simulationResult.forces">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>fitness_center</mat-icon>
+            Force Analysis
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="metrics-grid">
+            <div class="metric">
+              <span class="label">Max Hookload:</span>
+              <span class="value">{{ simulationResult.forces.maxHookload | number:'1.0-0' }} lbf</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Hydraulic Analysis -->
+      <mat-card class="result-card" *ngIf="simulationResult.hydraulics">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>water_drop</mat-icon>
+            Hydraulic Analysis
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="metrics-grid">
+            <div class="metric">
+              <span class="label">Max Pressure:</span>
+              <span class="value">{{ simulationResult.hydraulics.maxPressure | number:'1.0-0' }} psi</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Time Estimation -->
+      <mat-card class="result-card" *ngIf="simulationResult.times">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>schedule</mat-icon>
+            Time Estimation
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="metrics-grid">
+            <div class="metric">
+              <span class="label">Rigging Up:</span>
+              <span class="value">{{ simulationResult.times.riggingUpHours | number:'1.1-1' }} hrs</span>
+            </div>
+            <div class="metric">
+              <span class="label">Running In:</span>
+              <span class="value">{{ simulationResult.times.runningInHours | number:'1.1-1' }} hrs</span>
+            </div>
+            <div class="metric">
+              <span class="label">On Depth:</span>
+              <span class="value">{{ simulationResult.times.onDepthHours | number:'1.1-1' }} hrs</span>
+            </div>
+            <div class="metric">
+              <span class="label">Pulling Out:</span>
+              <span class="value">{{ simulationResult.times.pullingOutHours | number:'1.1-1' }} hrs</span>
+            </div>
+            <div class="metric">
+              <span class="label">Rigging Down:</span>
+              <span class="value">{{ simulationResult.times.riggingDownHours | number:'1.1-1' }} hrs</span>
+            </div>
+            <div class="metric total">
+              <span class="label">Total Duration:</span>
+              <span class="value">{{ simulationResult.times.totalDurationHours | number:'1.1-1' }} hrs</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Fatigue Prediction -->
+      <mat-card class="result-card" *ngIf="simulationResult.fatigue">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>trending_down</mat-icon>
+            Fatigue Prediction
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="metrics-grid">
+            <div class="metric">
+              <span class="label">Estimated Cycles:</span>
+              <span class="value">{{ simulationResult.fatigue.estimatedCycles }}</span>
+            </div>
+            <div class="metric">
+              <span class="label">Estimated Fatigue:</span>
+              <span class="value">{{ simulationResult.fatigue.estimatedFatiguePercent | number:'1.2-2' }}%</span>
+            </div>
+            <div class="metric">
+              <span class="label">Remaining Life:</span>
+              <span class="value">{{ simulationResult.fatigue.remainingLifePercent | number:'1.1-1' }}%</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Risks -->
+      <mat-card class="result-card" *ngIf="simulationResult.risks && simulationResult.risks.length > 0">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>warning</mat-icon>
+            Identified Risks
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="risks-list">
+            <div *ngFor="let risk of simulationResult.risks" class="risk-item" [ngClass]="getRiskSeverityClass(risk.severity)">
+              <div class="risk-header">
+                <span class="risk-category">{{ risk.category }}</span>
+                <span class="risk-severity">{{ risk.severity }}</span>
+              </div>
+              <p class="risk-description">{{ risk.description }}</p>
+              <p class="risk-mitigation"><strong>Mitigation:</strong> {{ risk.mitigation }}</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isSimulating" class="loading-state">
+      <mat-spinner></mat-spinner>
+      <p>Running simulation...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="simulationError" class="error-state">
+      <mat-icon color="warn">error</mat-icon>
+      <p>{{ simulationError }}</p>
+    </div>
+  </div>
+
+  <div mat-dialog-actions align="end">
+    <button mat-button (click)="close()">Close</button>
+    <button mat-raised-button color="primary" 
+            (click)="runSimulation()" 
+            [disabled]="isSimulating || (data.customMode && simulationForm.invalid)"
+            *ngIf="!simulationResult">
+      <mat-icon>science</mat-icon>
+      Run Simulation
+    </button>
+    <button mat-raised-button color="primary" 
+            (click)="simulationResult = null"
+            *ngIf="simulationResult && data.customMode">
+      <mat-icon>refresh</mat-icon>
+      New Simulation
+    </button>
+  </div>
+</div>

@@ -51,6 +51,7 @@
         <module>script</module>
         <module>edqs</module>
         <module>discovery-api</module>
+        <module>ct-module</module>
     </modules>
 
 </project>

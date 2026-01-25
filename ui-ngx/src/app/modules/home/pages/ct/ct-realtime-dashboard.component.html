@@ -1,0 +1,141 @@
+<div class="ct-realtime-dashboard">
+  <div class="dashboard-header">
+    <h2>Real-Time Operations Dashboard</h2>
+    <div class="header-actions">
+      <span class="last-update">Last update: {{ lastUpdate | date:'short' }}</span>
+      <button mat-icon-button (click)="refreshData()" [disabled]="loading">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="metrics-grid" *ngIf="!loading">
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon color="primary">work</mat-icon>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">{{ metrics.activeJobs }}</div>
+          <div class="metric-label">Active Jobs</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon color="accent">precision_manufacturing</mat-icon>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">{{ metrics.activeUnits }}</div>
+          <div class="metric-label">Active Units</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon color="primary">vertical_align_bottom</mat-icon>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">{{ metrics.totalDepth | number:'1.0-0' }} m</div>
+          <div class="metric-label">Total Depth</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon color="warn">warning</mat-icon>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">{{ metrics.criticalAlarms }}</div>
+          <div class="metric-label">Critical Alarms</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="jobs-card">
+    <mat-card-header>
+      <mat-card-title>Active Jobs Progress</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="loading" class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+
+      <table mat-table [dataSource]="activeJobs" *ngIf="!loading && activeJobs.length > 0" class="jobs-table">
+        
+        <ng-container matColumnDef="jobNumber">
+          <th mat-header-cell *matHeaderCellDef>Job Number</th>
+          <td mat-cell *matCellDef="let job">
+            <strong>{{ job.jobNumber }}</strong>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="wellName">
+          <th mat-header-cell *matHeaderCellDef>Well</th>
+          <td mat-cell *matCellDef="let job">{{ job.wellName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="currentDepth">
+          <th mat-header-cell *matHeaderCellDef>Current Depth</th>
+          <td mat-cell *matCellDef="let job">
+            {{ job.currentDepth | number:'1.0-0' }} m
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="targetDepth">
+          <th mat-header-cell *matHeaderCellDef>Target Depth</th>
+          <td mat-cell *matCellDef="let job">
+            {{ job.targetDepth | number:'1.0-0' }} m
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="progress">
+          <th mat-header-cell *matHeaderCellDef>Progress</th>
+          <td mat-cell *matCellDef="let job">
+            <div class="progress-container">
+              <mat-progress-bar 
+                mode="determinate" 
+                [value]="job.progress"
+                [color]="getProgressColor(job.progress)">
+              </mat-progress-bar>
+              <span class="progress-text">{{ job.progress | number:'1.0-0' }}%</span>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let job">
+            <span class="status-badge" [ngClass]="'status-' + job.status.toLowerCase()">
+              {{ job.status }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let job">
+            <button mat-icon-button (click)="viewJobDetails(job.jobId)" matTooltip="View Details">
+              <mat-icon>visibility</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <div *ngIf="!loading && activeJobs.length === 0" class="no-data">
+        <mat-icon>info</mat-icon>
+        <p>No active jobs at the moment</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

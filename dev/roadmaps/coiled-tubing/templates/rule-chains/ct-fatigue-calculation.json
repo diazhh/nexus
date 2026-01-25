@@ -1,0 +1,237 @@
+{
+  "ruleChain": {
+    "name": "CT Fatigue Calculation",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": false,
+    "configuration": null
+  },
+  "metadata": {
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "additionalInfo": {
+          "description": "Entry point for telemetry data",
+          "layoutX": 100,
+          "layoutY": 200
+        },
+        "type": "org.thingsboard.rule.engine.flow.TbRuleChainInputNode",
+        "name": "Input",
+        "debugMode": false,
+        "configuration": {
+          "version": 0
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Filter only reel telemetry data",
+          "layoutX": 300,
+          "layoutY": 200
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "Filter Reel Telemetry",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "return metadata.entityType === 'ASSET' && metadata.assetType === 'CT_REEL' && msg.direction !== undefined;"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Enrich with reel attributes",
+          "layoutX": 500,
+          "layoutY": 200
+        },
+        "type": "org.thingsboard.rule.engine.enrichment.TbGetAttributesNode",
+        "name": "Get Reel Attributes",
+        "debugMode": false,
+        "configuration": {
+          "clientAttributeNames": [],
+          "sharedAttributeNames": [],
+          "serverAttributeNames": [
+            "tubing_od_inch",
+            "tubing_id_inch",
+            "material_grade",
+            "typical_gooseneck_radius_inch",
+            "reel_core_diameter_inch",
+            "accumulated_fatigue_percent",
+            "total_cycles",
+            "corrosion_environment",
+            "weld_stress_concentration_factor"
+          ],
+          "latestTsKeyNames": [],
+          "getLatestValueWithTs": false,
+          "tellFailureIfAbsent": true,
+          "dataToFetch": "SERVER_SCOPE"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Calculate fatigue using Palmgren-Miner rule",
+          "layoutX": 700,
+          "layoutY": 200
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Calculate Fatigue",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "// Material properties database\nvar MATERIAL_PROPERTIES = {\n    'QT-800': {E: 30e6, A: 1e15, m: 3.5, yield: 80000},\n    'QT-900': {E: 30e6, A: 8e14, m: 3.3, yield: 90000},\n    'QT-1000': {E: 30e6, A: 5e14, m: 3.0, yield: 100000}\n};\n\nvar CORROSION_FACTORS = {\n    'SWEET': 1.0,\n    'MILDLY_SOUR': 1.2,\n    'SOUR': 1.5,\n    'HIGHLY_CORROSIVE': 2.0\n};\n\n// Extract telemetry\nvar pressure = msg.pressure || 0;\nvar tension = msg.tension || 0;\nvar temperature = msg.temperature || 70;\nvar direction = msg.direction || 'STOPPED';\nvar reelId = metadata.entityId;\n\n// Get reel attributes\nvar Do = metadata.ss_tubing_od_inch || 2.375;\nvar Di = metadata.ss_tubing_id_inch || 1.995;\nvar t = (Do - Di) / 2;\nvar materialGrade = metadata.ss_material_grade || 'QT-800';\n\n// Radius depends on operation\nvar radius = direction !== 'STOPPED' \n    ? (metadata.ss_typical_gooseneck_radius_inch || 72)\n    : ((metadata.ss_reel_core_diameter_inch || 96) / 2);\n\n// Material properties\nvar matProps = MATERIAL_PROPERTIES[materialGrade] || MATERIAL_PROPERTIES['QT-800'];\n\n// Current fatigue state\nvar currentFatigue = parseFloat(metadata.ss_accumulated_fatigue_percent) || 0;\nvar totalCycles = parseInt(metadata.ss_total_cycles) || 0;\n\n// Factors\nvar corrosionFactor = CORROSION_FACTORS[metadata.ss_corrosion_environment] || 1.0;\nvar weldFactor = parseFloat(metadata.ss_weld_stress_concentration_factor) || 1.0;\n\n// Calculate stresses\nvar sigma_h = (pressure * Di) / (2 * t);\nvar area = Math.PI / 4 * (Math.pow(Do, 2) - Math.pow(Di, 2));\nvar sigma_a = tension / area;\nvar sigma_b = (matProps.E * (Do / 2)) / radius;\n\n// Von Mises stress\nvar sigma_vm = Math.sqrt(\n    Math.pow(sigma_h, 2) + \n    Math.pow(sigma_a, 2) + \n    Math.pow(sigma_b, 2) - \n    sigma_h * sigma_a - \n    sigma_h * sigma_b - \n    sigma_a * sigma_b\n);\n\n// Skip if stress too low\nif (sigma_vm < 1000) {\n    return {msg: msg, metadata: metadata, msgType: msgType};\n}\n\n// Cycles to failure (S-N curve)\nvar N = matProps.A * Math.pow(sigma_vm, -matProps.m);\nN = Math.max(Math.min(N, 1e9), 1);\n\n// Temperature factor\nvar tempFactor = 1.0 + ((temperature - 70) / 1000);\n\n// Fatigue increment\nvar fatigueIncrement = (1 / N) * corrosionFactor * weldFactor * tempFactor;\nvar shouldIncrement = (direction === 'IN' || direction === 'OUT');\n\nif (!shouldIncrement) {\n    fatigueIncrement = 0;\n}\n\n// New accumulated fatigue\nvar newFatiguePercent = Math.min(currentFatigue + (fatigueIncrement * 100), 100);\nvar newTotalCycles = totalCycles + (shouldIncrement ? 1 : 0);\n\n// Remaining cycles estimate\nvar avgFatiguePerCycle = newFatiguePercent / Math.max(newTotalCycles, 1);\nvar remainingCycles = Math.floor((100 - newFatiguePercent) / Math.max(avgFatiguePerCycle, 0.001));\n\n// Build result\nvar result = {\n    tenantId: metadata.tenantId,\n    reelId: reelId,\n    timestamp: Date.now(),\n    cycleNumber: newTotalCycles,\n    \n    // Operational parameters\n    pressurePsi: Math.round(pressure * 100) / 100,\n    tensionLbf: Math.round(tension * 100) / 100,\n    bendRadiusIn: Math.round(radius * 100) / 100,\n    temperatureF: Math.round(temperature * 100) / 100,\n    \n    // Calculated stresses\n    hoopStressPsi: Math.round(sigma_h),\n    axialStressPsi: Math.round(sigma_a),\n    bendingStressPsi: Math.round(sigma_b),\n    vonMisesStressPsi: Math.round(sigma_vm),\n    \n    // Fatigue calculation\n    cyclesToFailure: Math.round(N),\n    fatigueIncrement: Math.round(fatigueIncrement * 1e10) / 1e10,\n    accumulatedFatiguePercent: Math.round(newFatiguePercent * 1000) / 1000,\n    \n    // Factors\n    corrosionFactor: corrosionFactor,\n    weldFactor: weldFactor,\n    temperatureFactor: Math.round(tempFactor * 1000) / 1000,\n    \n    // Metadata\n    calculationMethod: 'PALMGREN_MINER',\n    notes: 'Direction: ' + direction,\n    \n    // For attribute update\n    newFatiguePercent: newFatiguePercent,\n    newTotalCycles: newTotalCycles,\n    remainingCycles: remainingCycles,\n    fatigueStatus: newFatiguePercent >= 95 ? 'CRITICAL' : (newFatiguePercent >= 80 ? 'HIGH' : 'NORMAL')\n};\n\nreturn {msg: result, metadata: metadata, msgType: msgType};"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Save fatigue log to database via REST API",
+          "layoutX": 900,
+          "layoutY": 200
+        },
+        "type": "org.thingsboard.rule.engine.rest.TbRestApiCallNode",
+        "name": "Save Fatigue Log",
+        "debugMode": false,
+        "configuration": {
+          "restEndpointUrlPattern": "http://localhost:8080/api/nexus/ct/fatigue/log",
+          "requestMethod": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "useSimpleClientHttpFactory": false,
+          "readTimeoutMs": 2000,
+          "maxParallelRequestsCount": 200,
+          "enableProxy": false
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Update reel attributes with new fatigue values",
+          "layoutX": 900,
+          "layoutY": 350
+        },
+        "type": "org.thingsboard.rule.engine.action.TbSaveAttributesNode",
+        "name": "Update Reel Attributes",
+        "debugMode": false,
+        "configuration": {
+          "scope": "SERVER_SCOPE",
+          "notifyDevice": false
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Route based on fatigue level",
+          "layoutX": 1100,
+          "layoutY": 200
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsSwitchNode",
+        "name": "Check Fatigue Level",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "if (msg.fatigueStatus === 'CRITICAL') {\n    return ['Critical'];\n} else if (msg.fatigueStatus === 'HIGH') {\n    return ['High'];\n} else {\n    return ['Normal'];\n}"
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Create critical fatigue alarm",
+          "layoutX": 1300,
+          "layoutY": 100
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create Critical Alarm",
+        "debugMode": false,
+        "configuration": {
+          "alarmType": "CT_FATIGUE_CRITICAL",
+          "severity": "CRITICAL",
+          "propagate": true,
+          "relationTypes": ["Contains"],
+          "alarmDetailsBuildJs": "var details = {};\ndetails.fatigue = msg.accumulatedFatiguePercent;\ndetails.remainingCycles = msg.remainingCycles;\ndetails.vonMisesStress = msg.vonMisesStressPsi;\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": true,
+          "dynamicSeverity": null
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Create high fatigue alarm",
+          "layoutX": 1300,
+          "layoutY": 200
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create High Alarm",
+        "debugMode": false,
+        "configuration": {
+          "alarmType": "CT_FATIGUE_HIGH",
+          "severity": "MAJOR",
+          "propagate": true,
+          "relationTypes": ["Contains"],
+          "alarmDetailsBuildJs": "var details = {};\ndetails.fatigue = msg.accumulatedFatiguePercent;\ndetails.remainingCycles = msg.remainingCycles;\ndetails.vonMisesStress = msg.vonMisesStressPsi;\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": true,
+          "dynamicSeverity": null
+        }
+      },
+      {
+        "additionalInfo": {
+          "description": "Clear fatigue alarms when normal",
+          "layoutX": 1300,
+          "layoutY": 300
+        },
+        "type": "org.thingsboard.rule.engine.action.TbClearAlarmNode",
+        "name": "Clear Alarms",
+        "debugMode": false,
+        "configuration": {
+          "alarmType": "CT_FATIGUE_.*"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 1,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "True"
+      },
+      {
+        "fromIndex": 2,
+        "toIndex": 3,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 4,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 5,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 4,
+        "toIndex": 6,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 5,
+        "toIndex": 6,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 6,
+        "toIndex": 7,
+        "type": "Critical"
+      },
+      {
+        "fromIndex": 6,
+        "toIndex": 8,
+        "type": "High"
+      },
+      {
+        "fromIndex": 6,
+        "toIndex": 9,
+        "type": "Normal"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}

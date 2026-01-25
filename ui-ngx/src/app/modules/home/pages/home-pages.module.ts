@@ -49,6 +49,7 @@ import { GatewaysModule } from '@home/pages/gateways/gateways.module';
 import { MobileModule } from '@home/pages/mobile/mobile.module';
 import { AiModelModule } from '@home/pages/ai-model/ai-model.module';
 import { RoleModule } from '@modules/home/pages/role/role.module';
+import { CTModule } from '@modules/home/pages/ct/ct.module';
 
 @NgModule({
   exports: [
@@ -85,6 +86,7 @@ import { RoleModule } from '@modules/home/pages/role/role.module';
     AccountModule,
     ScadaSymbolModule,
     AiModelModule,
+    CTModule
   ]
 })
 export class HomePagesModule { }

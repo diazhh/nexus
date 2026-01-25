@@ -1,0 +1,213 @@
+<div class="ct-unit-details-container">
+  <!-- Header -->
+  <mat-toolbar class="details-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2 *ngIf="unit">{{ unit.unitCode }} - {{ unit.unitName }}</h2>
+    <h2 *ngIf="!unit && isLoading">Loading...</h2>
+    <span class="fill-space"></span>
+    <button mat-raised-button color="primary" (click)="editUnit()" *ngIf="unit">
+      <mat-icon>edit</mat-icon>
+      Edit
+    </button>
+  </mat-toolbar>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading unit details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="error-state">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="loadUnitDetails(unit?.id.id || '')">
+      Retry
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading && !error && unit" class="details-content">
+    
+    <!-- Summary Cards -->
+    <div class="summary-section">
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>info</mat-icon>
+            <span>Status</span>
+          </div>
+          <div class="card-value">
+            <span class="status-badge" [style.background-color]="getStatusColor(unit.operationalStatus)">
+              {{ getStatusLabel(unit.operationalStatus) }}
+            </span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>schedule</mat-icon>
+            <span>Operational Hours</span>
+          </div>
+          <div class="card-value">
+            {{ (unit.totalOperationalHours || 0).toFixed(1) }} hrs
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>work</mat-icon>
+            <span>Jobs Completed</span>
+          </div>
+          <div class="card-value">
+            {{ unit.totalJobsCompleted || 0 }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>location_on</mat-icon>
+            <span>Location</span>
+          </div>
+          <div class="card-value">
+            {{ unit.currentLocation || 'N/A' }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+      
+      <!-- Unit Information -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Unit Information</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Unit Code:</span>
+            <span class="info-value">{{ unit.unitCode }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Unit Name:</span>
+            <span class="info-value">{{ unit.unitName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Manufacturer:</span>
+            <span class="info-value">{{ unit.manufacturer || 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Model:</span>
+            <span class="info-value">{{ unit.model || 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Serial Number:</span>
+            <span class="info-value">{{ unit.serialNumber || 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Year:</span>
+            <span class="info-value">{{ unit.manufacturingYear || 'N/A' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Current Reel -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Current Reel</mat-card-title>
+          <button mat-icon-button *ngIf="!unit.currentReelId" (click)="assignReel()">
+            <mat-icon>add</mat-icon>
+          </button>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="unit.currentReelId" class="reel-info">
+            <div class="info-row">
+              <span class="info-label">Reel Code:</span>
+              <span class="info-value">{{ unit.currentReelCode || 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Material:</span>
+              <span class="info-value">{{ unit.currentReelMaterial || 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Coupled Date:</span>
+              <span class="info-value">{{ unit.reelCoupledDate | date:'short' }}</span>
+            </div>
+            <button mat-stroked-button color="warn" (click)="detachReel()" class="detach-btn">
+              <mat-icon>link_off</mat-icon>
+              Detach Reel
+            </button>
+          </div>
+          <div *ngIf="!unit.currentReelId" class="no-reel">
+            <mat-icon>album</mat-icon>
+            <p>No reel assigned</p>
+            <button mat-raised-button color="primary" (click)="assignReel()">
+              Assign Reel
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Specifications -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Specifications</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Max Depth:</span>
+            <span class="info-value">{{ unit.maxDepthCapabilityFt || 'N/A' }} ft</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Max Pressure:</span>
+            <span class="info-value">{{ unit.maxPressureCapabilityPsi || 'N/A' }} psi</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Injector Type:</span>
+            <span class="info-value">{{ unit.injectorType || 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Power Unit:</span>
+            <span class="info-value">{{ unit.powerUnitType || 'N/A' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Recent Jobs -->
+      <mat-card class="jobs-card">
+        <mat-card-header>
+          <mat-card-title>Recent Jobs</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="recentJobs.length === 0" class="no-jobs">
+            <mat-icon>work_off</mat-icon>
+            <p>No recent jobs</p>
+          </div>
+          <div *ngIf="recentJobs.length > 0" class="jobs-list">
+            <div *ngFor="let job of recentJobs" class="job-item" (click)="viewJob(job)">
+              <div class="job-header">
+                <strong>{{ job.jobNumber }}</strong>
+                <span class="job-status" [style.background-color]="getStatusColor(job.status)">
+                  {{ job.status }}
+                </span>
+              </div>
+              <div class="job-details">
+                <span>{{ job.jobName }}</span>
+                <span class="job-date">{{ job.plannedStartDate | date:'short' }}</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

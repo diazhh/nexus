@@ -1,0 +1,178 @@
+<div class="ct-reel-form-dialog">
+  <mat-toolbar class="dialog-toolbar">
+    <h2 mat-dialog-title>{{ isEditMode ? 'Edit Reel' : 'Create New Reel' }}</h2>
+    <span class="fill-space"></span>
+    <button mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <mat-dialog-content>
+    <form [formGroup]="reelForm" class="reel-form">
+      
+      <!-- Error Alert -->
+      <mat-error *ngIf="error" class="error-alert">
+        <mat-icon>error</mat-icon>
+        <span>{{ error }}</span>
+      </mat-error>
+
+      <!-- Basic Information -->
+      <div class="form-section">
+        <h3 class="section-title">Basic Information</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width" *ngIf="!isEditMode">
+            <mat-label>Reel Code</mat-label>
+            <input matInput formControlName="reelCode" placeholder="e.g., REEL-001">
+            <mat-error *ngIf="reelForm.get('reelCode')?.invalid">
+              {{ getErrorMessage('reelCode') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Reel Name</mat-label>
+            <input matInput formControlName="reelName" placeholder="e.g., CT Reel #1">
+            <mat-error *ngIf="reelForm.get('reelName')?.invalid">
+              {{ getErrorMessage('reelName') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row" *ngIf="!isEditMode">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Asset ID</mat-label>
+            <input matInput formControlName="assetId" placeholder="Asset identifier">
+            <mat-error *ngIf="reelForm.get('assetId')?.invalid">
+              {{ getErrorMessage('assetId') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-columns" *ngIf="!isEditMode">
+          <mat-form-field appearance="outline">
+            <mat-label>Manufacturer</mat-label>
+            <input matInput formControlName="manufacturer" placeholder="e.g., NOV">
+            <mat-error *ngIf="reelForm.get('manufacturer')?.invalid">
+              {{ getErrorMessage('manufacturer') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Serial Number</mat-label>
+            <input matInput formControlName="serialNumber" placeholder="Serial number">
+            <mat-error *ngIf="reelForm.get('serialNumber')?.invalid">
+              {{ getErrorMessage('serialNumber') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Tubing Specifications (Create Only) -->
+      <div class="form-section" *ngIf="!isEditMode">
+        <h3 class="section-title">Tubing Specifications</h3>
+        
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline">
+            <mat-label>Outer Diameter (inches)</mat-label>
+            <input matInput type="number" step="0.125" formControlName="tubingOdInch" placeholder="e.g., 2.375">
+            <mat-hint>Typical: 1.5 - 4.5 inches</mat-hint>
+            <mat-error *ngIf="reelForm.get('tubingOdInch')?.invalid">
+              {{ getErrorMessage('tubingOdInch') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Inner Diameter (inches)</mat-label>
+            <input matInput type="number" step="0.125" formControlName="tubingIdInch" placeholder="e.g., 2.0">
+            <mat-hint>Must be less than OD</mat-hint>
+            <mat-error *ngIf="reelForm.get('tubingIdInch')?.invalid">
+              {{ getErrorMessage('tubingIdInch') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline">
+            <mat-label>Material Grade</mat-label>
+            <input matInput formControlName="materialGrade" placeholder="e.g., CT-80, CT-90, CT-110">
+            <mat-hint>Common grades: CT-80, CT-90, CT-110</mat-hint>
+            <mat-error *ngIf="reelForm.get('materialGrade')?.invalid">
+              {{ getErrorMessage('materialGrade') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Total Length (feet)</mat-label>
+            <input matInput type="number" formControlName="totalLengthFt" placeholder="e.g., 15000">
+            <mat-hint>Typical: 10,000 - 25,000 ft</mat-hint>
+            <mat-error *ngIf="reelForm.get('totalLengthFt')?.invalid">
+              {{ getErrorMessage('totalLengthFt') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Operational Information -->
+      <div class="form-section">
+        <h3 class="section-title">Operational Information</h3>
+        
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline" *ngIf="isEditMode">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              <mat-option *ngFor="let status of reelStatuses" [value]="status">
+                {{ status.replace('_', ' ') }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="reelForm.get('status')?.invalid">
+              {{ getErrorMessage('status') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" [class.full-width]="!isEditMode">
+            <mat-label>Current Location</mat-label>
+            <input matInput formControlName="currentLocation" placeholder="e.g., Yard A, Bay 3">
+            <mat-error *ngIf="reelForm.get('currentLocation')?.invalid">
+              {{ getErrorMessage('currentLocation') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description" rows="3" 
+                      placeholder="Brief description of the reel"></textarea>
+            <mat-error *ngIf="reelForm.get('description')?.invalid">
+              {{ getErrorMessage('description') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row" *ngIf="isEditMode">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" 
+                      placeholder="Additional notes or comments"></textarea>
+            <mat-error *ngIf="reelForm.get('notes')?.invalid">
+              {{ getErrorMessage('notes') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()" [disabled]="isLoading">
+      Cancel
+    </button>
+    <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="isLoading || reelForm.invalid">
+      <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Update' : 'Create' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

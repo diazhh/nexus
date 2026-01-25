@@ -1,0 +1,51 @@
+#
+# Copyright © 2016-2026 The Thingsboard Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Configuración del Módulo Coiled Tubing
+
+ct:
+  module:
+    # URL del backend para nodos personalizados
+    backend-url: ${CT_BACKEND_URL:http://localhost:8080}
+    
+    # Cálculo de fatiga
+    fatigue-calculation-enabled: ${CT_FATIGUE_ENABLED:true}
+    critical-fatigue-threshold: ${CT_CRITICAL_THRESHOLD:95.0}
+    high-fatigue-threshold: ${CT_HIGH_THRESHOLD:80.0}
+    
+    # Simulación de trabajos
+    job-simulation-enabled: ${CT_SIMULATION_ENABLED:true}
+    simulation-steps: ${CT_SIMULATION_STEPS:100}
+    
+    # Timeouts
+    rest-timeout: ${CT_REST_TIMEOUT:5000}
+
+# Configuración de logging específica del módulo
+logging:
+  level:
+    org.thingsboard.nexus.ct: ${CT_LOG_LEVEL:INFO}
+    org.thingsboard.nexus.ct.rule: ${CT_RULE_LOG_LEVEL:DEBUG}
+    org.thingsboard.nexus.ct.service: ${CT_SERVICE_LOG_LEVEL:INFO}
+
+# Pool de threads para procesamiento asíncrono
+spring:
+  task:
+    execution:
+      pool:
+        core-size: ${CT_ASYNC_CORE_POOL:5}
+        max-size: ${CT_ASYNC_MAX_POOL:10}
+        queue-capacity: ${CT_ASYNC_QUEUE:100}
+      thread-name-prefix: ct-async-

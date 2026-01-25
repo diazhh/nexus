@@ -1,0 +1,249 @@
+<div class="ct-reel-details-container">
+  <!-- Header -->
+  <mat-toolbar class="details-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2 *ngIf="reel">{{ reel.reelCode }} - {{ reel.reelName }}</h2>
+    <h2 *ngIf="!reel && isLoading">Loading...</h2>
+    <span class="fill-space"></span>
+    <button mat-button (click)="viewFatigueHistory()" *ngIf="reel">
+      <mat-icon>history</mat-icon>
+      Fatigue History
+    </button>
+    <button mat-raised-button color="primary" (click)="editReel()" *ngIf="reel">
+      <mat-icon>edit</mat-icon>
+      Edit
+    </button>
+  </mat-toolbar>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading reel details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="error-state">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="loadReelDetails(reel?.id.id || '')">
+      Retry
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading && !error && reel" class="details-content">
+    
+    <!-- Summary Cards -->
+    <div class="summary-section">
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>info</mat-icon>
+            <span>Status</span>
+          </div>
+          <div class="card-value">
+            <span class="status-badge" [style.background-color]="getStatusColor(reel.status)">
+              {{ getStatusLabel(reel.status) }}
+            </span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card fatigue-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>warning</mat-icon>
+            <span>Fatigue Level</span>
+          </div>
+          <div class="card-value">
+            <div class="fatigue-display">
+              <span class="fatigue-percent" [style.color]="getFatigueColor(reel.accumulatedFatiguePercent || 0)">
+                {{ (reel.accumulatedFatiguePercent || 0).toFixed(1) }}%
+              </span>
+              <span class="fatigue-level" [style.color]="getFatigueColor(reel.accumulatedFatiguePercent || 0)">
+                {{ getFatigueLevel(reel.accumulatedFatiguePercent || 0) }}
+              </span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>autorenew</mat-icon>
+            <span>Total Cycles</span>
+          </div>
+          <div class="card-value">
+            {{ reel.totalCycles || 0 }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>battery_std</mat-icon>
+            <span>Remaining Life</span>
+          </div>
+          <div class="card-value">
+            {{ getRemainingLife(reel.accumulatedFatiguePercent || 0).toFixed(1) }}%
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+      
+      <!-- Reel Information -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Reel Information</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Reel Code:</span>
+            <span class="info-value">{{ reel.reelCode }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Reel Name:</span>
+            <span class="info-value">{{ reel.reelName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Serial Number:</span>
+            <span class="info-value">{{ reel.serialNumber || 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Manufacturing Date:</span>
+            <span class="info-value">{{ reel.manufacturingDate | date:'mediumDate' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Location:</span>
+            <span class="info-value">{{ reel.currentLocation || 'N/A' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Tubing Specifications -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Tubing Specifications</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Material Grade:</span>
+            <span class="info-value">
+              <span class="material-badge">{{ reel.materialGrade }}</span>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Outer Diameter:</span>
+            <span class="info-value">{{ reel.outerDiameterInch }} in</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Wall Thickness:</span>
+            <span class="info-value">{{ reel.wallThicknessInch }} in</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Total Length:</span>
+            <span class="info-value">{{ reel.totalLengthFt?.toFixed(0) || 0 }} ft</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Weight per Foot:</span>
+            <span class="info-value">{{ reel.weightPerFootLbs }} lbs/ft</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Fatigue Information -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Fatigue Information</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="fatigue-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" 
+                   [style.width.%]="reel.accumulatedFatiguePercent || 0"
+                   [style.background-color]="getFatigueColor(reel.accumulatedFatiguePercent || 0)">
+              </div>
+            </div>
+            <span class="progress-text">
+              {{ (reel.accumulatedFatiguePercent || 0).toFixed(1) }}% Accumulated
+            </span>
+          </div>
+          
+          <div class="info-row">
+            <span class="info-label">Total Cycles:</span>
+            <span class="info-value">{{ reel.totalCycles || 0 }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Last Calculation:</span>
+            <span class="info-value">{{ reel.lastFatigueCalculationDate | date:'short' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Estimated Life:</span>
+            <span class="info-value">{{ reel.estimatedRemainingLifeCycles || 'N/A' }} cycles</span>
+          </div>
+          
+          <button mat-raised-button color="accent" (click)="viewFatigueHistory()" class="history-btn">
+            <mat-icon>show_chart</mat-icon>
+            View Full History
+          </button>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Current Assignment -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Current Assignment</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="reel.currentUnitId" class="assignment-info">
+            <div class="info-row">
+              <span class="info-label">Unit Code:</span>
+              <span class="info-value">{{ reel.currentUnitCode || 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Coupled Date:</span>
+              <span class="info-value">{{ reel.coupledDate | date:'short' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Current Job:</span>
+              <span class="info-value">{{ reel.currentJobNumber || 'None' }}</span>
+            </div>
+          </div>
+          <div *ngIf="!reel.currentUnitId" class="no-assignment">
+            <mat-icon>link_off</mat-icon>
+            <p>Not currently assigned to any unit</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Actions -->
+      <mat-card class="actions-card">
+        <mat-card-header>
+          <mat-card-title>Actions</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <button mat-stroked-button color="primary" (click)="editReel()" class="action-btn">
+            <mat-icon>edit</mat-icon>
+            Edit Reel
+          </button>
+          <button mat-stroked-button color="accent" (click)="viewFatigueHistory()" class="action-btn">
+            <mat-icon>history</mat-icon>
+            Fatigue History
+          </button>
+          <button mat-stroked-button color="warn" (click)="retireReel()" class="action-btn" 
+                  *ngIf="reel.status !== ReelStatus.RETIRED">
+            <mat-icon>block</mat-icon>
+            Retire Reel
+          </button>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

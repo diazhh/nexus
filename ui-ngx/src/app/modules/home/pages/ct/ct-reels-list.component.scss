@@ -1,0 +1,144 @@
+.ct-reels-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .mat-mdc-table-toolbar {
+    background: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .fill-space {
+      flex: 1 1 auto;
+    }
+
+    .search-field {
+      width: 300px;
+      margin-bottom: -1.25em;
+    }
+
+    .filter-field {
+      width: 150px;
+      margin-bottom: -1.25em;
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px;
+  }
+
+  .table-container {
+    flex: 1;
+    overflow: auto;
+    background: white;
+
+    table {
+      width: 100%;
+
+      th {
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.87);
+      }
+
+      td {
+        color: rgba(0, 0, 0, 0.87);
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        color: white;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+
+      .material-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        background-color: rgba(33, 150, 243, 0.1);
+        border-radius: 4px;
+        color: #2196f3;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .location-icon {
+        vertical-align: middle;
+        margin-right: 4px;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: rgba(0, 0, 0, 0.54);
+      }
+
+      .fatigue-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .fatigue-bar {
+          flex: 1;
+          height: 8px;
+          background-color: rgba(0, 0, 0, 0.1);
+          border-radius: 4px;
+          overflow: hidden;
+          min-width: 80px;
+
+          .fatigue-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+
+            &.low {
+              background-color: #4caf50;
+            }
+
+            &.medium {
+              background-color: #ffc107;
+            }
+
+            &.high {
+              background-color: #ff9800;
+            }
+
+            &.critical {
+              background-color: #f44336;
+            }
+          }
+        }
+
+        .fatigue-text {
+          font-size: 13px;
+          font-weight: 600;
+          min-width: 45px;
+          text-align: right;
+        }
+      }
+
+      .clickable-row {
+        cursor: pointer;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.04);
+        }
+      }
+
+      .delete-action {
+        color: #f44336;
+      }
+    }
+  }
+}

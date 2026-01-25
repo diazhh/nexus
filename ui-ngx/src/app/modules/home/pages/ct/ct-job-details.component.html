@@ -1,0 +1,276 @@
+<div class="ct-job-details-container">
+  <!-- Header -->
+  <mat-toolbar class="details-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2 *ngIf="job">{{ job.jobNumber }} - {{ job.jobName }}</h2>
+    <h2 *ngIf="!job && isLoading">Loading...</h2>
+    <span class="fill-space"></span>
+    <button mat-button (click)="simulateJob()" *ngIf="job && canStart()">
+      <mat-icon>science</mat-icon>
+      Simulate
+    </button>
+    <button mat-raised-button color="primary" (click)="editJob()" *ngIf="job">
+      <mat-icon>edit</mat-icon>
+      Edit
+    </button>
+  </mat-toolbar>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading job details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="error-state">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="loadJobDetails(job?.id.id || '')">
+      Retry
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading && !error && job" class="details-content">
+    
+    <!-- Summary Cards -->
+    <div class="summary-section">
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>info</mat-icon>
+            <span>Status</span>
+          </div>
+          <div class="card-value">
+            <span class="status-badge" [style.background-color]="getStatusColor(job.status)">
+              {{ getStatusLabel(job.status) }}
+            </span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>flag</mat-icon>
+            <span>Priority</span>
+          </div>
+          <div class="card-value">
+            <div class="priority-display">
+              <span class="priority-indicator" [style.background-color]="getPriorityColor(job.priority)"></span>
+              <span>{{ job.priority }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>schedule</mat-icon>
+            <span>Duration</span>
+          </div>
+          <div class="card-value">
+            {{ job.actualDurationHours || job.plannedDurationHours || 0 }} hrs
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <div class="card-header">
+            <mat-icon>trending_up</mat-icon>
+            <span>Progress</span>
+          </div>
+          <div class="card-value">
+            {{ getProgressPercentage().toFixed(0) }}%
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Progress Bar -->
+    <mat-card class="progress-card" *ngIf="job.status === JobStatus.IN_PROGRESS">
+      <mat-card-content>
+        <div class="progress-header">
+          <span>Job Progress</span>
+          <span class="progress-percent">{{ getProgressPercentage().toFixed(0) }}%</span>
+        </div>
+        <mat-progress-bar mode="determinate" [value]="getProgressPercentage()"></mat-progress-bar>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+      
+      <!-- Job Information -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Job Information</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Job Number:</span>
+            <span class="info-value">{{ job.jobNumber }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Job Name:</span>
+            <span class="info-value">{{ job.jobName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Job Type:</span>
+            <span class="info-value">
+              <span class="type-badge">{{ job.jobType }}</span>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Priority:</span>
+            <span class="info-value">
+              <span class="priority-indicator" [style.background-color]="getPriorityColor(job.priority)"></span>
+              {{ job.priority }}
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Description:</span>
+            <span class="info-value">{{ job.description || 'N/A' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Well Information -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Well Information</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Well Name:</span>
+            <span class="info-value">{{ job.wellName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Field:</span>
+            <span class="info-value">{{ job.fieldName || 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Target Depth:</span>
+            <span class="info-value">{{ job.targetDepthFt || 'N/A' }} ft</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Well Type:</span>
+            <span class="info-value">{{ job.wellType || 'N/A' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Equipment Assignment -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Equipment Assignment</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">CT Unit:</span>
+            <span class="info-value">{{ job.unitCode || 'Not assigned' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Reel:</span>
+            <span class="info-value">{{ job.reelCode || 'Not assigned' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">BHA Config:</span>
+            <span class="info-value">{{ job.bhaConfigurationName || 'N/A' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Schedule -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Schedule</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Planned Start:</span>
+            <span class="info-value">{{ job.plannedStartDate | date:'medium' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Planned End:</span>
+            <span class="info-value">{{ job.plannedEndDate | date:'medium' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Actual Start:</span>
+            <span class="info-value">{{ job.actualStartDate ? (job.actualStartDate | date:'medium') : 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Actual End:</span>
+            <span class="info-value">{{ job.actualEndDate ? (job.actualEndDate | date:'medium') : 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Duration (Planned):</span>
+            <span class="info-value">{{ job.plannedDurationHours || 0 }} hrs</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Duration (Actual):</span>
+            <span class="info-value">{{ job.actualDurationHours || 'N/A' }} hrs</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Operational Parameters -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Operational Parameters</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Max Pressure:</span>
+            <span class="info-value">{{ job.maxPressurePsi || 'N/A' }} psi</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Max Speed:</span>
+            <span class="info-value">{{ job.maxSpeedFtMin || 'N/A' }} ft/min</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Fluid Type:</span>
+            <span class="info-value">{{ job.fluidType || 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Fluid Rate:</span>
+            <span class="info-value">{{ job.fluidRateBpm || 'N/A' }} bpm</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Actions -->
+      <mat-card class="actions-card">
+        <mat-card-header>
+          <mat-card-title>Actions</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <button mat-stroked-button color="primary" (click)="editJob()" class="action-btn">
+            <mat-icon>edit</mat-icon>
+            Edit Job
+          </button>
+          <button mat-stroked-button color="accent" (click)="simulateJob()" class="action-btn" *ngIf="canStart()">
+            <mat-icon>science</mat-icon>
+            Run Simulation
+          </button>
+          <button mat-raised-button color="primary" (click)="startJob()" class="action-btn" *ngIf="canStart()">
+            <mat-icon>play_arrow</mat-icon>
+            Start Job
+          </button>
+          <button mat-raised-button color="accent" (click)="completeJob()" class="action-btn" *ngIf="canComplete()">
+            <mat-icon>check_circle</mat-icon>
+            Complete Job
+          </button>
+          <button mat-stroked-button color="warn" (click)="cancelJob()" class="action-btn" *ngIf="canCancel()">
+            <mat-icon>cancel</mat-icon>
+            Cancel Job
+          </button>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

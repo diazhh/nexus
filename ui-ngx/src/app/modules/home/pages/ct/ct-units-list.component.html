@@ -1,0 +1,153 @@
+<div class="ct-units-container">
+  <mat-toolbar class="mat-mdc-table-toolbar">
+    <h2>CT Units</h2>
+    <span class="fill-space"></span>
+    
+    <!-- Search -->
+    <mat-form-field class="search-field">
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput 
+             placeholder="Search units..." 
+             [(ngModel)]="searchText"
+             (keyup.enter)="onSearch(searchText)">
+    </mat-form-field>
+    
+    <!-- Status Filter -->
+    <mat-form-field class="filter-field">
+      <mat-label>Status</mat-label>
+      <mat-select [(ngModel)]="statusFilter" (selectionChange)="onStatusFilterChange($event.value)">
+        <mat-option [value]="null">All</mat-option>
+        <mat-option [value]="UnitStatus.ACTIVE">Active</mat-option>
+        <mat-option [value]="UnitStatus.STANDBY">Standby</mat-option>
+        <mat-option [value]="UnitStatus.MAINTENANCE">Maintenance</mat-option>
+        <mat-option [value]="UnitStatus.OUT_OF_SERVICE">Out of Service</mat-option>
+      </mat-select>
+    </mat-form-field>
+    
+    <!-- Create Button -->
+    <button mat-raised-button color="primary" (click)="createUnit()">
+      <mat-icon>add</mat-icon>
+      New Unit
+    </button>
+  </mat-toolbar>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container" *ngIf="!isLoading">
+    <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
+      
+      <!-- Unit Code Column -->
+      <ng-container matColumnDef="unitCode">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Unit Code</th>
+        <td mat-cell *matCellDef="let unit">
+          <strong>{{ unit.unitCode }}</strong>
+        </td>
+      </ng-container>
+
+      <!-- Unit Name Column -->
+      <ng-container matColumnDef="unitName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Unit Name</th>
+        <td mat-cell *matCellDef="let unit">{{ unit.unitName }}</td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="operationalStatus">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+        <td mat-cell *matCellDef="let unit">
+          <span class="status-badge" [style.background-color]="getStatusColor(unit.operationalStatus)">
+            {{ getStatusLabel(unit.operationalStatus) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Location Column -->
+      <ng-container matColumnDef="currentLocation">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Location</th>
+        <td mat-cell *matCellDef="let unit">
+          <mat-icon class="location-icon">location_on</mat-icon>
+          {{ unit.currentLocation || 'N/A' }}
+        </td>
+      </ng-container>
+
+      <!-- Operational Hours Column -->
+      <ng-container matColumnDef="totalOperationalHours">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Hours</th>
+        <td mat-cell *matCellDef="let unit">
+          {{ unit.totalOperationalHours?.toFixed(1) || '0.0' }} hrs
+        </td>
+      </ng-container>
+
+      <!-- Jobs Completed Column -->
+      <ng-container matColumnDef="totalJobsCompleted">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Jobs</th>
+        <td mat-cell *matCellDef="let unit">
+          {{ unit.totalJobsCompleted || 0 }}
+        </td>
+      </ng-container>
+
+      <!-- Current Reel Column -->
+      <ng-container matColumnDef="currentReel">
+        <th mat-header-cell *matHeaderCellDef>Current Reel</th>
+        <td mat-cell *matCellDef="let unit">
+          <span *ngIf="unit.currentReelId" class="reel-badge">
+            <mat-icon>album</mat-icon>
+            Reel Attached
+          </span>
+          <span *ngIf="!unit.currentReelId" class="no-reel">
+            No Reel
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let unit">
+          <button mat-icon-button [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="viewDetails(unit)">
+              <mat-icon>visibility</mat-icon>
+              <span>View Details</span>
+            </button>
+            <button mat-menu-item (click)="editUnit(unit)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit</span>
+            </button>
+            <button mat-menu-item (click)="assignReel(unit)" *ngIf="!unit.currentReelId">
+              <mat-icon>link</mat-icon>
+              <span>Assign Reel</span>
+            </button>
+            <button mat-menu-item (click)="detachReel(unit)" *ngIf="unit.currentReelId">
+              <mat-icon>link_off</mat-icon>
+              <span>Detach Reel</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="deleteUnit(unit)" class="delete-action">
+              <mat-icon color="warn">delete</mat-icon>
+              <span>Delete</span>
+            </button>
+          </mat-menu>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+          class="clickable-row"
+          (click)="viewDetails(row)"></tr>
+    </table>
+
+    <!-- Paginator -->
+    <mat-paginator 
+      [length]="totalElements"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="[10, 20, 50, 100]"
+      (page)="onPageChange($event)">
+    </mat-paginator>
+  </div>
+</div>

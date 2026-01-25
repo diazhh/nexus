@@ -1,0 +1,40 @@
+<div class="ct-reports-container">
+  <div class="reports-header">
+    <h2>Reports</h2>
+    <mat-form-field class="format-selector">
+      <mat-label>Format</mat-label>
+      <mat-select [(ngModel)]="selectedFormat">
+        <mat-option [value]="ReportFormat.CSV">CSV</mat-option>
+        <mat-option [value]="ReportFormat.PDF">PDF (Text)</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="reports-grid">
+    <mat-card *ngFor="let report of reports" class="report-card">
+      <mat-card-header>
+        <div mat-card-avatar class="report-icon">
+          <mat-icon>{{ report.icon }}</mat-icon>
+        </div>
+        <mat-card-title>{{ report.name }}</mat-card-title>
+        <mat-card-subtitle>{{ report.description }}</mat-card-subtitle>
+      </mat-card-header>
+      
+      <mat-card-actions>
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="generateReport(report.type)"
+          [disabled]="generating">
+          <mat-icon>download</mat-icon>
+          Generate Report
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+
+  <div *ngIf="generating" class="loading-overlay">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Generating report...</p>
+  </div>
+</div>

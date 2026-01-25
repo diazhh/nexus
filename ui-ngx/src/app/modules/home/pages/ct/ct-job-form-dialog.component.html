@@ -1,0 +1,222 @@
+<div class="ct-job-form-dialog">
+  <mat-toolbar class="dialog-toolbar">
+    <h2 mat-dialog-title>{{ isEditMode ? 'Edit Job' : 'Create New Job' }}</h2>
+    <span class="fill-space"></span>
+    <button mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <mat-dialog-content>
+    <form [formGroup]="jobForm" class="job-form">
+      
+      <!-- Error Alert -->
+      <mat-error *ngIf="error" class="error-alert">
+        <mat-icon>error</mat-icon>
+        <span>{{ error }}</span>
+      </mat-error>
+
+      <!-- Basic Information -->
+      <div class="form-section">
+        <h3 class="section-title">Basic Information</h3>
+        
+        <div class="form-row two-columns" *ngIf="!isEditMode">
+          <mat-form-field appearance="outline">
+            <mat-label>Job Number</mat-label>
+            <input matInput formControlName="jobNumber" placeholder="e.g., JOB-2024-001">
+            <mat-error *ngIf="jobForm.get('jobNumber')?.invalid">
+              {{ getErrorMessage('jobNumber') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Job Type</mat-label>
+            <mat-select formControlName="jobType">
+              <mat-option *ngFor="let type of jobTypes" [value]="type">
+                {{ type }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="jobForm.get('jobType')?.invalid">
+              {{ getErrorMessage('jobType') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Job Name</mat-label>
+            <input matInput formControlName="jobName" placeholder="e.g., Well Cleanout Operation">
+            <mat-error *ngIf="jobForm.get('jobName')?.invalid">
+              {{ getErrorMessage('jobName') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row" *ngIf="!isEditMode">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Priority</mat-label>
+            <mat-select formControlName="priority">
+              <mat-option *ngFor="let priority of priorities" [value]="priority">
+                {{ priority }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Well Information (Create Only) -->
+      <div class="form-section" *ngIf="!isEditMode">
+        <h3 class="section-title">Well Information</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Well Name</mat-label>
+            <input matInput formControlName="wellName" placeholder="e.g., Well A-123">
+            <mat-error *ngIf="jobForm.get('wellName')?.invalid">
+              {{ getErrorMessage('wellName') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline">
+            <mat-label>Field Name</mat-label>
+            <input matInput formControlName="fieldName" placeholder="e.g., North Field">
+            <mat-error *ngIf="jobForm.get('fieldName')?.invalid">
+              {{ getErrorMessage('fieldName') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Client Name</mat-label>
+            <input matInput formControlName="clientName" placeholder="e.g., ABC Oil & Gas">
+            <mat-error *ngIf="jobForm.get('clientName')?.invalid">
+              {{ getErrorMessage('clientName') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Target Depth (feet)</mat-label>
+            <input matInput type="number" formControlName="targetDepthToFt" placeholder="e.g., 12000">
+            <mat-hint>Maximum depth to be reached</mat-hint>
+            <mat-error *ngIf="jobForm.get('targetDepthToFt')?.invalid">
+              {{ getErrorMessage('targetDepthToFt') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Equipment Assignment (Create Only) -->
+      <div class="form-section" *ngIf="!isEditMode">
+        <h3 class="section-title">Equipment Assignment</h3>
+        
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline">
+            <mat-label>Unit ID</mat-label>
+            <input matInput formControlName="unitId" placeholder="Unit identifier">
+            <mat-error *ngIf="jobForm.get('unitId')?.invalid">
+              {{ getErrorMessage('unitId') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Reel ID</mat-label>
+            <input matInput formControlName="reelId" placeholder="Reel identifier">
+            <mat-error *ngIf="jobForm.get('reelId')?.invalid">
+              {{ getErrorMessage('reelId') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Schedule (Create Only) -->
+      <div class="form-section" *ngIf="!isEditMode">
+        <h3 class="section-title">Schedule</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Planned Start Date</mat-label>
+            <input matInput [matDatepicker]="plannedStartPicker" formControlName="plannedStartDate">
+            <mat-datepicker-toggle matSuffix [for]="plannedStartPicker"></mat-datepicker-toggle>
+            <mat-datepicker #plannedStartPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Status & Dates (Edit Only) -->
+      <div class="form-section" *ngIf="isEditMode">
+        <h3 class="section-title">Status & Dates</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              <mat-option *ngFor="let status of jobStatuses" [value]="status">
+                {{ status.replace('_', ' ') }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="jobForm.get('status')?.invalid">
+              {{ getErrorMessage('status') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline">
+            <mat-label>Actual Start Date</mat-label>
+            <input matInput [matDatepicker]="actualStartPicker" formControlName="actualStartDate">
+            <mat-datepicker-toggle matSuffix [for]="actualStartPicker"></mat-datepicker-toggle>
+            <mat-datepicker #actualStartPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Actual End Date</mat-label>
+            <input matInput [matDatepicker]="actualEndPicker" formControlName="actualEndDate">
+            <mat-datepicker-toggle matSuffix [for]="actualEndPicker"></mat-datepicker-toggle>
+            <mat-datepicker #actualEndPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Additional Information -->
+      <div class="form-section">
+        <h3 class="section-title">Additional Information</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description" rows="3" 
+                      placeholder="Brief description of the job"></textarea>
+            <mat-error *ngIf="jobForm.get('description')?.invalid">
+              {{ getErrorMessage('description') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row" *ngIf="isEditMode">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" 
+                      placeholder="Additional notes or comments"></textarea>
+            <mat-error *ngIf="jobForm.get('notes')?.invalid">
+              {{ getErrorMessage('notes') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()" [disabled]="isLoading">
+      Cancel
+    </button>
+    <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="isLoading || jobForm.invalid">
+      <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Update' : 'Create' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

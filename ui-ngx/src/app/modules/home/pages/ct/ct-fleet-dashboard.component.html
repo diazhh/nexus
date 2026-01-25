@@ -1,0 +1,131 @@
+<div class="ct-fleet-dashboard">
+  <div class="dashboard-header">
+    <h2>Fleet Management Dashboard</h2>
+    <button mat-raised-button color="primary" (click)="loadFleetData()">
+      <mat-icon>refresh</mat-icon>
+      Refresh
+    </button>
+  </div>
+
+  <div class="metrics-grid" *ngIf="!loading">
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon color="primary">precision_manufacturing</mat-icon>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">{{ metrics.totalUnits }}</div>
+          <div class="metric-label">Total Units</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon color="accent">check_circle</mat-icon>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">{{ metrics.operationalUnits }}</div>
+          <div class="metric-label">Operational</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon color="warn">build</mat-icon>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">{{ metrics.maintenanceUnits }}</div>
+          <div class="metric-label">In Maintenance</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon [color]="getUtilizationColor(metrics.utilizationRate)">speed</mat-icon>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">{{ metrics.utilizationRate | number:'1.0-0' }}%</div>
+          <div class="metric-label">Utilization Rate</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="units-card">
+    <mat-card-header>
+      <mat-card-title>Fleet Status</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="loading" class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+
+      <table mat-table [dataSource]="units" *ngIf="!loading && units.length > 0" class="units-table">
+        
+        <ng-container matColumnDef="unitCode">
+          <th mat-header-cell *matHeaderCellDef>Unit Code</th>
+          <td mat-cell *matCellDef="let unit">
+            <strong>{{ unit.unitCode }}</strong>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="unitName">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let unit">{{ unit.unitName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let unit">
+            <span class="status-badge" [ngClass]="'status-' + unit.operationalStatus.toLowerCase()">
+              {{ unit.operationalStatus }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="location">
+          <th mat-header-cell *matHeaderCellDef>Location</th>
+          <td mat-cell *matCellDef="let unit">{{ unit.currentLocation || 'N/A' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="hours">
+          <th mat-header-cell *matHeaderCellDef>Hours</th>
+          <td mat-cell *matCellDef="let unit">
+            {{ unit.totalOperationalHours | number:'1.0-0' }} hrs
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="reel">
+          <th mat-header-cell *matHeaderCellDef>Reel</th>
+          <td mat-cell *matCellDef="let unit">
+            <span *ngIf="unit.currentReelId">Assigned</span>
+            <span *ngIf="!unit.currentReelId" class="text-muted">None</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let unit">
+            <button mat-icon-button (click)="viewUnitDetails(unit)" matTooltip="View Details">
+              <mat-icon>visibility</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <div *ngIf="!loading && units.length === 0" class="no-data">
+        <mat-icon>info</mat-icon>
+        <p>No units found</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

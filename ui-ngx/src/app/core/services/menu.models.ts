@@ -111,7 +111,16 @@ export enum MenuId {
   version_control = 'version_control',
   api_usage = 'api_usage',
   trendz_settings = 'trendz_settings',
-  ai_models = 'ai_models'
+  ai_models = 'ai_models',
+  coiled_tubing = 'coiled_tubing',
+  ct_dashboards = 'ct_dashboards',
+  ct_realtime_dashboard = 'ct_realtime_dashboard',
+  ct_fleet_dashboard = 'ct_fleet_dashboard',
+  ct_analytics_dashboard = 'ct_analytics_dashboard',
+  ct_reports = 'ct_reports',
+  ct_units = 'ct_units',
+  ct_reels = 'ct_reels',
+  ct_jobs = 'ct_jobs'
 }
 
 declare type MenuFilter = (authState: AuthState) => boolean;
@@ -296,10 +305,53 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
     MenuId.ai_models,
     {
       id: MenuId.ai_models,
-      name: 'ai-models.ai-models',
+      name: 'ai.ai-models',
       type: 'link',
       path: '/settings/ai-models',
-      icon: 'auto_awesome'
+      icon: 'mdi:robot'
+    }
+  ],
+  [
+    MenuId.coiled_tubing,
+    {
+      id: MenuId.coiled_tubing,
+      name: 'ct.coiled-tubing',
+      type: 'toggle',
+      path: '/ct',
+      icon: 'mdi:pipe'
+    }
+  ],
+  [
+    MenuId.ct_units,
+    {
+      id: MenuId.ct_units,
+      name: 'ct.units',
+      fullName: 'ct.ct-units',
+      type: 'link',
+      path: '/ct/units',
+      icon: 'precision_manufacturing'
+    }
+  ],
+  [
+    MenuId.ct_reels,
+    {
+      id: MenuId.ct_reels,
+      name: 'ct.reels',
+      fullName: 'ct.ct-reels',
+      type: 'link',
+      path: '/ct/reels',
+      icon: 'mdi:pipe-wrench'
+    }
+  ],
+  [
+    MenuId.ct_jobs,
+    {
+      id: MenuId.ct_jobs,
+      name: 'ct.jobs',
+      fullName: 'ct.ct-jobs',
+      type: 'link',
+      path: '/ct/jobs',
+      icon: 'work'
     }
   ],
   [
@@ -785,6 +837,14 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
       {id: MenuId.tenants},
       {id: MenuId.tenant_profiles},
       {
+        id: MenuId.coiled_tubing,
+        pages: [
+          {id: MenuId.ct_units},
+          {id: MenuId.ct_reels},
+          {id: MenuId.ct_jobs}
+        ]
+      },
+      {
         id: MenuId.resources,
         pages: [
           {
@@ -877,9 +937,18 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
       {id: MenuId.calculated_fields},
       {id: MenuId.rule_chains},
       {
+        id: MenuId.coiled_tubing,
+        pages: [
+          {id: MenuId.ct_units},
+          {id: MenuId.ct_reels},
+          {id: MenuId.ct_jobs}
+        ]
+      },
+      {
         id: MenuId.edge_management,
         pages: [
           {id: MenuId.edges},
+          {id: MenuId.edge_instances},
           {id: MenuId.rulechain_templates}
         ]
       },
