@@ -1,0 +1,114 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<h2 mat-dialog-title>Create CT Reel from Template: {{ data.template.name }}</h2>
+
+<mat-dialog-content>
+  <div class="template-info">
+    <p class="template-description">{{ data.template.description }}</p>
+    <div class="template-specs" *ngIf="data.template.specifications">
+      <mat-chip-listbox>
+        <mat-chip *ngIf="data.template.specifications.tubingOdInch">
+          Tubing OD: {{ data.template.specifications.tubingOdInch }}"
+        </mat-chip>
+        <mat-chip *ngIf="data.template.specifications.tubingIdInch">
+          Tubing ID: {{ data.template.specifications.tubingIdInch }}"
+        </mat-chip>
+        <mat-chip *ngIf="data.template.specifications.totalLengthFt">
+          Total Length: {{ data.template.specifications.totalLengthFt }} ft
+        </mat-chip>
+        <mat-chip *ngIf="data.template.specifications.material">
+          Material: {{ data.template.specifications.material }}
+        </mat-chip>
+      </mat-chip-listbox>
+    </div>
+  </div>
+
+  <form [formGroup]="reelForm" class="reel-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Reel Code *</mat-label>
+      <input matInput formControlName="reelCode" placeholder="e.g., REEL-001">
+      <mat-error *ngIf="reelForm.get('reelCode')?.invalid">
+        {{ getErrorMessage('reelCode') }}
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Reel Name *</mat-label>
+      <input matInput formControlName="reelName" placeholder="e.g., CT Reel Alpha">
+      <mat-error *ngIf="reelForm.get('reelName')?.invalid">
+        {{ getErrorMessage('reelName') }}
+      </mat-error>
+    </mat-form-field>
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Tubing OD (inches) *</mat-label>
+        <input matInput type="number" step="0.01" formControlName="tubingOD" placeholder="e.g., 3.5">
+        <mat-error *ngIf="reelForm.get('tubingOD')?.invalid">
+          {{ getErrorMessage('tubingOD') }}
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Tubing ID (inches) *</mat-label>
+        <input matInput type="number" step="0.01" formControlName="tubingID" placeholder="e.g., 3.0">
+        <mat-error *ngIf="reelForm.get('tubingID')?.invalid">
+          {{ getErrorMessage('tubingID') }}
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Wall Thickness (inches) *</mat-label>
+        <input matInput type="number" step="0.01" formControlName="wallThickness" placeholder="e.g., 0.25">
+        <mat-error *ngIf="reelForm.get('wallThickness')?.invalid">
+          {{ getErrorMessage('wallThickness') }}
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Total Length (feet) *</mat-label>
+        <input matInput type="number" formControlName="totalLength" placeholder="e.g., 15000">
+        <mat-error *ngIf="reelForm.get('totalLength')?.invalid">
+          {{ getErrorMessage('totalLength') }}
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Material/Grade</mat-label>
+      <input matInput formControlName="material" placeholder="e.g., CT-80">
+      <mat-error *ngIf="reelForm.get('material')?.invalid">
+        {{ getErrorMessage('material') }}
+      </mat-error>
+    </mat-form-field>
+  </form>
+
+  <mat-error *ngIf="error" class="error-message">
+    {{ error }}
+  </mat-error>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()" [disabled]="isLoading">Cancel</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="isLoading || reelForm.invalid">
+    <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+    <span *ngIf="!isLoading">Create Reel</span>
+  </button>
+</mat-dialog-actions>

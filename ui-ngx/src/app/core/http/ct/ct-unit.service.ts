@@ -36,6 +36,7 @@ import { Observable } from 'rxjs';
 import { PageData } from '@shared/models/page/page-data';
 import { PageLink } from '@shared/models/page/page-link';
 import { CTUnit, CreateCTUnitRequest, UpdateCTUnitRequest, AssignReelRequest } from '@shared/models/ct/ct-unit.model';
+import { CreateFromTemplateRequest } from '@core/http/ct-template.service';
 
 @Injectable({
   providedIn: 'root'
@@ -83,5 +84,11 @@ export class CTUnitService {
 
   getUnitsByStatus(tenantId: string, status: string): Observable<CTUnit[]> {
     return this.http.get<CTUnit[]>(`${this.baseUrl}/tenant/${tenantId}/status/${status}`);
+  }
+
+  createFromTemplate(tenantId: string, request: CreateFromTemplateRequest): Observable<CTUnit> {
+    return this.http.post<CTUnit>(`${this.baseUrl}/from-template`, request, {
+      params: { tenantId }
+    });
   }
 }

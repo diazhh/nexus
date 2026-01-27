@@ -36,6 +36,7 @@ import { Observable } from 'rxjs';
 import { PageData } from '@shared/models/page/page-data';
 import { PageLink } from '@shared/models/page/page-link';
 import { CTReel, CreateCTReelRequest, UpdateCTReelRequest } from '@shared/models/ct/ct-reel.model';
+import { CreateFromTemplateRequest } from '@core/http/ct-template.service';
 
 @Injectable({
   providedIn: 'root'
@@ -80,6 +81,12 @@ export class CTReelService {
   getHighFatigueReels(tenantId: string, threshold: number = 80): Observable<CTReel[]> {
     return this.http.get<CTReel[]>(`${this.baseUrl}/tenant/${tenantId}/high-fatigue`, {
       params: { threshold: threshold.toString() }
+    });
+  }
+
+  createFromTemplate(tenantId: string, request: CreateFromTemplateRequest): Observable<CTReel> {
+    return this.http.post<CTReel>(`${this.baseUrl}/from-template`, request, {
+      params: { tenantId }
     });
   }
 }

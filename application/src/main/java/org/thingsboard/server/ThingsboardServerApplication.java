@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 @SpringBootConfiguration
 @EnableAsync
 @EnableScheduling
-@ComponentScan({"org.thingsboard.server", "org.thingsboard.script"})
+@ComponentScan({"org.thingsboard.server", "org.thingsboard.script", "org.thingsboard.nexus.ct"})
 @Slf4j
 public class ThingsboardServerApplication {
 

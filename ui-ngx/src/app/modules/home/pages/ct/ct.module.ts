@@ -1,3 +1,19 @@
+///
+/// Copyright © 2016-2026 The Thingsboard Authors
+///
+/// Licensed under the Apache License, Version 2.0 (the "License");
+/// you may not use this file except in compliance with the License.
+/// You may obtain a copy of the License at
+///
+///     http://www.apache.org/licenses/LICENSE-2.0
+///
+/// Unless required by applicable law or agreed to in writing, software
+/// distributed under the License is distributed on an "AS IS" BASIS,
+/// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+/// See the License for the specific language governing permissions and
+/// limitations under the License.
+///
+
 /**
  * Copyright © 2016-2026 The Thingsboard Authors
  *
@@ -35,6 +51,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatListModule } from '@angular/material/list';
 
 import { CTRoutingModule } from './ct-routing.module';
 import { CTUnitsListComponent } from './ct-units-list.component';
@@ -52,6 +70,9 @@ import { CTRealtimeDashboardComponent } from './ct-realtime-dashboard.component'
 import { CTFleetDashboardComponent } from './ct-fleet-dashboard.component';
 import { CTAnalyticsDashboardComponent } from './ct-analytics-dashboard.component';
 import { CTReportsComponent } from './ct-reports.component';
+import { CTTemplateSelectorDialogComponent } from './ct-template-selector-dialog.component';
+import { CTUnitTemplateFormDialogComponent } from './ct-unit-template-form-dialog.component';
+import { CTReelTemplateFormDialogComponent } from './ct-reel-template-form-dialog.component';
 
 @NgModule({
   declarations: [
@@ -69,7 +90,10 @@ import { CTReportsComponent } from './ct-reports.component';
     CTRealtimeDashboardComponent,
     CTFleetDashboardComponent,
     CTAnalyticsDashboardComponent,
-    CTReportsComponent
+    CTReportsComponent,
+    CTTemplateSelectorDialogComponent,
+    CTUnitTemplateFormDialogComponent,
+    CTReelTemplateFormDialogComponent
   ],
   imports: [
     CommonModule,
@@ -93,7 +117,9 @@ import { CTReportsComponent } from './ct-reports.component';
     MatDividerModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatChipsModule,
+    MatListModule
   ],
   exports: [
     CTUnitsListComponent,

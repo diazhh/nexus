@@ -1,0 +1,85 @@
+{
+  "templateId": "reel-large-diameter-v1",
+  "name": "Large Diameter CT Reel",
+  "description": "Large Diameter Coiled Tubing Reel for tubing up to 4.5\" OD",
+  "version": "1.0.0",
+  "category": "CT_REEL",
+  "specifications": {
+    "maxTubingOD": 4.5,
+    "maxTubingLength": 20000,
+    "drumDiameter": 120,
+    "maxWorkingPressure": 20000
+  },
+  "assetHierarchy": {
+    "root": {
+      "type": "CT_REEL",
+      "name": "{{reelCode}} - {{reelName}}",
+      "label": "{{reelName}}",
+      "attributes": {
+        "reelCode": "{{reelCode}}",
+        "manufacturer": "{{manufacturer}}",
+        "serialNumber": "{{serialNumber}}",
+        "drumDiameter": 120,
+        "maxTubingOD": 4.5,
+        "maxTubingLength": 20000,
+        "maxWorkingPressure": 20000,
+        "status": "AVAILABLE"
+      },
+      "telemetryKeys": [
+        "currentLengthOnReel",
+        "rotationSpeed",
+        "tensionLbf",
+        "levelWindPosition"
+      ],
+      "children": [
+        {
+          "type": "CT_TUBING",
+          "name": "{{reelCode}} - Tubing String",
+          "label": "Tubing String",
+          "relation": "Contains",
+          "attributes": {
+            "tubingOD": "{{tubingOD}}",
+            "tubingID": "{{tubingID}}",
+            "wallThickness": "{{wallThickness}}",
+            "material": "{{material}}",
+            "grade": "{{grade}}",
+            "totalLength": "{{totalLength}}",
+            "manufactureDate": "{{manufactureDate}}",
+            "initialFatigueLife": 100.0,
+            "currentFatigueLife": 100.0
+          },
+          "telemetryKeys": [
+            "currentFatigueLife",
+            "cycleCount",
+            "maxStressExperienced",
+            "lastInspectionDate"
+          ]
+        }
+      ]
+    }
+  },
+  "dashboards": [
+    {
+      "name": "{{reelCode}} - Reel Lifecycle",
+      "description": "Lifecycle monitoring dashboard for large diameter CT reel",
+      "widgets": [
+        "fatigue_progress",
+        "cycle_counter",
+        "tubing_specs",
+        "inspection_history"
+      ]
+    }
+  ],
+  "alarmRules": [
+    {
+      "name": "Low Fatigue Life",
+      "condition": "currentFatigueLife < 20.0",
+      "severity": "WARNING"
+    },
+    {
+      "name": "Critical Fatigue Life",
+      "condition": "currentFatigueLife < 10.0",
+      "severity": "CRITICAL"
+    }
+  ]
+}

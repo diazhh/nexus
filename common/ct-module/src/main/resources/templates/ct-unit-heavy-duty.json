@@ -1,0 +1,169 @@
+{
+  "templateId": "ct-unit-heavy-duty-v1",
+  "name": "Heavy Duty CT Unit",
+  "description": "Heavy Duty Coiled Tubing Unit for tubing up to 4.5\" OD with 20,000 PSI max pressure",
+  "version": "1.0.0",
+  "category": "CT_UNIT",
+  "specifications": {
+    "maxPressurePsi": 20000,
+    "maxTensionLbf": 60000,
+    "maxTubingOD": 4.5,
+    "maxDepthFt": 30000,
+    "injectorType": "DUAL_CHAIN_DRIVE",
+    "powerType": "DIESEL_HYDRAULIC"
+  },
+  "assetHierarchy": {
+    "root": {
+      "type": "CT_UNIT",
+      "name": "{{unitCode}} - {{unitName}}",
+      "label": "{{unitName}}",
+      "attributes": {
+        "unitCode": "{{unitCode}}",
+        "manufacturer": "{{manufacturer}}",
+        "model": "{{model}}",
+        "serialNumber": "{{serialNumber}}",
+        "yearManufactured": "{{yearManufactured}}",
+        "maxPressurePsi": 20000,
+        "maxTensionLbf": 60000,
+        "maxTubingOD": 4.5,
+        "maxDepthFt": 30000,
+        "status": "AVAILABLE",
+        "location": "{{location}}"
+      },
+      "telemetryKeys": [
+        "currentPressurePsi",
+        "currentTensionLbf",
+        "currentDepthFt",
+        "injectorSpeedFtMin",
+        "pumpPressurePsi",
+        "engineRpm",
+        "fuelLevelPercent",
+        "hydraulicTempF",
+        "operatingHours"
+      ],
+      "children": [
+        {
+          "type": "CT_HYDRAULIC_SYSTEM",
+          "name": "{{unitCode}} - Hydraulic System",
+          "label": "Hydraulic System",
+          "relation": "Contains",
+          "attributes": {
+            "pumpCapacityGpm": 180,
+            "maxPressurePsi": 6000,
+            "tankCapacityGal": 300,
+            "filterType": "5_MICRON",
+            "oilType": "ISO_68"
+          },
+          "telemetryKeys": [
+            "pumpPressurePsi",
+            "flowRateGpm",
+            "oilTempF",
+            "tankLevelPercent",
+            "filterDeltaPsi"
+          ]
+        },
+        {
+          "type": "CT_INJECTION_SYSTEM",
+          "name": "{{unitCode}} - Injection Head",
+          "label": "Injection Head",
+          "relation": "Contains",
+          "attributes": {
+            "injectorType": "DUAL_CHAIN_DRIVE",
+            "maxSpeedFtMin": 250,
+            "gripForce": 60000,
+            "chainPitch": 3.0,
+            "numberOfChains": 6
+          },
+          "telemetryKeys": [
+            "speedFtMin",
+            "gripForceLbf",
+            "chainTensionLbf",
+            "motorTempF",
+            "vibrationG"
+          ]
+        },
+        {
+          "type": "CT_CONTROL_SYSTEM",
+          "name": "{{unitCode}} - Control System",
+          "label": "Control System",
+          "relation": "Contains",
+          "attributes": {
+            "controlType": "PLC_BASED",
+            "plcModel": "SIEMENS_S7",
+            "softwareVersion": "6.1.0",
+            "hasRemoteControl": true
+          },
+          "telemetryKeys": [
+            "systemStatus",
+            "activeAlarms",
+            "operatorPresent",
+            "emergencyStopActive"
+          ]
+        },
+        {
+          "type": "CT_POWER_SYSTEM",
+          "name": "{{unitCode}} - Power Pack",
+          "label": "Power Pack",
+          "relation": "Contains",
+          "attributes": {
+            "powerType": "DIESEL_HYDRAULIC",
+            "engineModel": "{{engineModel}}",
+            "horsePower": 750,
+            "fuelCapacityGal": 500,
+            "hasBackupGenerator": true
+          },
+          "telemetryKeys": [
+            "engineRpm",
+            "engineTempF",
+            "fuelLevelPercent",
+            "oilPressurePsi",
+            "batteryVoltage",
+            "runningHours"
+          ]
+        },
+        {
+          "type": "CT_GOOSENECK",
+          "name": "{{unitCode}} - Gooseneck",
+          "label": "Gooseneck",
+          "relation": "Contains",
+          "attributes": {
+            "bendRadius": 96,
+            "maxTubingOD": 4.5,
+            "material": "HARDENED_STEEL",
+            "hasStripper": true
+          },
+          "telemetryKeys": [
+            "bendAngleDeg",
+            "wearIndicator",
+            "stripperPressurePsi"
+          ]
+        }
+      ]
+    }
+  },
+  "dashboards": [
+    {
+      "name": "{{unitCode}} - Real-Time Operations",
+      "description": "Real-time monitoring dashboard for heavy duty CT unit operations",
+      "widgets": [
+        "depth_tracker",
+        "pressure_gauge",
+        "tension_indicator",
+        "speed_indicator",
+        "system_status"
+      ]
+    }
+  ],
+  "alarmRules": [
+    {
+      "name": "High Pressure Alarm",
+      "condition": "currentPressurePsi > maxPressurePsi * 0.95",
+      "severity": "CRITICAL"
+    },
+    {
+      "name": "High Tension Alarm",
+      "condition": "currentTensionLbf > maxTensionLbf * 0.90",
+      "severity": "WARNING"
+    }
+  ]
+}

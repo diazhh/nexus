@@ -809,4 +809,12 @@ public class ModelConstants {
         }
     }
 
+    /**
+     * Template constants.
+     */
+    public static final String TEMPLATE_COLUMN_FAMILY_NAME = "template";
+    public static final String TEMPLATE_TENANT_ID_PROPERTY = TENANT_ID_PROPERTY;
+    public static final String TEMPLATE_NAME_PROPERTY = NAME_PROPERTY;
+    public static final String TEMPLATE_CONFIGURATION_PROPERTY = "configuration";
+
 }

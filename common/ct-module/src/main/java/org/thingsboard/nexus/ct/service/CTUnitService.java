@@ -22,6 +22,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thingsboard.nexus.ct.dto.CTUnitDto;
+import org.thingsboard.nexus.ct.dto.CreateFromTemplateRequest;
+import org.thingsboard.nexus.ct.dto.template.TemplateInstanceResult;
 import org.thingsboard.nexus.ct.exception.CTBusinessException;
 import org.thingsboard.nexus.ct.exception.CTEntityNotFoundException;
 import org.thingsboard.nexus.ct.model.CTReel;
@@ -30,9 +32,12 @@ import org.thingsboard.nexus.ct.model.ReelStatus;
 import org.thingsboard.nexus.ct.model.UnitStatus;
 import org.thingsboard.nexus.ct.repository.CTReelRepository;
 import org.thingsboard.nexus.ct.repository.CTUnitRepository;
+import org.thingsboard.server.common.data.id.TenantId;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,6 +48,8 @@ public class CTUnitService {
 
     private final CTUnitRepository unitRepository;
     private final CTReelRepository reelRepository;
+    private final CTTemplateService templateService;
+    private final CTAttributeService attributeService;
 
     @Transactional(readOnly = true)
     public CTUnitDto getById(UUID id) {
@@ -98,6 +105,82 @@ public class CTUnitService {
         
         CTUnit savedUnit = unitRepository.save(unit);
         log.info("CT Unit created successfully: {}", savedUnit.getId());
+        
+        return CTUnitDto.fromEntity(savedUnit);
+    }
+
+    @Transactional
+    public CTUnitDto createFromTemplate(UUID tenantId, CreateFromTemplateRequest request) {
+        log.info("Creating CT Unit from template {} for tenant {}", request.getTemplateId(), tenantId);
+        
+        String unitCode = (String) request.getVariables().get("unitCode");
+        if (unitCode == null || unitCode.isEmpty()) {
+            throw new CTBusinessException("Unit code is required");
+        }
+        
+        if (unitRepository.existsByUnitCode(unitCode)) {
+            throw new CTBusinessException("Unit code already exists: " + unitCode);
+        }
+        
+        TemplateInstanceResult instanceResult = templateService.instantiateTemplate(
+                new TenantId(tenantId), 
+                request.getTemplateId(), 
+                request.getVariables()
+        );
+        
+        if (!instanceResult.isSuccess()) {
+            throw new CTBusinessException("Failed to instantiate template: " + instanceResult.getErrorMessage());
+        }
+        
+        CTUnit unit = new CTUnit();
+        unit.setId(UUID.randomUUID());
+        unit.setTenantId(tenantId);
+        unit.setAssetId(instanceResult.getRootAssetId());
+        unit.setUnitCode(unitCode);
+        unit.setUnitName((String) request.getVariables().get("unitName"));
+        unit.setManufacturer((String) request.getVariables().get("manufacturer"));
+        unit.setModel((String) request.getVariables().get("model"));
+        unit.setSerialNumber((String) request.getVariables().get("serialNumber"));
+        
+        Object yearManufactured = request.getVariables().get("yearManufactured");
+        if (yearManufactured != null) {
+            unit.setYearManufactured(yearManufactured instanceof Integer ? 
+                    (Integer) yearManufactured : Integer.parseInt(yearManufactured.toString()));
+        }
+        
+        Object maxPressure = request.getVariables().get("maxPressurePsi");
+        if (maxPressure != null) {
+            unit.setMaxPressurePsi(maxPressure instanceof Integer ? 
+                    (Integer) maxPressure : Integer.parseInt(maxPressure.toString()));
+        }
+        
+        Object maxTension = request.getVariables().get("maxTensionLbf");
+        if (maxTension != null) {
+            unit.setMaxTensionLbf(maxTension instanceof Integer ? 
+                    (Integer) maxTension : Integer.parseInt(maxTension.toString()));
+        }
+        
+        Object maxSpeed = request.getVariables().get("maxSpeedFtMin");
+        if (maxSpeed != null) {
+            unit.setMaxSpeedFtMin(maxSpeed instanceof Integer ? 
+                    (Integer) maxSpeed : Integer.parseInt(maxSpeed.toString()));
+        }
+        
+        Object maxTubingOD = request.getVariables().get("maxTubingOD");
+        if (maxTubingOD != null) {
+            unit.setMaxTubingOdInch(maxTubingOD instanceof Double ? 
+                    BigDecimal.valueOf((Double) maxTubingOD) : 
+                    BigDecimal.valueOf(Double.parseDouble(maxTubingOD.toString())));
+        }
+        
+        unit.setOperationalStatus(UnitStatus.OPERATIONAL);
+        unit.setCurrentLocation((String) request.getVariables().get("location"));
+        unit.setCreatedTime(System.currentTimeMillis());
+        unit.setUpdatedTime(System.currentTimeMillis());
+        
+        CTUnit savedUnit = unitRepository.save(unit);
+        log.info("CT Unit created from template successfully: {} with asset ID: {}", 
+                savedUnit.getId(), savedUnit.getAssetId());
         
         return CTUnitDto.fromEntity(savedUnit);
     }

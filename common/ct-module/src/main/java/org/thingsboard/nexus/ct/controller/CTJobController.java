@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/ct/jobs")
+@RequestMapping("/api/nexus/ct/jobs")
 @RequiredArgsConstructor
 @Slf4j
 public class CTJobController {

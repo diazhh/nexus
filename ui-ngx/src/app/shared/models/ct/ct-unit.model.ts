@@ -49,20 +49,28 @@ export interface CTUnit extends BaseData<HasUUID> {
   model?: string;
   serialNumber?: string;
   yearManufactured?: number;
-  maxPressureRatingPsi?: number;
-  maxTensionRatingLbf?: number;
-  maxSpeedRatingFtMin?: number;
-  powerRatingHp?: number;
+  maxPressurePsi?: number;
+  maxTensionLbf?: number;
+  maxSpeedFtMin?: number;
+  maxTubingOdInch?: number;
   operationalStatus: UnitStatus;
   currentLocation?: string;
+  latitude?: number;
+  longitude?: number;
   totalOperationalHours?: number;
   totalJobsCompleted?: number;
+  totalMetersDeployed?: number;
   currentReelId?: string;
+  currentReelCode?: string;
   reelCoupledDate?: number;
   lastMaintenanceDate?: number;
   lastMaintenanceHours?: number;
   nextMaintenanceDueHours?: number;
-  description?: string;
+  maintenanceIntervalHours?: number;
+  maintenanceOverdue?: boolean;
+  lastPressureTestDate?: number;
+  lastPressureTestPsi?: number;
+  certificationExpiryDate?: number;
   notes?: string;
   metadata?: any;
   createdTime: number;
@@ -77,12 +85,11 @@ export interface CreateCTUnitRequest {
   model?: string;
   serialNumber?: string;
   yearManufactured?: number;
-  maxPressureRatingPsi?: number;
-  maxTensionRatingLbf?: number;
-  maxSpeedRatingFtMin?: number;
-  powerRatingHp?: number;
+  maxPressurePsi?: number;
+  maxTensionLbf?: number;
+  maxSpeedFtMin?: number;
   currentLocation?: string;
-  description?: string;
+  notes?: string;
 }
 
 export interface UpdateCTUnitRequest {
@@ -91,7 +98,6 @@ export interface UpdateCTUnitRequest {
   model?: string;
   operationalStatus?: UnitStatus;
   currentLocation?: string;
-  description?: string;
   notes?: string;
 }
 

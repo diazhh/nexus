@@ -25,8 +25,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.ct.dto.CTUnitDto;
+import org.thingsboard.nexus.ct.dto.CreateFromTemplateRequest;
+import org.thingsboard.nexus.ct.dto.template.CTTemplateDto;
 import org.thingsboard.nexus.ct.model.CTUnit;
 import org.thingsboard.nexus.ct.model.UnitStatus;
+import org.thingsboard.nexus.ct.service.CTTemplateService;
 import org.thingsboard.nexus.ct.service.CTUnitService;
 
 import jakarta.validation.Valid;
@@ -34,12 +37,13 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/ct/units")
+@RequestMapping("/api/nexus/ct/units")
 @RequiredArgsConstructor
 @Slf4j
 public class CTUnitController {
 
     private final CTUnitService unitService;
+    private final CTTemplateService templateService;
 
     @GetMapping("/{id}")
     public ResponseEntity<CTUnitDto> getUnitById(@PathVariable UUID id) {
@@ -115,6 +119,23 @@ public class CTUnitController {
         log.debug("REST request to get CT Units requiring maintenance");
         List<CTUnitDto> units = unitService.getUnitsRequiringMaintenance(tenantId);
         return ResponseEntity.ok(units);
+    }
+
+    @GetMapping("/templates")
+    public ResponseEntity<List<CTTemplateDto>> getAvailableTemplates(
+            @RequestParam(required = false) String category) {
+        log.debug("REST request to get available CT Unit templates");
+        List<CTTemplateDto> templates = templateService.getAvailableTemplates(category);
+        return ResponseEntity.ok(templates);
+    }
+
+    @PostMapping("/from-template")
+    public ResponseEntity<CTUnitDto> createUnitFromTemplate(
+            @RequestParam UUID tenantId,
+            @Valid @RequestBody CreateFromTemplateRequest request) {
+        log.info("REST request to create CT Unit from template: {}", request.getTemplateId());
+        CTUnitDto createdUnit = unitService.createFromTemplate(tenantId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdUnit);
     }
 
     @PostMapping

@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/ct/reels")
+@RequestMapping("/api/nexus/ct/reels")
 @RequiredArgsConstructor
 @Slf4j
 public class CTReelController {

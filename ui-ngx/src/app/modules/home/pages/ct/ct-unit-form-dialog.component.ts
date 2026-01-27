@@ -1,3 +1,19 @@
+///
+/// Copyright © 2016-2026 The Thingsboard Authors
+///
+/// Licensed under the Apache License, Version 2.0 (the "License");
+/// you may not use this file except in compliance with the License.
+/// You may obtain a copy of the License at
+///
+///     http://www.apache.org/licenses/LICENSE-2.0
+///
+/// Unless required by applicable law or agreed to in writing, software
+/// distributed under the License is distributed on an "AS IS" BASIS,
+/// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+/// See the License for the specific language governing permissions and
+/// limitations under the License.
+///
+
 /**
  * Copyright © 2016-2026 The Thingsboard Authors
  *
@@ -64,7 +80,6 @@ export class CTUnitFormDialogComponent implements OnInit {
         model: ['', Validators.maxLength(255)],
         operationalStatus: [UnitStatus.STANDBY, Validators.required],
         currentLocation: ['', Validators.maxLength(255)],
-        description: ['', Validators.maxLength(1000)],
         notes: ['', Validators.maxLength(2000)]
       });
     } else {
@@ -76,12 +91,11 @@ export class CTUnitFormDialogComponent implements OnInit {
         model: ['', Validators.maxLength(255)],
         serialNumber: ['', Validators.maxLength(100)],
         yearManufactured: [null, [Validators.min(1900), Validators.max(new Date().getFullYear())]],
-        maxPressureRatingPsi: [null, Validators.min(0)],
-        maxTensionRatingLbf: [null, Validators.min(0)],
-        maxSpeedRatingFtMin: [null, Validators.min(0)],
-        powerRatingHp: [null, Validators.min(0)],
+        maxPressurePsi: [null, Validators.min(0)],
+        maxTensionLbf: [null, Validators.min(0)],
+        maxSpeedFtMin: [null, Validators.min(0)],
         currentLocation: ['', Validators.maxLength(255)],
-        description: ['', Validators.maxLength(1000)]
+        notes: ['', Validators.maxLength(1000)]
       });
     }
   }
@@ -93,7 +107,6 @@ export class CTUnitFormDialogComponent implements OnInit {
       model: unit.model,
       operationalStatus: unit.operationalStatus,
       currentLocation: unit.currentLocation,
-      description: unit.description,
       notes: unit.notes
     });
   }
