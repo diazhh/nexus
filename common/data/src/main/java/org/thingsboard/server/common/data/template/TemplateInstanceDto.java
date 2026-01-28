@@ -13,21 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thingsboard.nexus.ct.dto.template;
+package org.thingsboard.server.common.data.template;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import java.util.List;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
 
 @Data
-public class DashboardTemplateDto {
-    
-    @JsonProperty("name")
-    private String name;
-    
-    @JsonProperty("description")
-    private String description;
-    
-    @JsonProperty("widgets")
-    private List<String> widgets;
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class TemplateInstanceDto {
+    private UUID id;
+    private UUID templateId;
+    private String templateVersion;
+    private UUID rootAssetId;
+    private String instanceVariables;
+    private UUID createdBy;
+    private Long createdTime;
+    private UUID tenantId;
 }

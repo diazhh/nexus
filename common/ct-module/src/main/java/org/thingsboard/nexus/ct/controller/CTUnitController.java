@@ -25,12 +25,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.ct.dto.CTUnitDto;
-import org.thingsboard.nexus.ct.dto.CreateFromTemplateRequest;
-import org.thingsboard.nexus.ct.dto.template.CTTemplateDto;
 import org.thingsboard.nexus.ct.model.CTUnit;
 import org.thingsboard.nexus.ct.model.UnitStatus;
-import org.thingsboard.nexus.ct.service.CTTemplateService;
 import org.thingsboard.nexus.ct.service.CTUnitService;
+import org.thingsboard.server.common.data.template.CreateFromTemplateRequest;
 
 import jakarta.validation.Valid;
 import java.util.List;
@@ -43,7 +41,6 @@ import java.util.UUID;
 public class CTUnitController {
 
     private final CTUnitService unitService;
-    private final CTTemplateService templateService;
 
     @GetMapping("/{id}")
     public ResponseEntity<CTUnitDto> getUnitById(@PathVariable UUID id) {
@@ -66,13 +63,13 @@ public class CTUnitController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "unitCode") String sortBy,
             @RequestParam(defaultValue = "ASC") String sortDir) {
-        
+
         log.debug("REST request to get CT Units for tenant: {}", tenantId);
-        
-        Sort sort = sortDir.equalsIgnoreCase("DESC") ? 
+
+        Sort sort = sortDir.equalsIgnoreCase("DESC") ?
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        
+
         Page<CTUnitDto> units = unitService.getByTenant(tenantId, pageable);
         return ResponseEntity.ok(units);
     }
@@ -86,13 +83,13 @@ public class CTUnitController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "unitCode") String sortBy,
             @RequestParam(defaultValue = "ASC") String sortDir) {
-        
+
         log.debug("REST request to get CT Units with filters");
-        
-        Sort sort = sortDir.equalsIgnoreCase("DESC") ? 
+
+        Sort sort = sortDir.equalsIgnoreCase("DESC") ?
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        
+
         Page<CTUnitDto> units = unitService.getByFilters(tenantId, status, location, pageable);
         return ResponseEntity.ok(units);
     }
@@ -101,7 +98,7 @@ public class CTUnitController {
     public ResponseEntity<List<CTUnitDto>> getUnitsByStatus(
             @PathVariable UUID tenantId,
             @PathVariable UnitStatus status) {
-        
+
         log.debug("REST request to get CT Units by status: {}", status);
         List<CTUnitDto> units = unitService.getByStatus(tenantId, status);
         return ResponseEntity.ok(units);
@@ -119,14 +116,6 @@ public class CTUnitController {
         log.debug("REST request to get CT Units requiring maintenance");
         List<CTUnitDto> units = unitService.getUnitsRequiringMaintenance(tenantId);
         return ResponseEntity.ok(units);
-    }
-
-    @GetMapping("/templates")
-    public ResponseEntity<List<CTTemplateDto>> getAvailableTemplates(
-            @RequestParam(required = false) String category) {
-        log.debug("REST request to get available CT Unit templates");
-        List<CTTemplateDto> templates = templateService.getAvailableTemplates(category);
-        return ResponseEntity.ok(templates);
     }
 
     @PostMapping("/from-template")
@@ -149,7 +138,7 @@ public class CTUnitController {
     public ResponseEntity<CTUnitDto> updateUnit(
             @PathVariable UUID id,
             @Valid @RequestBody CTUnit unit) {
-        
+
         log.info("REST request to update CT Unit: {}", id);
         CTUnitDto updatedUnit = unitService.update(id, unit);
         return ResponseEntity.ok(updatedUnit);
@@ -159,7 +148,7 @@ public class CTUnitController {
     public ResponseEntity<CTUnitDto> updateUnitStatus(
             @PathVariable UUID id,
             @RequestParam UnitStatus status) {
-        
+
         log.info("REST request to update CT Unit status: {} to {}", id, status);
         CTUnitDto updatedUnit = unitService.updateStatus(id, status);
         return ResponseEntity.ok(updatedUnit);
@@ -171,7 +160,7 @@ public class CTUnitController {
             @RequestParam String location,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude) {
-        
+
         log.info("REST request to update CT Unit location: {}", id);
         CTUnitDto updatedUnit = unitService.updateLocation(id, location, latitude, longitude);
         return ResponseEntity.ok(updatedUnit);
@@ -181,7 +170,7 @@ public class CTUnitController {
     public ResponseEntity<CTUnitDto> assignReel(
             @PathVariable UUID unitId,
             @PathVariable UUID reelId) {
-        
+
         log.info("REST request to assign reel {} to unit {}", reelId, unitId);
         CTUnitDto updatedUnit = unitService.assignReel(unitId, reelId);
         return ResponseEntity.ok(updatedUnit);
@@ -199,7 +188,7 @@ public class CTUnitController {
             @PathVariable UUID id,
             @RequestParam Long maintenanceDate,
             @RequestParam(required = false) String notes) {
-        
+
         log.info("REST request to record maintenance for unit {}", id);
         CTUnitDto updatedUnit = unitService.recordMaintenance(id, maintenanceDate, notes);
         return ResponseEntity.ok(updatedUnit);

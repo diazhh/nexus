@@ -15,6 +15,7 @@
  */
 package org.thingsboard.server.common.data.template;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,21 +33,26 @@ public class TemplateDefinitionDto {
     private String templateCode;
     private String templateName;
     private String description;
-    
+
     private String moduleCode;
     private String entityType;
     private String category;
-    
+
     private String version;
     private Boolean isActive;
-    
+
     private TemplateStructure templateStructure;
     private List<TemplateVariable> requiredVariables;
-    
+
+    @JsonIgnore
+    private String templateStructureJson;
+    @JsonIgnore
+    private String requiredVariablesJson;
+
     private UUID createdBy;
     private Long createdTime;
     private UUID updatedBy;
     private Long updatedTime;
-    
+
     private UUID tenantId;
 }

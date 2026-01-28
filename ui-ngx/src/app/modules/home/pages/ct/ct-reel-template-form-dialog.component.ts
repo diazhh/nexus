@@ -18,10 +18,10 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CTReelService } from '@core/http/ct/ct-reel.service';
-import { CTTemplate, CreateFromTemplateRequest } from '@core/http/ct-template.service';
+import { TemplateDefinition, CreateFromTemplateRequest } from '@core/http/ct-template.service';
 
 export interface CTReelTemplateFormDialogData {
-  template: CTTemplate;
+  template: TemplateDefinition;
   tenantId: string;
 }
 
@@ -72,7 +72,7 @@ export class CTReelTemplateFormDialogComponent implements OnInit {
 
     const formValues = this.reelForm.value;
     const request: CreateFromTemplateRequest = {
-      templateId: this.data.template.templateId,
+      templateId: this.data.template.id,
       variables: {
         reelCode: formValues.reelCode,
         reelName: formValues.reelName,
@@ -80,8 +80,8 @@ export class CTReelTemplateFormDialogComponent implements OnInit {
         tubingID: formValues.tubingID,
         wallThickness: formValues.wallThickness,
         totalLength: formValues.totalLength,
-        material: formValues.material || this.data.template.specifications?.material || '',
-        grade: this.data.template.specifications?.grade || ''
+        material: formValues.material || this.data.template.templateStructure?.specifications?.material || '',
+        grade: this.data.template.templateStructure?.specifications?.grade || ''
       }
     };
 

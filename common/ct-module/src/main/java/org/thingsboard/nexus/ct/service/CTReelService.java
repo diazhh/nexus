@@ -22,17 +22,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thingsboard.nexus.ct.dto.CTReelDto;
-import org.thingsboard.nexus.ct.dto.CreateFromTemplateRequest;
-import org.thingsboard.nexus.ct.dto.template.TemplateInstanceResult;
 import org.thingsboard.nexus.ct.exception.CTBusinessException;
 import org.thingsboard.nexus.ct.exception.CTEntityNotFoundException;
 import org.thingsboard.nexus.ct.model.CTReel;
 import org.thingsboard.nexus.ct.model.ReelStatus;
 import org.thingsboard.nexus.ct.repository.CTReelRepository;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.template.CreateFromTemplateRequest;
+import org.thingsboard.server.common.data.template.TemplateInstanceResult;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -127,75 +128,74 @@ public class CTReelService {
     @Transactional
     public CTReelDto createFromTemplate(UUID tenantId, CreateFromTemplateRequest request) {
         log.info("Creating CT Reel from template {} for tenant {}", request.getTemplateId(), tenantId);
-        
-        String reelCode = (String) request.getVariables().get("reelCode");
+
+        Map<String, Object> variables = request.getVariables();
+
+        String reelCode = (String) variables.get("reelCode");
         if (reelCode == null || reelCode.isEmpty()) {
             throw new CTBusinessException("Reel code is required");
         }
-        
+
         if (reelRepository.existsByReelCode(reelCode)) {
             throw new CTBusinessException("Reel code already exists: " + reelCode);
         }
-        
+
         TemplateInstanceResult instanceResult = templateService.instantiateTemplate(
-                new TenantId(tenantId), 
-                request.getTemplateId(), 
-                request.getVariables()
+                new TenantId(tenantId),
+                request.getTemplateId(),
+                variables,
+                tenantId
         );
-        
-        if (!instanceResult.isSuccess()) {
-            throw new CTBusinessException("Failed to instantiate template: " + instanceResult.getErrorMessage());
-        }
-        
+
         CTReel reel = new CTReel();
         reel.setId(UUID.randomUUID());
         reel.setTenantId(tenantId);
         reel.setAssetId(instanceResult.getRootAssetId());
         reel.setReelCode(reelCode);
-        reel.setReelName((String) request.getVariables().get("reelName"));
-        
-        Object tubingOD = request.getVariables().get("tubingOD");
+        reel.setReelName((String) variables.get("reelName"));
+
+        Object tubingOD = variables.get("tubingOD");
         if (tubingOD != null) {
-            reel.setTubingOdInch(tubingOD instanceof Double ? 
-                    BigDecimal.valueOf((Double) tubingOD) : 
+            reel.setTubingOdInch(tubingOD instanceof Double ?
+                    BigDecimal.valueOf((Double) tubingOD) :
                     BigDecimal.valueOf(Double.parseDouble(tubingOD.toString())));
         }
-        
-        Object tubingID = request.getVariables().get("tubingID");
+
+        Object tubingID = variables.get("tubingID");
         if (tubingID != null) {
-            reel.setTubingIdInch(tubingID instanceof Double ? 
-                    BigDecimal.valueOf((Double) tubingID) : 
+            reel.setTubingIdInch(tubingID instanceof Double ?
+                    BigDecimal.valueOf((Double) tubingID) :
                     BigDecimal.valueOf(Double.parseDouble(tubingID.toString())));
         }
-        
-        Object wallThickness = request.getVariables().get("wallThickness");
+
+        Object wallThickness = variables.get("wallThickness");
         if (wallThickness != null) {
-            reel.setWallThicknessInch(wallThickness instanceof Double ? 
-                    BigDecimal.valueOf((Double) wallThickness) : 
+            reel.setWallThicknessInch(wallThickness instanceof Double ?
+                    BigDecimal.valueOf((Double) wallThickness) :
                     BigDecimal.valueOf(Double.parseDouble(wallThickness.toString())));
         }
-        
-        Object totalLength = request.getVariables().get("totalLength");
+
+        Object totalLength = variables.get("totalLength");
         if (totalLength != null) {
-            reel.setTotalLengthFt(totalLength instanceof Double ? 
-                    BigDecimal.valueOf((Double) totalLength) : 
+            reel.setTotalLengthFt(totalLength instanceof Double ?
+                    BigDecimal.valueOf((Double) totalLength) :
                     BigDecimal.valueOf(Double.parseDouble(totalLength.toString())));
         }
-        
-        String materialGrade = (String) request.getVariables().get("material");
+
+        String materialGrade = (String) variables.get("material");
         if (materialGrade == null) {
-            materialGrade = (String) request.getVariables().get("grade");
+            materialGrade = (String) variables.get("grade");
         }
         reel.setMaterialGrade(materialGrade);
         reel.setStatus(ReelStatus.AVAILABLE);
         reel.setAccumulatedFatiguePercent(BigDecimal.ZERO);
         reel.setCreatedTime(System.currentTimeMillis());
         reel.setUpdatedTime(System.currentTimeMillis());
-        
+
         CTReel savedReel = reelRepository.save(reel);
-        log.info("CT Reel created from template successfully: {} with asset ID: {}", 
+        log.info("CT Reel created from template successfully: {} with asset ID: {}",
                 savedReel.getId(), savedReel.getAssetId());
-        
+
         return CTReelDto.fromEntity(savedReel);
     }
 

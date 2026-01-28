@@ -18,10 +18,10 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CTUnitService } from '@core/http/ct/ct-unit.service';
-import { CTTemplate, CreateFromTemplateRequest } from '@core/http/ct-template.service';
+import { TemplateDefinition, CreateFromTemplateRequest } from '@core/http/ct-template.service';
 
 export interface CTUnitTemplateFormDialogData {
-  template: CTTemplate;
+  template: TemplateDefinition;
   tenantId: string;
 }
 
@@ -72,7 +72,7 @@ export class CTUnitTemplateFormDialogComponent implements OnInit {
 
     const formValues = this.unitForm.value;
     const request: CreateFromTemplateRequest = {
-      templateId: this.data.template.templateId,
+      templateId: this.data.template.id,
       variables: {
         unitCode: formValues.unitCode,
         unitName: formValues.unitName,
@@ -81,9 +81,9 @@ export class CTUnitTemplateFormDialogComponent implements OnInit {
         serialNumber: formValues.serialNumber || '',
         yearManufactured: formValues.yearManufactured || new Date().getFullYear(),
         location: formValues.location || '',
-        maxPressurePsi: this.data.template.specifications?.maxPressurePsi || 0,
-        maxTensionLbf: this.data.template.specifications?.maxTensionLbf || 0,
-        maxSpeedFtMin: this.data.template.specifications?.maxSpeedFtMin || 0
+        maxPressurePsi: this.data.template.templateStructure?.specifications?.maxPressurePsi || 0,
+        maxTensionLbf: this.data.template.templateStructure?.specifications?.maxTensionLbf || 0,
+        maxSpeedFtMin: this.data.template.templateStructure?.specifications?.maxSpeedFtMin || 0
       }
     };
 
