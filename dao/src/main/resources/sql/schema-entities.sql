@@ -433,6 +433,29 @@ CREATE TABLE IF NOT EXISTS relation (
     CONSTRAINT relation_pkey PRIMARY KEY (from_id, from_type, relation_type_group, relation_type, to_id, to_type)
 );
 
+CREATE TABLE IF NOT EXISTS role (
+    id uuid NOT NULL,
+    created_time bigint NOT NULL,
+    tenant_id uuid,
+    name varchar(255) NOT NULL,
+    description varchar(1024),
+    is_system boolean DEFAULT FALSE,
+    additional_info varchar,
+    version bigint DEFAULT 1,
+    CONSTRAINT role_pkey PRIMARY KEY (id),
+    CONSTRAINT role_tenant_name_unq UNIQUE (tenant_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS role_permission (
+    id uuid NOT NULL,
+    role_id uuid NOT NULL,
+    resource_type varchar(64) NOT NULL,
+    operation varchar(64) NOT NULL,
+    CONSTRAINT role_permission_pkey PRIMARY KEY (id),
+    CONSTRAINT role_permission_role_resource_op_unq UNIQUE (role_id, resource_type, operation),
+    CONSTRAINT fk_role_permission_role FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS tb_user (
     id uuid NOT NULL CONSTRAINT tb_user_pkey PRIMARY KEY,
     created_time bigint NOT NULL,
@@ -443,8 +466,10 @@ CREATE TABLE IF NOT EXISTS tb_user (
     first_name varchar(255),
     last_name varchar(255),
     phone varchar(255),
+    role_id uuid,
     tenant_id uuid,
-    version BIGINT DEFAULT 1
+    version BIGINT DEFAULT 1,
+    CONSTRAINT fk_user_role FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS tenant_profile (

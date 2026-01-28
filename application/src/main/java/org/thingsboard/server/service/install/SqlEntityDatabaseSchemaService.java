@@ -29,6 +29,7 @@ public class SqlEntityDatabaseSchemaService extends SqlAbstractDatabaseSchemaSer
     public static final String SCHEMA_ENTITIES_IDX_PSQL_ADDON_SQL = "schema-entities-idx-psql-addon.sql";
     public static final String SCHEMA_VIEWS_SQL = "schema-views.sql";
     public static final String SCHEMA_FUNCTIONS_SQL = "schema-functions.sql";
+    public static final String SCHEMA_ROLES_DATA_SQL = "schema-roles-data.sql";
 
     public SqlEntityDatabaseSchemaService() {
         super(SCHEMA_ENTITIES_SQL, SCHEMA_ENTITIES_IDX_SQL);
@@ -54,6 +55,8 @@ public class SqlEntityDatabaseSchemaService extends SqlAbstractDatabaseSchemaSer
         executeQueryFromFile(SCHEMA_VIEWS_SQL);
         log.info("Installing SQL DataBase schema functions: " + SCHEMA_FUNCTIONS_SQL);
         executeQueryFromFile(SCHEMA_FUNCTIONS_SQL);
+        log.info("Installing SQL DataBase roles initial data: " + SCHEMA_ROLES_DATA_SQL);
+        executeQueryFromFile(SCHEMA_ROLES_DATA_SQL);
     }
 
 }

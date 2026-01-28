@@ -117,3 +117,12 @@ CREATE INDEX IF NOT EXISTS idx_job_tenant_id ON job(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_ai_model_tenant_id ON ai_model(tenant_id);
 
 CREATE INDEX IF NOT EXISTS idx_api_key_user_id ON api_key(user_id);
+
+-- Indexes for role tables
+CREATE INDEX IF NOT EXISTS idx_role_tenant_id ON role(tenant_id) WHERE tenant_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_role_is_system ON role(is_system) WHERE is_system = TRUE;
+CREATE INDEX IF NOT EXISTS idx_role_name ON role(name);
+CREATE INDEX IF NOT EXISTS idx_user_role_id ON tb_user(role_id) WHERE role_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_role_permission_role_id ON role_permission(role_id);
+CREATE INDEX IF NOT EXISTS idx_role_permission_resource ON role_permission(resource_type);
+CREATE INDEX IF NOT EXISTS idx_role_permission_composite ON role_permission(role_id, resource_type, operation);
