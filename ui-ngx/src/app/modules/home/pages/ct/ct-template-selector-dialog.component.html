@@ -31,13 +31,13 @@
     <mat-list-option 
       *ngFor="let template of templates" 
       [value]="template"
-      [selected]="selectedTemplate?.templateId === template.templateId"
+      [selected]="selectedTemplate?.id === template.id"
       (click)="selectTemplate(template)">
       <div class="template-item">
-        <h3>{{ template.name }}</h3>
+        <h3>{{ template.templateName }}</h3>
         <p class="template-description">{{ template.description }}</p>
-        <div class="template-specs" *ngIf="template.specifications">
-          <span class="spec-item" *ngFor="let spec of template.specifications | keyvalue">
+        <div class="template-specs" *ngIf="template.templateStructure?.specifications">
+          <span class="spec-item" *ngFor="let spec of template.templateStructure.specifications | keyvalue">
             <strong>{{ spec.key }}:</strong> {{ spec.value }}
           </span>
         </div>

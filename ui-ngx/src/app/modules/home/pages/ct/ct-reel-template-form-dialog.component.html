@@ -15,24 +15,24 @@
     limitations under the License.
 
 -->
-<h2 mat-dialog-title>Create CT Reel from Template: {{ data.template.name }}</h2>
+<h2 mat-dialog-title>Create CT Reel from Template: {{ data.template.templateName }}</h2>
 
 <mat-dialog-content>
   <div class="template-info">
     <p class="template-description">{{ data.template.description }}</p>
-    <div class="template-specs" *ngIf="data.template.specifications">
+    <div class="template-specs" *ngIf="data.template.templateStructure?.specifications">
       <mat-chip-listbox>
-        <mat-chip *ngIf="data.template.specifications.tubingOdInch">
-          Tubing OD: {{ data.template.specifications.tubingOdInch }}"
+        <mat-chip *ngIf="data.template.templateStructure?.specifications?.tubingOdInch">
+          Tubing OD: {{ data.template.templateStructure.specifications.tubingOdInch }}"
         </mat-chip>
-        <mat-chip *ngIf="data.template.specifications.tubingIdInch">
-          Tubing ID: {{ data.template.specifications.tubingIdInch }}"
+        <mat-chip *ngIf="data.template.templateStructure?.specifications?.tubingIdInch">
+          Tubing ID: {{ data.template.templateStructure.specifications.tubingIdInch }}"
         </mat-chip>
-        <mat-chip *ngIf="data.template.specifications.totalLengthFt">
-          Total Length: {{ data.template.specifications.totalLengthFt }} ft
+        <mat-chip *ngIf="data.template.templateStructure?.specifications?.totalLengthFt">
+          Total Length: {{ data.template.templateStructure.specifications.totalLengthFt }} ft
         </mat-chip>
-        <mat-chip *ngIf="data.template.specifications.material">
-          Material: {{ data.template.specifications.material }}
+        <mat-chip *ngIf="data.template.templateStructure?.specifications?.material">
+          Material: {{ data.template.templateStructure.specifications.material }}
         </mat-chip>
       </mat-chip-listbox>
     </div>

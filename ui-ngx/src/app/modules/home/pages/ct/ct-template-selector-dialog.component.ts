@@ -16,10 +16,10 @@
 
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { CTTemplate, CTTemplateService } from '@core/http/ct-template.service';
+import { TemplateDefinition, CTTemplateService } from '@core/http/ct-template.service';
 
 export interface TemplateSelectorData {
-  category: string;
+  tenantId: string;
   type: 'unit' | 'reel';
 }
 
@@ -30,8 +30,8 @@ export interface TemplateSelectorData {
 })
 export class CTTemplateSelectorDialogComponent implements OnInit {
 
-  templates: CTTemplate[] = [];
-  selectedTemplate: CTTemplate | null = null;
+  templates: TemplateDefinition[] = [];
+  selectedTemplate: TemplateDefinition | null = null;
   loading = true;
 
   constructor(
@@ -46,9 +46,9 @@ export class CTTemplateSelectorDialogComponent implements OnInit {
 
   loadTemplates(): void {
     this.loading = true;
-    const service$ = this.data.type === 'unit' 
-      ? this.templateService.getUnitTemplates(this.data.category)
-      : this.templateService.getReelTemplates(this.data.category);
+    const service$ = this.data.type === 'unit'
+      ? this.templateService.getUnitTemplates(this.data.tenantId)
+      : this.templateService.getReelTemplates(this.data.tenantId);
 
     service$.subscribe({
       next: (templates) => {
@@ -62,7 +62,7 @@ export class CTTemplateSelectorDialogComponent implements OnInit {
     });
   }
 
-  selectTemplate(template: CTTemplate): void {
+  selectTemplate(template: TemplateDefinition): void {
     this.selectedTemplate = template;
   }
 

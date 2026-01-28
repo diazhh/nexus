@@ -13,34 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thingsboard.nexus.ct.dto.template;
+package org.thingsboard.server.common.data.template;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import java.util.List;
-import java.util.Map;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
 
 @Data
-public class AssetNodeDto {
-    
-    @JsonProperty("type")
-    private String type;
-    
-    @JsonProperty("name")
-    private String name;
-    
-    @JsonProperty("label")
-    private String label;
-    
-    @JsonProperty("relation")
-    private String relation;
-    
-    @JsonProperty("attributes")
-    private Map<String, Object> attributes;
-    
-    @JsonProperty("telemetryKeys")
-    private List<String> telemetryKeys;
-    
-    @JsonProperty("children")
-    private List<AssetNodeDto> children;
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class TemplateVersionDto {
+    private UUID id;
+    private UUID templateId;
+    private String version;
+    private String templateStructure;
+    private String changeDescription;
+    private UUID createdBy;
+    private Long createdTime;
 }
