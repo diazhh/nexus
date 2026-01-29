@@ -72,3 +72,4 @@ export * from './regex.constants';
 export * from './trendz-settings.models';
 export * from './ai-model.models';
 export * from './password.models';
+export * from './rv/rv.models';

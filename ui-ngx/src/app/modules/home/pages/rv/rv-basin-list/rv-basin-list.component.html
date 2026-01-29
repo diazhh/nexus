@@ -1,0 +1,119 @@
+<!--
+  Copyright © 2016-2026 The Thingsboard Authors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<div class="rv-list-container">
+  <mat-toolbar class="mat-mdc-table-toolbar">
+    <h2>
+      <mat-icon>terrain</mat-icon>
+      Cuencas
+    </h2>
+    <span class="fill-space"></span>
+
+    <mat-form-field class="search-field" appearance="outline">
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput placeholder="Buscar..." [(ngModel)]="searchText" (input)="applyFilter()">
+      <button *ngIf="searchText" matSuffix mat-icon-button (click)="searchText=''; applyFilter()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      Nueva Cuenca
+    </button>
+  </mat-toolbar>
+
+  <div class="table-container" *ngIf="!isLoading">
+    <table mat-table [dataSource]="dataSource" matSort>
+
+      <!-- Name Column -->
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Nombre</th>
+        <td mat-cell *matCellDef="let basin">
+          <strong>{{ basin.name }}</strong>
+          <div class="cell-subtitle" *ngIf="basin.label">{{ basin.label }}</div>
+        </td>
+      </ng-container>
+
+      <!-- Code Column -->
+      <ng-container matColumnDef="code">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Codigo</th>
+        <td mat-cell *matCellDef="let basin">{{ basin.code || '-' }}</td>
+      </ng-container>
+
+      <!-- Type Column -->
+      <ng-container matColumnDef="basinType">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Tipo</th>
+        <td mat-cell *matCellDef="let basin">
+          <mat-chip *ngIf="basin.basinType">{{ basin.basinType }}</mat-chip>
+          <span *ngIf="!basin.basinType">-</span>
+        </td>
+      </ng-container>
+
+      <!-- Country Column -->
+      <ng-container matColumnDef="country">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Pais</th>
+        <td mat-cell *matCellDef="let basin">{{ basin.country || '-' }}</td>
+      </ng-container>
+
+      <!-- Area Column -->
+      <ng-container matColumnDef="areaKm2">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Area (km2)</th>
+        <td mat-cell *matCellDef="let basin">
+          {{ basin.areaKm2 ? (basin.areaKm2 | number:'1.0-0') : '-' }}
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let basin">
+          <button mat-icon-button matTooltip="Editar" (click)="openEditDialog(basin)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button matTooltip="Eliminar" color="warn" (click)="deleteBasin(basin)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <!-- No Data Row -->
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
+          <mat-icon>terrain</mat-icon>
+          <span>No hay cuencas registradas</span>
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator
+      [length]="totalElements"
+      [pageSize]="pageSize"
+      [pageIndex]="pageIndex"
+      [pageSizeOptions]="[10, 20, 50, 100]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons>
+    </mat-paginator>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Cargando cuencas...</p>
+  </div>
+</div>

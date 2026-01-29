@@ -1,0 +1,130 @@
+<!--
+  Copyright © 2016-2026 The Thingsboard Authors
+-->
+
+<div class="rv-dialog-container">
+  <h2 mat-dialog-title><mat-icon>layers</mat-icon> {{ isEditMode ? 'Editar Yacimiento' : 'Nuevo Yacimiento' }}</h2>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="form">
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="name" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Codigo</mat-label>
+          <input matInput formControlName="code">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Campo</mat-label>
+          <mat-select formControlName="fieldAssetId">
+            <mat-option value="">Sin campo</mat-option>
+            <mat-option *ngFor="let f of fields" [value]="f.assetId">{{ f.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Formacion</mat-label>
+          <input matInput formControlName="formationName">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Clasificacion</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Litologia</mat-label>
+          <mat-select formControlName="lithology">
+            <mat-option *ngFor="let l of lithologies" [value]="l">{{ l }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de Yacimiento</mat-label>
+          <mat-select formControlName="reservoirType">
+            <mat-option *ngFor="let t of reservoirTypes" [value]="t">{{ t }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Mecanismo de Empuje</mat-label>
+          <mat-select formControlName="driveType">
+            <mat-option *ngFor="let d of driveTypes" [value]="d">{{ d }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Propiedades Petrofisicas</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Area (acres)</mat-label>
+          <input matInput type="number" formControlName="areaAcres">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Espesor Bruto (m)</mat-label>
+          <input matInput type="number" formControlName="grossThicknessM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Espesor Neto (m)</mat-label>
+          <input matInput type="number" formControlName="netPayThicknessM">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Porosidad (frac)</mat-label>
+          <input matInput type="number" formControlName="avgPorosityFrac" step="0.01" min="0" max="1">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Permeabilidad (md)</mat-label>
+          <input matInput type="number" formControlName="avgPermeabilityMd">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Sw (frac)</mat-label>
+          <input matInput type="number" formControlName="avgWaterSatFrac" step="0.01" min="0" max="1">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Condiciones del Yacimiento</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Presion Inicial (psi)</mat-label>
+          <input matInput type="number" formControlName="initialReservoirPressurePsi">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Temperatura (F)</mat-label>
+          <input matInput type="number" formControlName="reservoirTemperatureF">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>API Gravity</mat-label>
+          <input matInput type="number" formControlName="apiGravity">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Bo (rb/stb)</mat-label>
+          <input matInput type="number" formControlName="oilFvfRbStb" step="0.001">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Caracteristicas Especiales (Venezuela)</div>
+
+      <div class="form-row">
+        <mat-slide-toggle formControlName="hasFoamyOil">Comportamiento Foamy Oil</mat-slide-toggle>
+        <mat-slide-toggle formControlName="requiresDiluent">Requiere Diluente</mat-slide-toggle>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="cancel()">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="!form.valid || isLoading">
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Actualizar' : 'Crear' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

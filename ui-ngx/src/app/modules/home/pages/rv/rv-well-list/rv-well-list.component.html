@@ -1,0 +1,88 @@
+<!--
+  Copyright © 2016-2026 The Thingsboard Authors
+-->
+
+<div class="rv-list-container">
+  <mat-toolbar class="mat-mdc-table-toolbar">
+    <h2><mat-icon>build</mat-icon> Pozos</h2>
+    <span class="fill-space"></span>
+    <mat-form-field class="search-field" appearance="outline">
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput placeholder="Buscar..." [(ngModel)]="searchText" (input)="applyFilter()">
+    </mat-form-field>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon> Nuevo Pozo
+    </button>
+  </mat-toolbar>
+
+  <div class="table-container" *ngIf="!isLoading">
+    <table mat-table [dataSource]="dataSource">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Nombre</th>
+        <td mat-cell *matCellDef="let w">
+          <strong>{{ w.name }}</strong>
+          <div class="cell-subtitle" *ngIf="w.uwi">UWI: {{ w.uwi }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="wellType">
+        <th mat-header-cell *matHeaderCellDef>Tipo</th>
+        <td mat-cell *matCellDef="let w">{{ w.wellType || '-' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="wellStatus">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let w">
+          <mat-chip [color]="getStatusColor(w.wellStatus)">
+            <mat-icon>{{ getWellStatusIcon(w.wellStatus) }}</mat-icon>
+            {{ w.wellStatus }}
+          </mat-chip>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="wellCategory">
+        <th mat-header-cell *matHeaderCellDef>Categoria</th>
+        <td mat-cell *matCellDef="let w">{{ w.wellCategory || '-' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="currentRateBopd">
+        <th mat-header-cell *matHeaderCellDef>Tasa Actual</th>
+        <td mat-cell *matCellDef="let w">
+          <strong *ngIf="w.currentRateBopd">{{ formatOilRate(w.currentRateBopd) }}</strong>
+          <span *ngIf="!w.currentRateBopd">-</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="currentWaterCutPercent">
+        <th mat-header-cell *matHeaderCellDef>BSW (%)</th>
+        <td mat-cell *matCellDef="let w">
+          {{ w.currentWaterCutPercent ? (w.currentWaterCutPercent | number:'1.0-0') : '-' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let w">
+          <button mat-icon-button matTooltip="Ver Detalles" color="primary" (click)="viewDetails(w)">
+            <mat-icon>visibility</mat-icon>
+          </button>
+          <button mat-icon-button matTooltip="Editar" (click)="openEditDialog(w)"><mat-icon>edit</mat-icon></button>
+          <button mat-icon-button matTooltip="Eliminar" color="warn" (click)="deleteWell(w)"><mat-icon>delete</mat-icon></button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (dblclick)="viewDetails(row)"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
+          <mat-icon>build</mat-icon><span>No hay pozos registrados</span>
+        </td>
+      </tr>
+    </table>
+    <mat-paginator [length]="totalElements" [pageSize]="pageSize" [pageSizeOptions]="[10,20,50]" (page)="onPageChange($event)" showFirstLastButtons></mat-paginator>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner><p>Cargando pozos...</p>
+  </div>
+</div>
