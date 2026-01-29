@@ -25,6 +25,12 @@ public class RvEntityNotFoundException extends RvException {
     private final String entityType;
     private final UUID entityId;
 
+    public RvEntityNotFoundException(String message) {
+        super(message);
+        this.entityType = "Unknown";
+        this.entityId = null;
+    }
+
     public RvEntityNotFoundException(String entityType, UUID entityId) {
         super(String.format("%s not found with ID: %s", entityType, entityId));
         this.entityType = entityType;

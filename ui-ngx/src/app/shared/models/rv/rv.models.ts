@@ -24,6 +24,7 @@
 // ==============================================
 
 export interface RvBaseEntity {
+  id?: string;         // Alias for assetId for convenience
   assetId?: string;
   tenantId?: string;
   name: string;
@@ -234,11 +235,20 @@ export interface RvPvtStudy extends RvBaseEntity {
   specificGravityOil?: number;
   stockTankOilViscosityCp?: number;
   bubblePointPressurePsi?: number;
+  bubblePointPressurePsia?: number;  // Alias for bubblePointPressurePsi
+  initialPressurePsia?: number;
+  reservoirTemperatureF?: number;
   solutionGorAtPbScfStb?: number;
+  solutionGorScfStb?: number;        // Alias for solutionGorAtPbScfStb
   oilFvfAtPbRbStb?: number;
+  boAtPbRbStb?: number;              // Alias for oilFvfAtPbRbStb
+  bobRbStb?: number;                 // Oil FVF at bubble point
   oilViscosityAtPbCp?: number;
+  deadOilViscosityCp?: number;
   gasSpecificGravity?: number;
+  gasGravity?: number;               // Alias for gasSpecificGravity
   gasZFactorAtPb?: number;
+  oilCompressibility?: number;
   waterSalinity?: number;
   waterFvfAtReservoirRbStb?: number;
   usesCorrelations?: boolean;
@@ -247,6 +257,8 @@ export interface RvPvtStudy extends RvBaseEntity {
   viscosityCorrelation?: string;
   hasFoamyBehavior?: boolean;
   pseudoBubblePointPsi?: number;
+  pseudoBubblePoint?: number;        // Alias for pseudoBubblePointPsi
+  foamyOilFactor?: number;
   foamCriticalGasSaturation?: number;
   differentialLiberationData?: any;
   separatorTestData?: any;

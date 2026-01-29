@@ -62,6 +62,9 @@ import { RvWellDialogComponent } from './rv-well-list/rv-well-dialog.component';
 import { RvWellDetailsComponent } from './rv-well-details/rv-well-details.component';
 import { RvIprChartComponent } from './rv-charts/rv-ipr-chart.component';
 import { RvDeclineChartComponent } from './rv-charts/rv-decline-chart.component';
+import { RvMaterialBalanceChartComponent } from './rv-charts/rv-material-balance-chart.component';
+import { RvPvtChartComponent } from './rv-charts/rv-pvt-chart.component';
+import { RvWellMapComponent } from './rv-charts/rv-well-map.component';
 import { RvCalculatorComponent } from './rv-calculator/rv-calculator.component';
 
 @NgModule({
@@ -78,6 +81,9 @@ import { RvCalculatorComponent } from './rv-calculator/rv-calculator.component';
     RvWellDetailsComponent,
     RvIprChartComponent,
     RvDeclineChartComponent,
+    RvMaterialBalanceChartComponent,
+    RvPvtChartComponent,
+    RvWellMapComponent,
     RvCalculatorComponent
   ],
   imports: [

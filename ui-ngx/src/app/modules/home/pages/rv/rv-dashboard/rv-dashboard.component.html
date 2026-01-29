@@ -1,19 +1,20 @@
 <!--
-  Copyright © 2016-2026 The Thingsboard Authors
 
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
+    Copyright © 2016-2026 The Thingsboard Authors
 
-      http://www.apache.org/licenses/LICENSE-2.0
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
 -->
-
 <div class="rv-dashboard-container">
   <!-- Header -->
   <div class="dashboard-header">
@@ -258,5 +259,110 @@
         </div>
       </mat-card-content>
     </mat-card>
+  </div>
+
+  <!-- Visualizations Section -->
+  <div class="visualizations-section" *ngIf="!isLoading">
+    <h2 class="section-title">
+      <mat-icon>analytics</mat-icon>
+      Visualizaciones
+    </h2>
+
+    <div class="viz-grid">
+      <!-- Well Map -->
+      <mat-card class="viz-card full-width">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>map</mat-icon>
+            Mapa de Pozos
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <tb-rv-well-map
+            [tenantId]="tenantId"
+            (wellSelected)="openWellDetails($event)">
+          </tb-rv-well-map>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Material Balance Chart -->
+      <mat-card class="viz-card" *ngIf="materialBalanceStudyId">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>show_chart</mat-icon>
+            Balance de Materiales (Havlena-Odeh)
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <tb-rv-material-balance-chart
+            [studyId]="materialBalanceStudyId">
+          </tb-rv-material-balance-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- PVT Chart -->
+      <mat-card class="viz-card" *ngIf="pvtStudyId">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>science</mat-icon>
+            Propiedades PVT
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <tb-rv-pvt-chart
+            [pvtStudyId]="pvtStudyId">
+          </tb-rv-pvt-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- IPR Chart -->
+      <mat-card class="viz-card" *ngIf="iprModelId">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>show_chart</mat-icon>
+            Curva IPR (Inflow Performance)
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <tb-rv-ipr-chart
+            [iprModelId]="iprModelId">
+          </tb-rv-ipr-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Decline Analysis Chart -->
+      <mat-card class="viz-card" *ngIf="declineAnalysisId">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>trending_down</mat-icon>
+            Analisis de Declinacion (Arps)
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <tb-rv-decline-chart
+            [declineAnalysisId]="declineAnalysisId">
+          </tb-rv-decline-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- No Visualization Data Message -->
+      <mat-card class="viz-card info-card" *ngIf="!materialBalanceStudyId && !pvtStudyId && !iprModelId && !declineAnalysisId">
+        <mat-card-content>
+          <mat-icon class="info-icon">info</mat-icon>
+          <h3>Visualizaciones Avanzadas</h3>
+          <p>Las visualizaciones se muestran cuando hay datos disponibles.</p>
+          <ul>
+            <li>Agregue estudios PVT a sus yacimientos</li>
+            <li>Configure el analisis de Balance de Materiales</li>
+            <li>Cree modelos IPR para analisis de productividad</li>
+            <li>Configure analisis de declinacion Arps</li>
+          </ul>
+          <button mat-raised-button color="primary" (click)="navigateTo('calculator')">
+            <mat-icon>calculate</mat-icon>
+            Ir a Calculadora
+          </button>
+        </mat-card-content>
+      </mat-card>
+    </div>
   </div>
 </div>

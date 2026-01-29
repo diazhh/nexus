@@ -156,6 +156,10 @@ public class RvHierarchyService {
 
     /**
      * Obtiene todos los Assets relacionados por un tipo específico.
+     * @param tenantId ID del tenant
+     * @param assetId ID del asset origen
+     * @param relationType Tipo de relación a buscar
+     * @return Lista de IDs de entidades relacionadas
      */
     public List<UUID> getRelatedAssets(UUID tenantId, UUID assetId, String relationType) {
         List<EntityRelation> relations = relationService.findByFromAndType(
@@ -168,6 +172,17 @@ public class RvHierarchyService {
         return relations.stream()
             .map(r -> r.getTo().getId())
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Alias para getRelatedAssets - obtiene entidades relacionadas por tipo de relación.
+     * @param tenantId ID del tenant
+     * @param entityId ID de la entidad origen
+     * @param relationType Tipo de relación a buscar
+     * @return Lista de IDs de entidades relacionadas
+     */
+    public List<UUID> getRelatedEntities(UUID tenantId, UUID entityId, String relationType) {
+        return getRelatedAssets(tenantId, entityId, relationType);
     }
 
     /**

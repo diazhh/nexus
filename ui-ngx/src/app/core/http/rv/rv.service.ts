@@ -500,4 +500,140 @@ export class RvService {
   calculateArpsDecline(params: { qi: number; di: number; b: number; time: number }): Observable<any> {
     return this.http.post<any>(`${BASE_URL}/calculations/arps-decline`, params);
   }
+
+  // ==============================================
+  // MATERIAL BALANCE ENDPOINTS
+  // ==============================================
+
+  getMaterialBalanceStudies(tenantId: string, pageLink: PageLink): Observable<PageData<any>> {
+    return this.http.get<PageData<any>>(`${BASE_URL}/material-balance`, {
+      headers: this.getHeaders(tenantId),
+      params: {
+        page: pageLink.page.toString(),
+        size: pageLink.pageSize.toString()
+      }
+    });
+  }
+
+  getMaterialBalanceStudiesByReservoir(tenantId: string, reservoirId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${BASE_URL}/material-balance/by-reservoir/${reservoirId}`, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  getMaterialBalanceStudy(id: string): Observable<any> {
+    return this.http.get<any>(`${BASE_URL}/material-balance/${id}`);
+  }
+
+  createMaterialBalanceStudy(tenantId: string, study: any): Observable<any> {
+    return this.http.post<any>(`${BASE_URL}/material-balance`, study, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  updateMaterialBalanceStudy(id: string, study: any): Observable<any> {
+    return this.http.put<any>(`${BASE_URL}/material-balance/${id}`, study);
+  }
+
+  calculateMBETerms(id: string, study: any): Observable<any> {
+    return this.http.post<any>(`${BASE_URL}/material-balance/${id}/calculate-mbe-terms`, study);
+  }
+
+  performHavlenaOdehAnalysis(id: string, study: any): Observable<any> {
+    return this.http.post<any>(`${BASE_URL}/material-balance/${id}/havlena-odeh-analysis`, study);
+  }
+
+  getDriveMechanisms(id: string): Observable<any> {
+    return this.http.get<any>(`${BASE_URL}/material-balance/${id}/drive-mechanisms`);
+  }
+
+  getHavlenaOdehPlotData(id: string): Observable<any> {
+    return this.http.get<any>(`${BASE_URL}/material-balance/${id}/havlena-odeh-plot`);
+  }
+
+  deleteMaterialBalanceStudy(tenantId: string, id: string): Observable<void> {
+    return this.http.delete<void>(`${BASE_URL}/material-balance/${id}`, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  // ==============================================
+  // SEISMIC SURVEY ENDPOINTS
+  // ==============================================
+
+  getSeismicSurveys(tenantId: string, pageLink: PageLink): Observable<PageData<any>> {
+    return this.http.get<PageData<any>>(`${BASE_URL}/seismic-surveys`, {
+      headers: this.getHeaders(tenantId),
+      params: {
+        page: pageLink.page.toString(),
+        size: pageLink.pageSize.toString()
+      }
+    });
+  }
+
+  getSeismicSurveysByField(tenantId: string, fieldId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${BASE_URL}/seismic-surveys/by-field/${fieldId}`, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  // ==============================================
+  // FAULT ENDPOINTS
+  // ==============================================
+
+  getFaults(tenantId: string, pageLink: PageLink): Observable<PageData<any>> {
+    return this.http.get<PageData<any>>(`${BASE_URL}/faults`, {
+      headers: this.getHeaders(tenantId),
+      params: {
+        page: pageLink.page.toString(),
+        size: pageLink.pageSize.toString()
+      }
+    });
+  }
+
+  getFaultsByField(tenantId: string, fieldId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${BASE_URL}/faults/by-field/${fieldId}`, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  // ==============================================
+  // WELL LOG ENDPOINTS
+  // ==============================================
+
+  getWellLogs(tenantId: string, pageLink: PageLink): Observable<PageData<any>> {
+    return this.http.get<PageData<any>>(`${BASE_URL}/well-logs`, {
+      headers: this.getHeaders(tenantId),
+      params: {
+        page: pageLink.page.toString(),
+        size: pageLink.pageSize.toString()
+      }
+    });
+  }
+
+  getWellLogsByWell(tenantId: string, wellId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${BASE_URL}/well-logs/by-well/${wellId}`, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  // ==============================================
+  // CORE ENDPOINTS
+  // ==============================================
+
+  getCores(tenantId: string, pageLink: PageLink): Observable<PageData<any>> {
+    return this.http.get<PageData<any>>(`${BASE_URL}/cores`, {
+      headers: this.getHeaders(tenantId),
+      params: {
+        page: pageLink.page.toString(),
+        size: pageLink.pageSize.toString()
+      }
+    });
+  }
+
+  getCoresByWell(tenantId: string, wellId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${BASE_URL}/cores/by-well/${wellId}`, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
 }

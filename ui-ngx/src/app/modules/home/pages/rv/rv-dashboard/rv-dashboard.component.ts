@@ -48,6 +48,7 @@ interface RecentActivity {
   timestamp: number;
 }
 
+
 @Component({
   selector: 'tb-rv-dashboard',
   templateUrl: './rv-dashboard.component.html',
@@ -72,6 +73,12 @@ export class RvDashboardComponent implements OnInit {
   recentFields: RvField[] = [];
   recentWells: RvWell[] = [];
   topProducingWells: RvWell[] = [];
+
+  // Visualization data
+  materialBalanceStudyId: string | null = null;
+  pvtStudyId: string | null = null;
+  iprModelId: string | null = null;
+  declineAnalysisId: string | null = null;
 
   // Helper functions
   formatOilRate = formatOilRate;
@@ -151,6 +158,62 @@ export class RvDashboardComponent implements OnInit {
       },
       error: () => {
         this.isLoading = false;
+      }
+    });
+
+    // Load Material Balance study ID (first study found)
+    this.loadMaterialBalanceStudyId();
+
+    // Load PVT study ID (first study found)
+    this.loadPvtStudyId();
+
+    // Load IPR model ID (first model found)
+    this.loadIprModelId();
+
+    // Load Decline Analysis ID (first analysis found)
+    this.loadDeclineAnalysisId();
+  }
+
+  private loadMaterialBalanceStudyId(): void {
+    const pageLink = new PageLink(1, 0);
+    this.rvService.getMaterialBalanceStudies(this.tenantId, pageLink).subscribe({
+      next: (data) => {
+        if (data.data && data.data.length > 0) {
+          this.materialBalanceStudyId = data.data[0].id;
+        }
+      }
+    });
+  }
+
+  private loadPvtStudyId(): void {
+    const pageLink = new PageLink(1, 0);
+    this.rvService.getPvtStudies(this.tenantId, pageLink).subscribe({
+      next: (data) => {
+        if (data.data && data.data.length > 0) {
+          this.pvtStudyId = data.data[0].id;
+        }
+      }
+    });
+  }
+
+  private loadIprModelId(): void {
+    const pageLink = new PageLink(1, 0);
+    this.rvService.getIprModels(this.tenantId, pageLink).subscribe({
+      next: (data) => {
+        if (data.data && data.data.length > 0) {
+          this.iprModelId = data.data[0].id;
+        }
+      }
+    });
+  }
+
+  private loadDeclineAnalysisId(): void {
+    const pageLink = new PageLink(1, 0);
+    this.rvService.getDeclineAnalyses(this.tenantId, pageLink).subscribe({
+      next: (data) => {
+        if (data.data && data.data.length > 0) {
+          this.declineAnalysisId = data.data[0].id;
+        }
       }
     });
   }
