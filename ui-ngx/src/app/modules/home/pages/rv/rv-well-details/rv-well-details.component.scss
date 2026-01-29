@@ -1,0 +1,21 @@
+@import '../rv-common.scss';
+
+.tab-content {
+  padding: 24px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 16px;
+}
+
+.no-data-message {
+  text-align: center;
+  color: #888;
+  padding: 48px;
+  grid-column: 1 / -1;
+}
+
+mat-tab-group {
+  ::ng-deep .mat-mdc-tab-body-content {
+    padding: 16px;
+  }
+}

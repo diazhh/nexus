@@ -1,0 +1,159 @@
+<!--
+  Copyright © 2016-2026 The Thingsboard Authors
+-->
+
+<div class="rv-details-container" *ngIf="!isLoading && well">
+  <div class="details-header">
+    <div class="header-info">
+      <h1>
+        <mat-icon>build</mat-icon>
+        {{ well.name }}
+      </h1>
+      <p class="subtitle">
+        {{ well.wellType }} | {{ well.wellCategory }} |
+        <mat-chip [color]="getStatusColor(well.wellStatus)">{{ well.wellStatus }}</mat-chip>
+      </p>
+    </div>
+    <div class="header-actions">
+      <button mat-button (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon> Volver
+      </button>
+      <button mat-raised-button color="primary">
+        <mat-icon>edit</mat-icon> Editar
+      </button>
+    </div>
+  </div>
+
+  <mat-tab-group [(selectedIndex)]="selectedTabIndex">
+    <!-- General Info Tab -->
+    <mat-tab label="Informacion General">
+      <div class="details-grid">
+        <mat-card class="details-card">
+          <mat-card-header>
+            <mat-card-title><mat-icon>info</mat-icon> Identificacion</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="property-list">
+              <div class="property-item"><span class="property-label">Nombre</span><span class="property-value">{{ well.name }}</span></div>
+              <div class="property-item"><span class="property-label">UWI</span><span class="property-value">{{ well.uwi || '-' }}</span></div>
+              <div class="property-item"><span class="property-label">API Number</span><span class="property-value">{{ well.apiNumber || '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Operador</span><span class="property-value">{{ well.operatorName || '-' }}</span></div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="details-card">
+          <mat-card-header>
+            <mat-card-title><mat-icon>trending_up</mat-icon> Produccion Actual</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="property-list">
+              <div class="property-item"><span class="property-label">Tasa Petroleo</span><span class="property-value">{{ well.currentRateBopd ? formatOilRate(well.currentRateBopd) : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Tasa Gas</span><span class="property-value">{{ well.currentGasRateMscfd ? (well.currentGasRateMscfd | number:'1.0-0') + ' Mscfd' : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">BSW</span><span class="property-value">{{ well.currentWaterCutPercent ? (well.currentWaterCutPercent | number:'1.0-0') + '%' : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">IP</span><span class="property-value">{{ well.productivityIndexBpdPsi ? (well.productivityIndexBpdPsi | number:'1.2-2') + ' bpd/psi' : '-' }}</span></div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="details-card">
+          <mat-card-header>
+            <mat-card-title><mat-icon>location_on</mat-icon> Ubicacion y Profundidad</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="property-list">
+              <div class="property-item"><span class="property-label">Latitud</span><span class="property-value">{{ well.surfaceLatitude || '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Longitud</span><span class="property-value">{{ well.surfaceLongitude || '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Profundidad MD</span><span class="property-value">{{ well.totalDepthMdM ? (well.totalDepthMdM | number:'1.0-0') + ' m' : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Profundidad TVD</span><span class="property-value">{{ well.totalDepthTvdM ? (well.totalDepthTvdM | number:'1.0-0') + ' m' : '-' }}</span></div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="details-card">
+          <mat-card-header>
+            <mat-card-title><mat-icon>assessment</mat-icon> Acumulados</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="property-list">
+              <div class="property-item"><span class="property-label">Petroleo Acumulado</span><span class="property-value">{{ well.cumulativeOilBbl ? formatVolume(well.cumulativeOilBbl) : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Gas Acumulado</span><span class="property-value">{{ well.cumulativeGasMcf ? (well.cumulativeGasMcf / 1000 | number:'1.1-1') + ' MMcf' : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Agua Acumulada</span><span class="property-value">{{ well.cumulativeWaterBbl ? formatVolume(well.cumulativeWaterBbl) : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Lift</span><span class="property-value">{{ well.artificialLiftType || 'NATURAL' }}</span></div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Completions Tab -->
+    <mat-tab label="Completaciones ({{ completions.length }})">
+      <div class="tab-content">
+        <mat-card *ngFor="let comp of completions" class="details-card">
+          <mat-card-header>
+            <mat-card-title>{{ comp.name }}</mat-card-title>
+            <mat-chip [color]="getStatusColor(comp.completionStatus)">{{ comp.completionStatus }}</mat-chip>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="property-list">
+              <div class="property-item"><span class="property-label">Tipo</span><span class="property-value">{{ comp.completionType }}</span></div>
+              <div class="property-item"><span class="property-label">Intervalo</span><span class="property-value">{{ comp.topPerforationMdM }} - {{ comp.bottomPerforationMdM }} m</span></div>
+              <div class="property-item"><span class="property-label">Lift</span><span class="property-value">{{ comp.liftMethod || 'NATURAL' }}</span></div>
+              <div class="property-item"><span class="property-label">Tasa</span><span class="property-value">{{ comp.currentRateBopd ? formatOilRate(comp.currentRateBopd) : '-' }}</span></div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+        <p *ngIf="completions.length === 0" class="no-data-message">No hay completaciones registradas</p>
+      </div>
+    </mat-tab>
+
+    <!-- IPR Tab -->
+    <mat-tab label="IPR ({{ iprModels.length }})">
+      <div class="tab-content">
+        <mat-card *ngFor="let ipr of iprModels" class="details-card">
+          <mat-card-header>
+            <mat-card-title>{{ ipr.name }}</mat-card-title>
+            <mat-chip>{{ ipr.iprMethod }}</mat-chip>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="property-list">
+              <div class="property-item"><span class="property-label">Qmax (AOF)</span><span class="property-value">{{ ipr.qmaxBopd ? formatOilRate(ipr.qmaxBopd) : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">IP</span><span class="property-value">{{ ipr.productivityIndexBpdPsi ? (ipr.productivityIndexBpdPsi | number:'1.2-2') + ' bpd/psi' : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Pr</span><span class="property-value">{{ ipr.reservoirPressurePsi ? (ipr.reservoirPressurePsi | number:'1.0-0') + ' psi' : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Skin</span><span class="property-value">{{ ipr.skinFactor ?? '-' }}</span></div>
+            </div>
+            <tb-rv-ipr-chart [iprModelId]="ipr.assetId"></tb-rv-ipr-chart>
+          </mat-card-content>
+        </mat-card>
+        <p *ngIf="iprModels.length === 0" class="no-data-message">No hay modelos IPR registrados</p>
+      </div>
+    </mat-tab>
+
+    <!-- Decline Tab -->
+    <mat-tab label="Declinacion ({{ declineAnalyses.length }})">
+      <div class="tab-content">
+        <mat-card *ngFor="let decline of declineAnalyses" class="details-card">
+          <mat-card-header>
+            <mat-card-title>{{ decline.name }}</mat-card-title>
+            <mat-chip>{{ decline.declineType }}</mat-chip>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="property-list">
+              <div class="property-item"><span class="property-label">Qi</span><span class="property-value">{{ decline.qiBopd ? formatOilRate(decline.qiBopd) : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">Di</span><span class="property-value">{{ decline.diPerYear ? (decline.diPerYear * 100 | number:'1.1-1') + '%/año' : '-' }}</span></div>
+              <div class="property-item"><span class="property-label">b</span><span class="property-value">{{ decline.bExponent ?? '-' }}</span></div>
+              <div class="property-item"><span class="property-label">EUR</span><span class="property-value">{{ decline.eurBbl ? formatVolume(decline.eurBbl) : '-' }}</span></div>
+            </div>
+            <tb-rv-decline-chart [declineAnalysisId]="decline.assetId"></tb-rv-decline-chart>
+          </mat-card-content>
+        </mat-card>
+        <p *ngIf="declineAnalyses.length === 0" class="no-data-message">No hay analisis de declinacion registrados</p>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>
+
+<div *ngIf="isLoading" class="loading-container">
+  <mat-spinner diameter="50"></mat-spinner>
+  <p>Cargando datos del pozo...</p>
+</div>

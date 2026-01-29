@@ -120,7 +120,15 @@ export enum MenuId {
   ct_reports = 'ct_reports',
   ct_units = 'ct_units',
   ct_reels = 'ct_reels',
-  ct_jobs = 'ct_jobs'
+  ct_jobs = 'ct_jobs',
+  // Reservoir Module (Yacimientos)
+  reservoir_module = 'reservoir_module',
+  rv_dashboard = 'rv_dashboard',
+  rv_basins = 'rv_basins',
+  rv_fields = 'rv_fields',
+  rv_reservoirs = 'rv_reservoirs',
+  rv_wells = 'rv_wells',
+  rv_calculator = 'rv_calculator'
 }
 
 declare type MenuFilter = (authState: AuthState) => boolean;
@@ -814,6 +822,83 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
       path: '/settings/trendz',
       icon: 'trendz-settings'
     }
+  ],
+  // Reservoir Module (Yacimientos)
+  [
+    MenuId.reservoir_module,
+    {
+      id: MenuId.reservoir_module,
+      name: 'rv.reservoir-module',
+      type: 'toggle',
+      path: '/rv',
+      icon: 'mdi:oil'
+    }
+  ],
+  [
+    MenuId.rv_dashboard,
+    {
+      id: MenuId.rv_dashboard,
+      name: 'rv.dashboard',
+      fullName: 'rv.rv-dashboard',
+      type: 'link',
+      path: '/rv/dashboard',
+      icon: 'dashboard'
+    }
+  ],
+  [
+    MenuId.rv_basins,
+    {
+      id: MenuId.rv_basins,
+      name: 'rv.basins',
+      fullName: 'rv.rv-basins',
+      type: 'link',
+      path: '/rv/basins',
+      icon: 'mdi:earth'
+    }
+  ],
+  [
+    MenuId.rv_fields,
+    {
+      id: MenuId.rv_fields,
+      name: 'rv.fields',
+      fullName: 'rv.rv-fields',
+      type: 'link',
+      path: '/rv/fields',
+      icon: 'mdi:oil-lamp'
+    }
+  ],
+  [
+    MenuId.rv_reservoirs,
+    {
+      id: MenuId.rv_reservoirs,
+      name: 'rv.reservoirs',
+      fullName: 'rv.rv-reservoirs',
+      type: 'link',
+      path: '/rv/reservoirs',
+      icon: 'mdi:database'
+    }
+  ],
+  [
+    MenuId.rv_wells,
+    {
+      id: MenuId.rv_wells,
+      name: 'rv.wells',
+      fullName: 'rv.rv-wells',
+      type: 'link',
+      path: '/rv/wells',
+      icon: 'mdi:water-well'
+    }
+  ],
+  [
+    MenuId.rv_calculator,
+    {
+      id: MenuId.rv_calculator,
+      name: 'rv.calculator',
+      fullName: 'rv.rv-calculator',
+      type: 'link',
+      path: '/rv/calculator',
+      icon: 'mdi:calculator'
+    }
   ]
 ]);
 
@@ -842,6 +927,17 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
           {id: MenuId.ct_units},
           {id: MenuId.ct_reels},
           {id: MenuId.ct_jobs}
+        ]
+      },
+      {
+        id: MenuId.reservoir_module,
+        pages: [
+          {id: MenuId.rv_dashboard},
+          {id: MenuId.rv_basins},
+          {id: MenuId.rv_fields},
+          {id: MenuId.rv_reservoirs},
+          {id: MenuId.rv_wells},
+          {id: MenuId.rv_calculator}
         ]
       },
       {
@@ -942,6 +1038,17 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
           {id: MenuId.ct_units},
           {id: MenuId.ct_reels},
           {id: MenuId.ct_jobs}
+        ]
+      },
+      {
+        id: MenuId.reservoir_module,
+        pages: [
+          {id: MenuId.rv_dashboard},
+          {id: MenuId.rv_basins},
+          {id: MenuId.rv_fields},
+          {id: MenuId.rv_reservoirs},
+          {id: MenuId.rv_wells},
+          {id: MenuId.rv_calculator}
         ]
       },
       {

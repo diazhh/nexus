@@ -50,6 +50,7 @@ import { MobileModule } from '@home/pages/mobile/mobile.module';
 import { AiModelModule } from '@home/pages/ai-model/ai-model.module';
 import { RoleModule } from '@modules/home/pages/role/role.module';
 import { CTModule } from '@modules/home/pages/ct/ct.module';
+import { RvModule } from '@modules/home/pages/rv/rv.module';
 
 @NgModule({
   exports: [
@@ -86,7 +87,8 @@ import { CTModule } from '@modules/home/pages/ct/ct.module';
     AccountModule,
     ScadaSymbolModule,
     AiModelModule,
-    CTModule
+    CTModule,
+    RvModule
   ]
 })
 export class HomePagesModule { }

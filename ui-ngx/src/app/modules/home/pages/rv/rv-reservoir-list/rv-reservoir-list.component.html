@@ -1,0 +1,82 @@
+<!--
+  Copyright © 2016-2026 The Thingsboard Authors
+-->
+
+<div class="rv-list-container">
+  <mat-toolbar class="mat-mdc-table-toolbar">
+    <h2><mat-icon>layers</mat-icon> Yacimientos</h2>
+    <span class="fill-space"></span>
+    <mat-form-field class="search-field" appearance="outline">
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput placeholder="Buscar..." [(ngModel)]="searchText" (input)="applyFilter()">
+    </mat-form-field>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon> Nuevo Yacimiento
+    </button>
+  </mat-toolbar>
+
+  <div class="table-container" *ngIf="!isLoading">
+    <table mat-table [dataSource]="dataSource">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Nombre</th>
+        <td mat-cell *matCellDef="let r">
+          <strong>{{ r.name }}</strong>
+          <div class="cell-subtitle" *ngIf="r.code">{{ r.code }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="formationName">
+        <th mat-header-cell *matHeaderCellDef>Formacion</th>
+        <td mat-cell *matCellDef="let r">{{ r.formationName || '-' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="lithology">
+        <th mat-header-cell *matHeaderCellDef>Litologia</th>
+        <td mat-cell *matCellDef="let r">{{ r.lithology || '-' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="reservoirType">
+        <th mat-header-cell *matHeaderCellDef>Tipo</th>
+        <td mat-cell *matCellDef="let r">
+          <mat-chip *ngIf="r.reservoirType" [color]="r.hasFoamyOil ? 'warn' : ''">
+            {{ r.reservoirType }}
+          </mat-chip>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="ooipMmbbl">
+        <th mat-header-cell *matHeaderCellDef>OOIP (MMbbl)</th>
+        <td mat-cell *matCellDef="let r">{{ r.ooipMmbbl ? (r.ooipMmbbl | number:'1.1-1') : '-' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="recoveryFactorPercent">
+        <th mat-header-cell *matHeaderCellDef>F.R. (%)</th>
+        <td mat-cell *matCellDef="let r">{{ r.recoveryFactorPercent ? (r.recoveryFactorPercent | number:'1.1-1') : '-' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let r">
+          <button mat-icon-button matTooltip="Calcular OOIP" color="accent" (click)="calculateOOIP(r)">
+            <mat-icon>calculate</mat-icon>
+          </button>
+          <button mat-icon-button matTooltip="Editar" (click)="openEditDialog(r)"><mat-icon>edit</mat-icon></button>
+          <button mat-icon-button matTooltip="Eliminar" color="warn" (click)="deleteReservoir(r)"><mat-icon>delete</mat-icon></button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
+          <mat-icon>layers</mat-icon><span>No hay yacimientos registrados</span>
+        </td>
+      </tr>
+    </table>
+    <mat-paginator [length]="totalElements" [pageSize]="pageSize" [pageSizeOptions]="[10,20,50]" (page)="onPageChange($event)" showFirstLastButtons></mat-paginator>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner><p>Cargando yacimientos...</p>
+  </div>
+</div>

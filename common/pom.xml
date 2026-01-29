@@ -52,6 +52,7 @@
         <module>edqs</module>
         <module>discovery-api</module>
         <module>ct-module</module>
+        <module>rv-module</module>
     </modules>
 
 </project>

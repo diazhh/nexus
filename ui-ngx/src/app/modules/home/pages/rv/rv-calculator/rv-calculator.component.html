@@ -1,0 +1,173 @@
+<!--
+  Copyright © 2016-2026 The Thingsboard Authors
+-->
+
+<div class="rv-calculator-container">
+  <div class="calculator-header">
+    <h1><mat-icon>calculate</mat-icon> Calculadora de Ingenieria de Yacimientos</h1>
+  </div>
+
+  <mat-tab-group [(selectedIndex)]="selectedTabIndex" class="calculation-tabs">
+    <!-- OOIP Calculator -->
+    <mat-tab label="OOIP (Volumetrico)">
+      <div class="calculation-form">
+        <p class="formula">OOIP = 7758 x A x h x phi x (1 - Sw) / Bo</p>
+
+        <form [formGroup]="ooipForm">
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Area (acres)</mat-label>
+              <input matInput type="number" formControlName="areaAcres">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Espesor Neto (m)</mat-label>
+              <input matInput type="number" formControlName="thicknessM">
+            </mat-form-field>
+          </div>
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Porosidad (frac)</mat-label>
+              <input matInput type="number" formControlName="porosity" step="0.01">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Sw (frac)</mat-label>
+              <input matInput type="number" formControlName="waterSat" step="0.01">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Bo (rb/stb)</mat-label>
+              <input matInput type="number" formControlName="boRbStb" step="0.001">
+            </mat-form-field>
+          </div>
+          <button mat-raised-button color="primary" (click)="calculateOOIP()" [disabled]="!ooipForm.valid || isCalculating" class="calculate-button">
+            <mat-icon>calculate</mat-icon> Calcular OOIP
+          </button>
+        </form>
+
+        <mat-card class="result-card" *ngIf="ooipResult !== null">
+          <mat-card-content>
+            <span class="result-value">{{ ooipResult | number:'1.0-0' }}</span>
+            <span class="result-label">STB ({{ ooipResult / 1000000 | number:'1.2-2' }} MMbbl)</span>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Archie Calculator -->
+    <mat-tab label="Sw (Archie)">
+      <div class="calculation-form">
+        <p class="formula">Sw = (a x Rw / (phi^m x Rt))^(1/n)</p>
+
+        <form [formGroup]="archieForm">
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Porosidad (frac)</mat-label>
+              <input matInput type="number" formControlName="porosity" step="0.01">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Rw (ohm-m)</mat-label>
+              <input matInput type="number" formControlName="rw" step="0.01">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Rt (ohm-m)</mat-label>
+              <input matInput type="number" formControlName="rt" step="0.1">
+            </mat-form-field>
+          </div>
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>a (tortuosidad)</mat-label>
+              <input matInput type="number" formControlName="a" step="0.1">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>m (cementacion)</mat-label>
+              <input matInput type="number" formControlName="m" step="0.1">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>n (saturacion)</mat-label>
+              <input matInput type="number" formControlName="n" step="0.1">
+            </mat-form-field>
+          </div>
+          <button mat-raised-button color="primary" (click)="calculateArchie()" [disabled]="!archieForm.valid || isCalculating" class="calculate-button">
+            <mat-icon>calculate</mat-icon> Calcular Sw
+          </button>
+        </form>
+
+        <mat-card class="result-card" *ngIf="archieResult !== null">
+          <mat-card-content>
+            <span class="result-value">{{ archieResult | number:'1.4-4' }}</span>
+            <span class="result-label">Saturacion de Agua ({{ archieResult * 100 | number:'1.1-1' }}%)</span>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Pb Standing Calculator -->
+    <mat-tab label="Pb (Standing)">
+      <div class="calculation-form">
+        <p class="formula">Pb = 18.2 x ((Rs/gamma_g)^0.83 x 10^(0.00091T - 0.0125API) - 1.4)</p>
+
+        <form [formGroup]="pbForm">
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Rs (scf/stb)</mat-label>
+              <input matInput type="number" formControlName="rs">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Gas Gravity</mat-label>
+              <input matInput type="number" formControlName="gasGravity" step="0.01">
+            </mat-form-field>
+          </div>
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Temperatura (F)</mat-label>
+              <input matInput type="number" formControlName="temperature">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>API Gravity</mat-label>
+              <input matInput type="number" formControlName="apiGravity">
+            </mat-form-field>
+          </div>
+          <button mat-raised-button color="primary" (click)="calculatePb()" [disabled]="!pbForm.valid || isCalculating" class="calculate-button">
+            <mat-icon>calculate</mat-icon> Calcular Pb
+          </button>
+        </form>
+
+        <mat-card class="result-card" *ngIf="pbResult !== null">
+          <mat-card-content>
+            <span class="result-value">{{ pbResult | number:'1.0-0' }}</span>
+            <span class="result-label">Presion de Burbuja (psia)</span>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Viscosity Calculator -->
+    <mat-tab label="Viscosidad (Beggs-Robinson)">
+      <div class="calculation-form">
+        <p class="formula">mu_od = 10^(10^(3.0324 - 0.02023 x API) x T^-1.163) - 1</p>
+
+        <form [formGroup]="viscosityForm">
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>API Gravity</mat-label>
+              <input matInput type="number" formControlName="apiGravity">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Temperatura (F)</mat-label>
+              <input matInput type="number" formControlName="temperature">
+            </mat-form-field>
+          </div>
+          <button mat-raised-button color="primary" (click)="calculateViscosity()" [disabled]="!viscosityForm.valid || isCalculating" class="calculate-button">
+            <mat-icon>calculate</mat-icon> Calcular Viscosidad
+          </button>
+        </form>
+
+        <mat-card class="result-card" *ngIf="viscosityResult !== null">
+          <mat-card-content>
+            <span class="result-value">{{ viscosityResult | number:'1.2-2' }}</span>
+            <span class="result-label">Viscosidad del Petroleo Muerto (cp)</span>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

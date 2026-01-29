@@ -1,0 +1,262 @@
+<!--
+  Copyright © 2016-2026 The Thingsboard Authors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<div class="rv-dashboard-container">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <h1>
+      <mat-icon>oil_barrel</mat-icon>
+      Modulo de Yacimientos
+    </h1>
+    <p class="subtitle">Gestion integral de cuencas, campos, yacimientos y pozos</p>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Cargando datos...</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid" *ngIf="!isLoading">
+    <!-- Basins Card -->
+    <mat-card class="stat-card" (click)="navigateTo('basins')">
+      <mat-card-content>
+        <div class="stat-icon">
+          <mat-icon>terrain</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.totalBasins }}</span>
+          <span class="stat-label">Cuencas</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Fields Card -->
+    <mat-card class="stat-card" (click)="navigateTo('fields')">
+      <mat-card-content>
+        <div class="stat-icon fields">
+          <mat-icon>location_on</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.totalFields }}</span>
+          <span class="stat-label">Campos</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Reservoirs Card -->
+    <mat-card class="stat-card" (click)="navigateTo('reservoirs')">
+      <mat-card-content>
+        <div class="stat-icon reservoirs">
+          <mat-icon>layers</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.totalReservoirs }}</span>
+          <span class="stat-label">Yacimientos</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Wells Card -->
+    <mat-card class="stat-card" (click)="navigateTo('wells')">
+      <mat-card-content>
+        <div class="stat-icon wells">
+          <mat-icon>build</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.totalWells }}</span>
+          <span class="stat-label">Pozos</span>
+          <span class="stat-subtitle">{{ stats.producingWells }} produciendo</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- OOIP Card -->
+    <mat-card class="stat-card wide">
+      <mat-card-content>
+        <div class="stat-icon ooip">
+          <mat-icon>water_drop</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.totalOOIP | number:'1.1-1' }}</span>
+          <span class="stat-label">OOIP (MMbbl)</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Production Card -->
+    <mat-card class="stat-card wide">
+      <mat-card-content>
+        <div class="stat-icon production">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.totalProduction | number:'1.1-1' }}</span>
+          <span class="stat-label">Produccion Acumulada (MMbbl)</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Recovery Factor Card -->
+    <mat-card class="stat-card wide">
+      <mat-card-content>
+        <div class="stat-icon recovery">
+          <mat-icon>pie_chart</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ stats.avgRecoveryFactor | number:'1.1-1' }}%</span>
+          <span class="stat-label">Factor de Recobro Promedio</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="content-grid" *ngIf="!isLoading">
+    <!-- Recent Fields -->
+    <mat-card class="content-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>location_on</mat-icon>
+          Campos Recientes
+        </mat-card-title>
+        <button mat-button color="primary" (click)="navigateTo('fields')">
+          Ver Todos
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list>
+          <mat-list-item *ngFor="let field of recentFields">
+            <mat-icon matListItemIcon>location_on</mat-icon>
+            <div matListItemTitle>{{ field.name }}</div>
+            <div matListItemLine>
+              <mat-chip-set>
+                <mat-chip [color]="getFieldStatusColor(field.fieldStatus)">
+                  {{ field.fieldStatus }}
+                </mat-chip>
+              </mat-chip-set>
+              <span *ngIf="field.currentOilRateBopd">
+                {{ formatOilRate(field.currentOilRateBopd) }}
+              </span>
+            </div>
+          </mat-list-item>
+          <mat-list-item *ngIf="recentFields.length === 0">
+            <div matListItemTitle>No hay campos registrados</div>
+          </mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Top Producing Wells -->
+    <mat-card class="content-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>trending_up</mat-icon>
+          Pozos con Mayor Produccion
+        </mat-card-title>
+        <button mat-button color="primary" (click)="navigateTo('wells')">
+          Ver Todos
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list>
+          <mat-list-item *ngFor="let well of topProducingWells; let i = index"
+                         (click)="openWellDetails(well.assetId)">
+            <span matListItemIcon class="rank">{{ i + 1 }}</span>
+            <div matListItemTitle>{{ well.name }}</div>
+            <div matListItemLine>
+              <strong>{{ formatOilRate(well.currentRateBopd) }}</strong>
+              <span *ngIf="well.currentWaterCutPercent">
+                | BSW: {{ well.currentWaterCutPercent | number:'1.0-0' }}%
+              </span>
+            </div>
+          </mat-list-item>
+          <mat-list-item *ngIf="topProducingWells.length === 0">
+            <div matListItemTitle>No hay pozos produciendo</div>
+          </mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Recent Wells -->
+    <mat-card class="content-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>build</mat-icon>
+          Pozos Recientes
+        </mat-card-title>
+        <button mat-button color="primary" (click)="navigateTo('wells')">
+          Ver Todos
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list>
+          <mat-list-item *ngFor="let well of recentWells"
+                         (click)="openWellDetails(well.assetId)">
+            <mat-icon matListItemIcon>build</mat-icon>
+            <div matListItemTitle>{{ well.name }}</div>
+            <div matListItemLine>
+              <mat-chip-set>
+                <mat-chip [color]="getWellStatusColor(well.wellStatus)">
+                  {{ well.wellStatus }}
+                </mat-chip>
+              </mat-chip-set>
+              <span>{{ well.wellType }}</span>
+            </div>
+          </mat-list-item>
+          <mat-list-item *ngIf="recentWells.length === 0">
+            <div matListItemTitle>No hay pozos registrados</div>
+          </mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Quick Actions -->
+    <mat-card class="content-card actions-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>flash_on</mat-icon>
+          Acciones Rapidas
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="action-buttons">
+          <button mat-raised-button color="primary" (click)="navigateTo('basins')">
+            <mat-icon>add</mat-icon>
+            Nueva Cuenca
+          </button>
+          <button mat-raised-button color="primary" (click)="navigateTo('fields')">
+            <mat-icon>add</mat-icon>
+            Nuevo Campo
+          </button>
+          <button mat-raised-button color="primary" (click)="navigateTo('reservoirs')">
+            <mat-icon>add</mat-icon>
+            Nuevo Yacimiento
+          </button>
+          <button mat-raised-button color="primary" (click)="navigateTo('wells')">
+            <mat-icon>add</mat-icon>
+            Nuevo Pozo
+          </button>
+          <button mat-raised-button color="accent" (click)="navigateTo('calculator')">
+            <mat-icon>calculate</mat-icon>
+            Calculadora
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
