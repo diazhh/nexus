@@ -110,6 +110,18 @@ public enum EntityType {
         public String getNormalName() {
             return "Distribution Log";
         }
+    },
+    MAPPING_TEMPLATE(53, "nx_mapping_template") {
+        @Override
+        public String getNormalName() {
+            return "Mapping Template";
+        }
+    },
+    MAPPING_TEMPLATE_RULE(54, "nx_mapping_template_rule") {
+        @Override
+        public String getNormalName() {
+            return "Mapping Template Rule";
+        }
     };
 
     @Getter

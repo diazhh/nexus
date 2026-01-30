@@ -17,23 +17,29 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SharedModule } from '@shared/shared.module';
-import { TenantComponent } from '@modules/home/pages/tenant/tenant.component';
-import { TenantRoutingModule } from '@modules/home/pages/tenant/tenant-routing.module';
-import { HomeComponentsModule } from '@modules/home/components/home-components.module';
-import { TenantTabsComponent } from '@home/pages/tenant/tenant-tabs.component';
-import { TenantModulesComponent } from '@home/pages/tenant/tenant-modules.component';
+import { DataMappingRoutingModule } from './data-mapping-routing.module';
+import { DataMappingTemplatesComponent } from './data-mapping-templates.component';
+import { DataMappingSourcesComponent } from './data-mapping-sources.component';
+import { MappingTemplateDialogComponent } from './mapping-template-dialog.component';
+import { MappingTemplateRulesDialogComponent } from './mapping-template-rules-dialog.component';
+import { ApplyTemplateDialogComponent } from './apply-template-dialog.component';
 
 @NgModule({
   declarations: [
-    TenantComponent,
-    TenantTabsComponent,
-    TenantModulesComponent
+    DataMappingTemplatesComponent,
+    DataMappingSourcesComponent,
+    MappingTemplateDialogComponent,
+    MappingTemplateRulesDialogComponent,
+    ApplyTemplateDialogComponent
   ],
   imports: [
     CommonModule,
     SharedModule,
-    HomeComponentsModule,
-    TenantRoutingModule
+    DataMappingRoutingModule
+  ],
+  exports: [
+    DataMappingTemplatesComponent,
+    DataMappingSourcesComponent
   ]
 })
-export class TenantModule { }
+export class DataMappingModule { }

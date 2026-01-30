@@ -1,0 +1,211 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<h2 mat-dialog-title>
+  {{ template.name }} - {{ 'data-mapping.rules' | translate }}
+</h2>
+
+<mat-dialog-content>
+  <div class="rules-container">
+    <!-- Rules Table -->
+    <div class="rules-table-section" *ngIf="!showRuleForm">
+      <div class="rules-toolbar">
+        <button mat-raised-button color="primary" (click)="showAddRuleForm()">
+          <mat-icon>add</mat-icon>
+          <span translate>data-mapping.create-rule</span>
+        </button>
+      </div>
+
+      <div class="table-container">
+        <mat-spinner *ngIf="isLoading" diameter="40" class="loading-spinner"></mat-spinner>
+
+        <table mat-table [dataSource]="dataSource" class="rules-table" *ngIf="!isLoading">
+
+          <!-- Source Key Column -->
+          <ng-container matColumnDef="sourceKey">
+            <th mat-header-cell *matHeaderCellDef translate>data-mapping.source-key</th>
+            <td mat-cell *matCellDef="let rule">
+              <span class="key-badge source">{{ rule.sourceKey }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Target Key Column -->
+          <ng-container matColumnDef="targetKey">
+            <th mat-header-cell *matHeaderCellDef translate>data-mapping.target-key</th>
+            <td mat-cell *matCellDef="let rule">
+              <span class="key-badge target">{{ rule.targetKey }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Transformation Type Column -->
+          <ng-container matColumnDef="transformationType">
+            <th mat-header-cell *matHeaderCellDef translate>data-mapping.transformation-type</th>
+            <td mat-cell *matCellDef="let rule">
+              <span class="transformation-chip">{{ getTransformationTypeLabel(rule.transformationType) }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Units Column -->
+          <ng-container matColumnDef="units">
+            <th mat-header-cell *matHeaderCellDef>{{ 'data-mapping.unit-source' | translate }} → {{ 'data-mapping.unit-target' | translate }}</th>
+            <td mat-cell *matCellDef="let rule">
+              <span *ngIf="rule.unitSource || rule.unitTarget">
+                {{ rule.unitSource || '-' }} → {{ rule.unitTarget || '-' }}
+              </span>
+              <span *ngIf="!rule.unitSource && !rule.unitTarget">-</span>
+            </td>
+          </ng-container>
+
+          <!-- Priority Column -->
+          <ng-container matColumnDef="priority">
+            <th mat-header-cell *matHeaderCellDef translate>data-mapping.priority</th>
+            <td mat-cell *matCellDef="let rule">{{ rule.priority }}</td>
+          </ng-container>
+
+          <!-- Active Column -->
+          <ng-container matColumnDef="active">
+            <th mat-header-cell *matHeaderCellDef translate>data-mapping.is-active</th>
+            <td mat-cell *matCellDef="let rule">
+              <mat-icon [ngClass]="rule.active ? 'active-icon' : 'inactive-icon'">
+                {{ rule.active ? 'check_circle' : 'cancel' }}
+              </mat-icon>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let rule" class="actions-cell">
+              <button mat-icon-button
+                      [matTooltip]="'action.edit' | translate"
+                      (click)="editRule(rule)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button
+                      [matTooltip]="'action.delete' | translate"
+                      (click)="deleteRule(rule)"
+                      color="warn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+              [ngClass]="{'inactive-row': !row.active}"></tr>
+        </table>
+
+        <div class="no-rules" *ngIf="!isLoading && dataSource.data.length === 0">
+          <mat-icon>list</mat-icon>
+          <span translate>data-mapping.no-rules</span>
+          <button mat-stroked-button color="primary" (click)="showAddRuleForm()">
+            <mat-icon>add</mat-icon>
+            <span translate>data-mapping.create-rule</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rule Form -->
+    <div class="rule-form-section" *ngIf="showRuleForm">
+      <h3>{{ (editingRule ? 'data-mapping.edit-rule' : 'data-mapping.create-rule') | translate }}</h3>
+
+      <form [formGroup]="ruleForm" class="rule-form">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label translate>data-mapping.source-key</mat-label>
+            <input matInput formControlName="sourceKey" required [matAutocomplete]="sourceAuto">
+            <mat-autocomplete #sourceAuto="matAutocomplete">
+              <mat-option *ngFor="let key of getAvailableSourceKeys()" [value]="key">
+                {{ key }}
+              </mat-option>
+            </mat-autocomplete>
+            <mat-error *ngIf="ruleForm.get('sourceKey')?.hasError('required')">
+              {{ 'data-mapping.source-key' | translate }} {{ 'action.required' | translate }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label translate>data-mapping.target-key</mat-label>
+            <input matInput formControlName="targetKey" required [matAutocomplete]="targetAuto">
+            <mat-autocomplete #targetAuto="matAutocomplete">
+              <mat-option *ngFor="let key of getAvailableTargetKeys()" [value]="key">
+                {{ key }}
+              </mat-option>
+            </mat-autocomplete>
+            <mat-error *ngIf="ruleForm.get('targetKey')?.hasError('required')">
+              {{ 'data-mapping.target-key' | translate }} {{ 'action.required' | translate }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label translate>data-mapping.transformation-type</mat-label>
+          <mat-select formControlName="transformationType" required>
+            <mat-option *ngFor="let type of transformationTypes" [value]="type">
+              {{ getTransformationTypeLabel(type) }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label translate>data-mapping.unit-source</mat-label>
+            <input matInput formControlName="unitSource" placeholder="PSI, °C, ft...">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label translate>data-mapping.unit-target</mat-label>
+            <input matInput formControlName="unitTarget" placeholder="PSI, °F, m...">
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label translate>data-mapping.template-description</mat-label>
+          <input matInput formControlName="description">
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="priority-field">
+            <mat-label translate>data-mapping.priority</mat-label>
+            <input matInput type="number" formControlName="priority" min="0">
+          </mat-form-field>
+
+          <mat-checkbox formControlName="active" color="primary" class="active-checkbox">
+            {{ 'data-mapping.is-active' | translate }}
+          </mat-checkbox>
+        </div>
+
+        <div class="form-actions">
+          <button mat-button (click)="cancelRuleForm()" [disabled]="isSaving">
+            {{ 'action.cancel' | translate }}
+          </button>
+          <button mat-raised-button color="primary" (click)="saveRule()" [disabled]="isSaving || ruleForm.invalid">
+            <mat-spinner *ngIf="isSaving" diameter="20" class="button-spinner"></mat-spinner>
+            {{ (editingRule ? 'action.save' : 'action.create') | translate }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-raised-button (click)="close()">
+    {{ 'action.close' | translate }}
+  </button>
+</mat-dialog-actions>

@@ -1,0 +1,120 @@
+/**
+ * Copyright © 2016-2026 The Thingsboard Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.tb-tenant-modules {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tb-modules-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+
+  h3 {
+    margin: 0 0 8px 0;
+  }
+
+  .mat-caption {
+    color: rgba(0, 0, 0, 0.54);
+  }
+}
+
+.tb-modules-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tb-module-item {
+  height: auto !important;
+  min-height: 72px;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+}
+
+.tb-module-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+}
+
+.tb-module-icon {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.tb-module-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tb-module-name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.tb-module-key {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 12px;
+}
+
+.tb-module-description {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tb-module-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.tb-module-toggle {
+  min-width: 100px;
+}
+
+.tb-no-modules {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: rgba(0, 0, 0, 0.38);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 0;
+    text-align: center;
+  }
+}

@@ -16,6 +16,11 @@
 
 -->
 @if (entity) {
+  <mat-tab label="{{ 'nexus-module.modules' | translate }}" #modulesTab="matTab">
+    <tb-tenant-modules [tenantId]="entity.id.id"
+                       [active]="modulesTab.isActive">
+    </tb-tenant-modules>
+  </mat-tab>
   <mat-tab label="{{ 'attribute.attributes' | translate }}" #attributesTab="matTab">
     <tb-attribute-table [defaultAttributeScope]="attributeScopes.SERVER_SCOPE"
                         [active]="attributesTab.isActive"

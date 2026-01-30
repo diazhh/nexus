@@ -1,0 +1,197 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<h2 mat-dialog-title>
+  {{ 'data-mapping.apply-template-wizard' | translate }}
+</h2>
+
+<mat-dialog-content>
+  <div class="wizard-container">
+    <!-- Progress Stepper -->
+    <div class="wizard-stepper">
+      <div class="step" [ngClass]="{'active': currentStep === 1, 'completed': currentStep > 1}">
+        <div class="step-number">1</div>
+        <span class="step-label" translate>data-mapping.select-device</span>
+      </div>
+      <div class="step-connector" [ngClass]="{'completed': currentStep > 1}"></div>
+      <div class="step" [ngClass]="{'active': currentStep === 2, 'completed': currentStep > 2}">
+        <div class="step-number">2</div>
+        <span class="step-label" translate>data-mapping.select-asset</span>
+      </div>
+      <div class="step-connector" [ngClass]="{'completed': currentStep > 2}"></div>
+      <div class="step" [ngClass]="{'active': currentStep === 3, 'completed': currentStep > 3}">
+        <div class="step-number">3</div>
+        <span class="step-label" translate>data-mapping.select-template</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Select Device -->
+    <div class="step-content" *ngIf="currentStep === 1">
+      <h3 translate>data-mapping.select-device</h3>
+      <p class="step-description">{{ 'data-mapping.select-device-description' | translate }}</p>
+
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label translate>action.search</mat-label>
+        <input matInput (input)="onDeviceSearchChange($event)" placeholder="{{ 'action.search' | translate }}">
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <div class="selection-list">
+        <mat-spinner *ngIf="isLoadingDevices" diameter="40"></mat-spinner>
+
+        <mat-selection-list *ngIf="!isLoadingDevices" [multiple]="false">
+          <mat-list-option *ngFor="let device of filteredDevices"
+                          [selected]="isDeviceSelected(device)"
+                          (click)="selectDevice(device)">
+            <mat-icon matListItemIcon>devices_other</mat-icon>
+            <div matListItemTitle>{{ device.name }}</div>
+            <div matListItemLine *ngIf="device.label">{{ device.label }}</div>
+          </mat-list-option>
+        </mat-selection-list>
+
+        <div class="no-items" *ngIf="!isLoadingDevices && filteredDevices.length === 0">
+          <mat-icon>devices_other</mat-icon>
+          <span>{{ 'device.no-devices-text' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="selected-summary" *ngIf="getSelectedDevice()">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ 'data-mapping.device' | translate }}: <strong>{{ getSelectedDevice()?.name }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Step 2: Select Asset -->
+    <div class="step-content" *ngIf="currentStep === 2">
+      <h3 translate>data-mapping.select-asset</h3>
+      <p class="step-description">{{ 'data-mapping.select-asset-description' | translate }}</p>
+
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label translate>action.search</mat-label>
+        <input matInput (input)="onAssetSearchChange($event)" placeholder="{{ 'action.search' | translate }}">
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <div class="selection-list">
+        <mat-spinner *ngIf="isLoadingAssets" diameter="40"></mat-spinner>
+
+        <mat-selection-list *ngIf="!isLoadingAssets" [multiple]="false">
+          <mat-list-option *ngFor="let asset of filteredAssets"
+                          [selected]="isAssetSelected(asset)"
+                          (click)="selectAsset(asset)">
+            <mat-icon matListItemIcon>domain</mat-icon>
+            <div matListItemTitle>{{ asset.name }}</div>
+            <div matListItemLine *ngIf="asset.label">{{ asset.label }}</div>
+          </mat-list-option>
+        </mat-selection-list>
+
+        <div class="no-items" *ngIf="!isLoadingAssets && filteredAssets.length === 0">
+          <mat-icon>domain</mat-icon>
+          <span>{{ 'asset.no-assets-text' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="selected-summary" *ngIf="getSelectedAsset()">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ 'data-mapping.target-asset' | translate }}: <strong>{{ getSelectedAsset()?.name }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Step 3: Select Template -->
+    <div class="step-content" *ngIf="currentStep === 3">
+      <h3 translate>data-mapping.select-template</h3>
+      <p class="step-description">{{ 'data-mapping.select-template-description' | translate }}</p>
+
+      <div class="selection-list">
+        <mat-spinner *ngIf="isLoadingTemplates" diameter="40"></mat-spinner>
+
+        <mat-selection-list *ngIf="!isLoadingTemplates" [multiple]="false">
+          <mat-list-option *ngFor="let template of templates"
+                          [selected]="isTemplateSelected(template)"
+                          (click)="selectTemplate(template)">
+            <mat-icon matListItemIcon>copy_all</mat-icon>
+            <div matListItemTitle>
+              {{ template.name }}
+              <mat-icon *ngIf="template.isDefault" class="default-star">star</mat-icon>
+            </div>
+            <div matListItemLine>
+              <span class="module-badge">{{ template.moduleKey }}</span>
+              <span *ngIf="template.targetAssetType"> | {{ template.targetAssetType }}</span>
+            </div>
+          </mat-list-option>
+        </mat-selection-list>
+
+        <div class="no-items" *ngIf="!isLoadingTemplates && templates.length === 0">
+          <mat-icon>copy_all</mat-icon>
+          <span translate>data-mapping.no-templates</span>
+        </div>
+      </div>
+
+      <div class="selected-summary" *ngIf="getSelectedTemplate()">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ 'data-mapping.template' | translate }}: <strong>{{ getSelectedTemplate()?.name }}</strong></span>
+      </div>
+
+      <!-- Summary before apply -->
+      <div class="apply-summary" *ngIf="getSelectedDevice() && getSelectedAsset() && getSelectedTemplate()">
+        <h4 translate>data-mapping.configuration-summary</h4>
+        <div class="summary-item">
+          <mat-icon>devices_other</mat-icon>
+          <span>{{ 'data-mapping.device' | translate }}: <strong>{{ getSelectedDevice()?.name }}</strong></span>
+        </div>
+        <div class="summary-arrow">
+          <mat-icon>arrow_downward</mat-icon>
+        </div>
+        <div class="summary-item">
+          <mat-icon>domain</mat-icon>
+          <span>{{ 'data-mapping.target-asset' | translate }}: <strong>{{ getSelectedAsset()?.name }}</strong></span>
+        </div>
+        <div class="summary-template">
+          <mat-icon>copy_all</mat-icon>
+          <span>{{ 'data-mapping.template' | translate }}: <strong>{{ getSelectedTemplate()?.name }}</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()" [disabled]="isApplying">
+    {{ 'action.cancel' | translate }}
+  </button>
+
+  <button mat-button (click)="previousStep()" *ngIf="currentStep > 1" [disabled]="isApplying">
+    <mat-icon>arrow_back</mat-icon>
+    {{ 'action.back' | translate }}
+  </button>
+
+  <button mat-raised-button color="primary"
+          (click)="nextStep()"
+          *ngIf="currentStep < totalSteps"
+          [disabled]="!canProceedToNextStep()">
+    {{ 'action.next' | translate }}
+    <mat-icon>arrow_forward</mat-icon>
+  </button>
+
+  <button mat-raised-button color="primary"
+          (click)="apply()"
+          *ngIf="currentStep === totalSteps"
+          [disabled]="isApplying || applyForm.invalid">
+    <mat-spinner *ngIf="isApplying" diameter="20" class="button-spinner"></mat-spinner>
+    {{ 'data-mapping.apply-template' | translate }}
+  </button>
+</mat-dialog-actions>

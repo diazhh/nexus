@@ -126,3 +126,56 @@ CREATE INDEX IF NOT EXISTS idx_nx_dist_log_tenant_time ON nx_distribution_log(te
 CREATE INDEX IF NOT EXISTS idx_nx_dist_log_device ON nx_distribution_log(device_id);
 CREATE INDEX IF NOT EXISTS idx_nx_dist_log_status ON nx_distribution_log(status);
 CREATE INDEX IF NOT EXISTS idx_nx_dist_log_module ON nx_distribution_log(module_key);
+
+-- -----------------------------------------------------
+-- Table: nx_mapping_template
+-- Reusable mapping templates per module (CT, DR, RV)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS nx_mapping_template (
+    id UUID NOT NULL,
+    created_time BIGINT NOT NULL,
+    tenant_id UUID NOT NULL,
+    module_key VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    target_asset_type VARCHAR(100),
+    distribution_mode VARCHAR(50) DEFAULT 'MAPPED',
+    is_default BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    additional_info VARCHAR,
+    CONSTRAINT nx_mapping_template_pkey PRIMARY KEY (id),
+    CONSTRAINT nx_mapping_template_name_unq UNIQUE (tenant_id, module_key, name),
+    CONSTRAINT fk_nx_mapping_template_tenant FOREIGN KEY (tenant_id)
+        REFERENCES tenant(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_nx_mapping_template_tenant ON nx_mapping_template(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_nx_mapping_template_module ON nx_mapping_template(tenant_id, module_key);
+CREATE INDEX IF NOT EXISTS idx_nx_mapping_template_default ON nx_mapping_template(tenant_id, module_key, is_default) WHERE is_default = TRUE;
+CREATE INDEX IF NOT EXISTS idx_nx_mapping_template_active ON nx_mapping_template(tenant_id, is_active) WHERE is_active = TRUE;
+
+-- -----------------------------------------------------
+-- Table: nx_mapping_template_rule
+-- Rules within a mapping template
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS nx_mapping_template_rule (
+    id UUID NOT NULL,
+    created_time BIGINT NOT NULL,
+    template_id UUID NOT NULL,
+    source_key VARCHAR(255) NOT NULL,
+    target_key VARCHAR(255) NOT NULL,
+    transformation_type VARCHAR(50) DEFAULT 'DIRECT',
+    transformation_config VARCHAR,
+    unit_source VARCHAR(50),
+    unit_target VARCHAR(50),
+    description TEXT,
+    priority INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    CONSTRAINT nx_mapping_template_rule_pkey PRIMARY KEY (id),
+    CONSTRAINT nx_mapping_template_rule_source_unq UNIQUE (template_id, source_key),
+    CONSTRAINT fk_nx_mapping_template_rule_template FOREIGN KEY (template_id)
+        REFERENCES nx_mapping_template(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_nx_mapping_template_rule_template ON nx_mapping_template_rule(template_id);
+CREATE INDEX IF NOT EXISTS idx_nx_mapping_template_rule_active ON nx_mapping_template_rule(template_id, is_active) WHERE is_active = TRUE;

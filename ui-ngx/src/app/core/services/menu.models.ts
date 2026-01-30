@@ -142,7 +142,11 @@ export enum MenuId {
   dr_rigs = 'dr_rigs',
   dr_runs = 'dr_runs',
   dr_bhas = 'dr_bhas',
-  dr_wellcontrol_monitor = 'dr_wellcontrol_monitor'
+  dr_wellcontrol_monitor = 'dr_wellcontrol_monitor',
+  // Data Mapping
+  data_mapping = 'data_mapping',
+  data_mapping_templates = 'data_mapping_templates',
+  data_mapping_sources = 'data_mapping_sources'
 }
 
 declare type MenuFilter = (authState: AuthState) => boolean;
@@ -1026,6 +1030,39 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
       path: '/dr/dashboards/wellcontrol',
       icon: 'security'
     }
+  ],
+  // Data Mapping
+  [
+    MenuId.data_mapping,
+    {
+      id: MenuId.data_mapping,
+      name: 'data-mapping.data-mapping',
+      type: 'toggle',
+      path: '/dataMapping',
+      icon: 'account_tree'
+    }
+  ],
+  [
+    MenuId.data_mapping_templates,
+    {
+      id: MenuId.data_mapping_templates,
+      name: 'data-mapping.templates',
+      fullName: 'data-mapping.mapping-templates',
+      type: 'link',
+      path: '/dataMapping/templates',
+      icon: 'copy_all'
+    }
+  ],
+  [
+    MenuId.data_mapping_sources,
+    {
+      id: MenuId.data_mapping_sources,
+      name: 'data-mapping.sources',
+      fullName: 'data-mapping.data-sources',
+      type: 'link',
+      path: '/dataMapping/sources',
+      icon: 'input'
+    }
   ]
 ]);
 
@@ -1048,36 +1085,9 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
       {id: MenuId.home},
       {id: MenuId.tenants},
       {id: MenuId.tenant_profiles},
-      {
-        id: MenuId.coiled_tubing,
-        pages: [
-          {id: MenuId.ct_units},
-          {id: MenuId.ct_reels},
-          {id: MenuId.ct_jobs}
-        ]
-      },
-      {
-        id: MenuId.reservoir_module,
-        pages: [
-          {id: MenuId.rv_dashboard},
-          {id: MenuId.rv_basins},
-          {id: MenuId.rv_fields},
-          {id: MenuId.rv_reservoirs},
-          {id: MenuId.rv_wells},
-          {id: MenuId.rv_calculator}
-        ]
-      },
-      {
-        id: MenuId.drilling_module,
-        pages: [
-          {id: MenuId.dr_realtime_dashboard},
-          {id: MenuId.dr_fleet_dashboard},
-          {id: MenuId.dr_wellcontrol_monitor},
-          {id: MenuId.dr_rigs},
-          {id: MenuId.dr_runs},
-          {id: MenuId.dr_bhas}
-        ]
-      },
+      // NOTA: Módulos operativos (CT, RV, DR) NO se muestran al SYSADMIN
+      // El SYSADMIN es administrativo y asigna módulos a tenants.
+      // Solo los TENANT_ADMIN ven los módulos que tienen asignados.
       {
         id: MenuId.resources,
         pages: [
@@ -1250,6 +1260,13 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         ]
       },
       {id: MenuId.api_usage},
+      {
+        id: MenuId.data_mapping,
+        pages: [
+          {id: MenuId.data_mapping_templates},
+          {id: MenuId.data_mapping_sources}
+        ]
+      },
       {
         id: MenuId.settings,
         pages: [

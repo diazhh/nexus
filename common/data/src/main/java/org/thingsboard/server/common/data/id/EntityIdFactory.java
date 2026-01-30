@@ -92,6 +92,8 @@ public class EntityIdFactory {
             case DATA_MAPPING_RULE -> new DataMappingRuleId(uuid);
             case DATA_AGGREGATION -> new DataAggregationId(uuid);
             case DISTRIBUTION_LOG -> new DistributionLogId(uuid);
+            case MAPPING_TEMPLATE -> new MappingTemplateId(uuid);
+            case MAPPING_TEMPLATE_RULE -> new MappingTemplateRuleId(uuid);
         };
     }
 

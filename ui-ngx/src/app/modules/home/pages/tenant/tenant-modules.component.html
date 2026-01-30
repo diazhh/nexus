@@ -1,0 +1,63 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="tb-tenant-modules">
+  <div class="tb-modules-header mat-padding">
+    <h3>{{ 'nexus-module.assigned-modules' | translate }}</h3>
+    <p class="mat-caption">{{ 'nexus-module.assign-modules-hint' | translate }}</p>
+  </div>
+
+  <mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+
+  <div class="tb-modules-list" *ngIf="!isLoading">
+    <mat-list>
+      <mat-list-item *ngFor="let module of availableModules" class="tb-module-item">
+        <div class="tb-module-content">
+          <mat-icon class="tb-module-icon">{{ getModuleIcon(module) }}</mat-icon>
+          <div class="tb-module-info">
+            <span class="tb-module-name">{{ module.name }}</span>
+            <span class="tb-module-key mat-caption">{{ module.moduleKey }}</span>
+            <span class="tb-module-description mat-caption" *ngIf="module.description">
+              {{ module.description }}
+            </span>
+          </div>
+          <div class="tb-module-actions">
+            <mat-checkbox
+              [checked]="isModuleAssigned(module)"
+              (change)="toggleModuleAssignment(module)"
+              color="primary">
+              {{ 'nexus-module.assigned' | translate }}
+            </mat-checkbox>
+            <mat-slide-toggle
+              *ngIf="isModuleAssigned(module)"
+              [checked]="isModuleActive(module)"
+              (change)="toggleModuleActivation(module)"
+              color="accent"
+              class="tb-module-toggle">
+              {{ isModuleActive(module) ? ('nexus-module.active' | translate) : ('nexus-module.inactive' | translate) }}
+            </mat-slide-toggle>
+          </div>
+        </div>
+      </mat-list-item>
+    </mat-list>
+
+    <div class="tb-no-modules" *ngIf="availableModules.length === 0">
+      <mat-icon>extension_off</mat-icon>
+      <p>{{ 'nexus-module.no-modules-available' | translate }}</p>
+    </div>
+  </div>
+</div>

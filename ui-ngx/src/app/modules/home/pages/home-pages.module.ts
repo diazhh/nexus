@@ -52,6 +52,7 @@ import { RoleModule } from '@modules/home/pages/role/role.module';
 import { CTModule } from '@modules/home/pages/ct/ct.module';
 import { RvModule } from '@modules/home/pages/rv/rv.module';
 import { DrModule } from '@modules/home/pages/dr/dr.module';
+import { DataMappingModule } from '@home/pages/admin/data-mapping/data-mapping.module';
 
 @NgModule({
   exports: [
@@ -90,7 +91,8 @@ import { DrModule } from '@modules/home/pages/dr/dr.module';
     AiModelModule,
     CTModule,
     RvModule,
-    DrModule
+    DrModule,
+    DataMappingModule
   ]
 })
 export class HomePagesModule { }
