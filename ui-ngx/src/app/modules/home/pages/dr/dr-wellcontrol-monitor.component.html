@@ -1,0 +1,258 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="dr-wellcontrol-monitor">
+  <mat-toolbar class="monitor-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2>Well Control Monitor</h2>
+    <span class="fill-space"></span>
+    <div class="overall-status" [style.background-color]="getStatusColor(overallStatus)">
+      <mat-icon>{{ getStatusIcon(overallStatus) }}</mat-icon>
+      <span>{{ overallStatus }}</span>
+    </div>
+    <button mat-button (click)="refreshData()">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  </mat-toolbar>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div class="monitor-content" *ngIf="!isLoading">
+    <!-- Active Alerts -->
+    <div class="alerts-section" *ngIf="activeAlerts.length > 0">
+      <mat-card class="alert-card">
+        <mat-card-header>
+          <mat-icon mat-card-avatar class="alert-icon">warning</mat-icon>
+          <mat-card-title>Active Alerts ({{ activeAlerts.length }})</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="alert-list">
+            <div class="alert-item" *ngFor="let alert of activeAlerts">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ alert }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Main Indicators Grid -->
+    <div class="indicators-grid">
+      <mat-card class="indicator-card" *ngFor="let indicator of indicators"
+                [class.normal]="indicator.status === 'NORMAL'"
+                [class.caution]="indicator.status === 'CAUTION'"
+                [class.warning]="indicator.status === 'WARNING'"
+                [class.critical]="indicator.status === 'CRITICAL'">
+        <mat-card-content>
+          <div class="indicator-header">
+            <span class="indicator-name">{{ indicator.name }}</span>
+            <mat-icon [style.color]="getStatusColor(indicator.status)">
+              {{ getStatusIcon(indicator.status) }}
+            </mat-icon>
+          </div>
+          <div class="indicator-value">
+            {{ formatNumber(indicator.value, 2) }}
+            <span class="indicator-unit">{{ indicator.unit }}</span>
+          </div>
+          <div class="indicator-threshold">
+            Threshold: {{ formatNumber(indicator.threshold, 2) }} {{ indicator.unit }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Detailed Panels -->
+    <div class="details-grid">
+      <!-- Pressure Window -->
+      <mat-card class="detail-card">
+        <mat-card-header>
+          <mat-card-title>Pressure Window</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="pressure-window">
+            <div class="pressure-bar">
+              <div class="pressure-zone fracture"
+                   [style.height.%]="100 - (fracturePressurePpg / 20 * 100)">
+                <span class="zone-label">Fracture: {{ formatNumber(fracturePressurePpg, 1) }} ppg</span>
+              </div>
+              <div class="pressure-zone operating"
+                   [style.height.%]="(fracturePressurePpg - formationPressurePpg) / 20 * 100">
+                <div class="current-marker"
+                     [style.bottom.%]="((currentEcdPpg - formationPressurePpg) / (fracturePressurePpg - formationPressurePpg)) * 100">
+                  <span>ECD: {{ formatNumber(currentEcdPpg, 2) }}</span>
+                </div>
+                <div class="mud-weight-marker"
+                     [style.bottom.%]="((currentMudWeightPpg - formationPressurePpg) / (fracturePressurePpg - formationPressurePpg)) * 100">
+                  <span>MW: {{ formatNumber(currentMudWeightPpg, 2) }}</span>
+                </div>
+              </div>
+              <div class="pressure-zone pore"
+                   [style.height.%]="formationPressurePpg / 20 * 100">
+                <span class="zone-label">Pore: {{ formatNumber(formationPressurePpg, 1) }} ppg</span>
+              </div>
+            </div>
+            <div class="pressure-legend">
+              <div class="legend-item">
+                <span class="legend-color fracture"></span> Fracture Zone
+              </div>
+              <div class="legend-item">
+                <span class="legend-color operating"></span> Operating Window
+              </div>
+              <div class="legend-item">
+                <span class="legend-color pore"></span> Below Pore Pressure
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Kick Tolerance Details -->
+      <mat-card class="detail-card">
+        <mat-card-header>
+          <mat-card-title>Kick Tolerance</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Max Kick Volume</span>
+              <span class="value">{{ formatNumber(maxKickVolumesBbl, 1) }} bbl</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Max Influx Height</span>
+              <span class="value">{{ formatNumber(maxInfluxHeightFt, 0) }} ft</span>
+            </div>
+            <div class="detail-item" *ngIf="kickTolerance">
+              <span class="label">MAASP</span>
+              <span class="value">{{ formatNumber(kickTolerance.maasp, 0) }} psi</span>
+            </div>
+            <div class="detail-item" *ngIf="kickTolerance">
+              <span class="label">Safety Margin</span>
+              <span class="value">{{ formatNumber(kickTolerance.safetyMarginPpg, 2) }} ppg</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Swab/Surge Analysis -->
+      <mat-card class="detail-card">
+        <mat-card-header>
+          <mat-card-title>Swab/Surge Analysis</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Swab Pressure</span>
+              <span class="value">{{ formatNumber(swabPressurePsi, 0) }} psi</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Surge Pressure</span>
+              <span class="value">{{ formatNumber(surgePressurePsi, 0) }} psi</span>
+            </div>
+            <div class="detail-item" *ngIf="swabSurgeResult">
+              <span class="label">Swab ECD</span>
+              <span class="value">{{ formatNumber(swabSurgeResult.swabEcdPpg, 2) }} ppg</span>
+            </div>
+            <div class="detail-item" *ngIf="swabSurgeResult">
+              <span class="label">Surge ECD</span>
+              <span class="value">{{ formatNumber(swabSurgeResult.surgeEcdPpg, 2) }} ppg</span>
+            </div>
+            <div class="detail-item" *ngIf="swabSurgeResult">
+              <span class="label">Max Safe Trip Speed</span>
+              <span class="value">{{ formatNumber(swabSurgeResult.maxSafeTripSpeedFtMin, 0) }} ft/min</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- ECD Details -->
+      <mat-card class="detail-card">
+        <mat-card-header>
+          <mat-card-title>ECD Analysis</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Static MW</span>
+              <span class="value">{{ formatNumber(currentMudWeightPpg, 2) }} ppg</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">ECD</span>
+              <span class="value">{{ formatNumber(currentEcdPpg, 2) }} ppg</span>
+            </div>
+            <div class="detail-item" *ngIf="ecdResult">
+              <span class="label">Hydrostatic Pressure</span>
+              <span class="value">{{ formatNumber(ecdResult.hydrostaticPressurePsi, 0) }} psi</span>
+            </div>
+            <div class="detail-item" *ngIf="ecdResult">
+              <span class="label">Total BHP</span>
+              <span class="value">{{ formatNumber(ecdResult.totalBottomholePressurePsi, 0) }} psi</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">ECD Margin to Frac</span>
+              <span class="value" [class.danger]="fracturePressurePpg - currentEcdPpg < 0.5">
+                {{ formatNumber(fracturePressurePpg - currentEcdPpg, 2) }} ppg
+              </span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Simulation Controls (for demo) -->
+    <mat-card class="simulation-card">
+      <mat-card-header>
+        <mat-card-title>Simulation Controls</mat-card-title>
+        <mat-card-subtitle>For demonstration purposes</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="simulation-controls">
+          <button mat-raised-button color="warn" (click)="simulateKick()">
+            <mat-icon>warning</mat-icon> Simulate Kick
+          </button>
+          <button mat-raised-button color="accent" (click)="simulateLostCirculation()">
+            <mat-icon>error</mat-icon> Simulate Lost Circulation
+          </button>
+          <button mat-raised-button (click)="resetSimulation()">
+            <mat-icon>refresh</mat-icon> Reset
+          </button>
+        </div>
+        <div class="simulation-inputs">
+          <mat-form-field appearance="outline">
+            <mat-label>Current Depth (ft)</mat-label>
+            <input matInput type="number" [(ngModel)]="currentDepthFt" (change)="refreshData()">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Mud Weight (ppg)</mat-label>
+            <input matInput type="number" [(ngModel)]="currentMudWeightPpg" (change)="refreshData()">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Formation Pressure (ppg)</mat-label>
+            <input matInput type="number" [(ngModel)]="formationPressurePpg" (change)="refreshData()">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Fracture Pressure (ppg)</mat-label>
+            <input matInput type="number" [(ngModel)]="fracturePressurePpg" (change)="refreshData()">
+          </mat-form-field>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

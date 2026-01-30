@@ -1,0 +1,142 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<h2 mat-dialog-title>{{ isEdit ? 'Edit Rig' : 'Create New Rig' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="rigForm" class="rig-form">
+    <!-- Basic Information -->
+    <div class="form-section">
+      <h4>Basic Information</h4>
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Rig Code</mat-label>
+          <input matInput formControlName="rigCode" placeholder="e.g., RIG-001">
+          <mat-error *ngIf="rigForm.get('rigCode').hasError('required')">Rig code is required</mat-error>
+          <mat-error *ngIf="rigForm.get('rigCode').hasError('maxlength')">Max 50 characters</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Rig Name</mat-label>
+          <input matInput formControlName="rigName" placeholder="e.g., Drilling Rig Alpha">
+          <mat-error *ngIf="rigForm.get('rigName').hasError('required')">Rig name is required</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Rig Type</mat-label>
+          <mat-select formControlName="rigType">
+            <mat-option *ngFor="let type of rigTypes" [value]="type">{{ type }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="operationalStatus">
+            <mat-option *ngFor="let status of rigStatuses" [value]="status">{{ status }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Contractor</mat-label>
+          <input matInput formControlName="contractor" placeholder="Drilling contractor name">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field full-width">
+          <mat-label>Current Location</mat-label>
+          <input matInput formControlName="currentLocation" placeholder="Location or coordinates">
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Equipment Details -->
+    <div class="form-section">
+      <h4>Equipment Details</h4>
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Manufacturer</mat-label>
+          <input matInput formControlName="manufacturer">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Model</mat-label>
+          <input matInput formControlName="model">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field-small">
+          <mat-label>Year Built</mat-label>
+          <input matInput type="number" formControlName="yearBuilt">
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Specifications -->
+    <div class="form-section">
+      <h4>Specifications</h4>
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="form-field-small">
+          <mat-label>Max Hookload (tons)</mat-label>
+          <input matInput type="number" formControlName="maxHookloadTons">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field-small">
+          <mat-label>Max Depth (ft)</mat-label>
+          <input matInput type="number" formControlName="maxDepthCapacityFt">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field-small">
+          <mat-label>Drawworks (HP)</mat-label>
+          <input matInput type="number" formControlName="drawworksHp">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="form-field-small">
+          <mat-label>Mud Pump Count</mat-label>
+          <input matInput type="number" formControlName="mudPumpCount">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field-small">
+          <mat-label>Mud Pump (HP)</mat-label>
+          <input matInput type="number" formControlName="mudPumpHp">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field-small">
+          <mat-label>Top Drive (tons)</mat-label>
+          <input matInput type="number" formControlName="topDriveCapacityTons">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field-small">
+          <mat-label>Rotary Table (in)</mat-label>
+          <input matInput type="number" formControlName="rotaryTableSizeIn">
+        </mat-form-field>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()" [disabled]="isSubmitting">Cancel</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()"
+          [disabled]="rigForm.invalid || isSubmitting">
+    <mat-spinner *ngIf="isSubmitting" diameter="20" class="button-spinner"></mat-spinner>
+    <span *ngIf="!isSubmitting">{{ isEdit ? 'Save' : 'Create' }}</span>
+  </button>
+</mat-dialog-actions>

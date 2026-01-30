@@ -1,0 +1,90 @@
+/**
+ * Copyright © 2016-2026 The Thingsboard Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+.dr-realtime-dashboard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .dashboard-toolbar {
+    background: white;
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    h2 { margin: 0; font-size: 20px; font-weight: 500; }
+    .fill-space { flex: 1 1 auto; }
+  }
+
+  .loading-container { display: flex; justify-content: center; align-items: center; padding: 60px; }
+
+  .dashboard-content {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+    background: #f5f5f5;
+  }
+
+  .no-data {
+    text-align: center;
+    padding: 60px;
+    color: rgba(0, 0, 0, 0.54);
+    mat-icon { font-size: 64px; width: 64px; height: 64px; margin-bottom: 16px; }
+  }
+
+  .rig-dashboard {
+    .rig-info-card {
+      margin-bottom: 24px;
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        color: white;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        .info-item {
+          .label { color: rgba(0, 0, 0, 0.6); margin-right: 8px; }
+          .value { font-weight: 500; }
+        }
+      }
+    }
+
+    .widgets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+
+      .widget-card {
+        .widget-content {
+          text-align: center;
+          padding: 16px 0;
+          .big-number { font-size: 36px; font-weight: 500; color: #1976d2; }
+          .unit { font-size: 14px; color: rgba(0, 0, 0, 0.6); }
+        }
+      }
+    }
+
+    .note {
+      text-align: center;
+      color: rgba(0, 0, 0, 0.54);
+      font-style: italic;
+    }
+  }
+}

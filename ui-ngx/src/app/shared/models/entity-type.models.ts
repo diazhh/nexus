@@ -55,6 +55,8 @@ export enum EntityType {
   API_KEY = 'API_KEY',
   ROLE = 'ROLE',
   ROLE_PERMISSION = 'ROLE_PERMISSION',
+  NEXUS_MODULE = 'NEXUS_MODULE',
+  TENANT_MODULE = 'TENANT_MODULE',
 }
 
 export enum AliasEntityType {

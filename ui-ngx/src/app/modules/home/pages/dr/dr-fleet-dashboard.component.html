@@ -1,0 +1,115 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="dr-fleet-dashboard">
+  <mat-toolbar class="dashboard-toolbar">
+    <h2>Fleet Management</h2>
+    <span class="fill-space"></span>
+    <button mat-button (click)="loadFleetData()">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  </mat-toolbar>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div class="dashboard-content" *ngIf="!isLoading">
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ totalRigs }}</div>
+          <div class="stat-label">Total Rigs</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card drilling">
+        <mat-card-content>
+          <div class="stat-value">{{ drillingRigs }}</div>
+          <div class="stat-label">Drilling</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card standby">
+        <mat-card-content>
+          <div class="stat-value">{{ standbyRigs }}</div>
+          <div class="stat-label">Standby</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card maintenance">
+        <mat-card-content>
+          <div class="stat-value">{{ maintenanceRigs }}</div>
+          <div class="stat-label">Maintenance</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ (totalFootage / 1000000).toFixed(2) }}M</div>
+          <div class="stat-label">Total Footage (ft)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ avgUtilization.toFixed(1) }}%</div>
+          <div class="stat-label">Utilization</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Rigs Grid -->
+    <h3>Rig Fleet</h3>
+    <div class="rigs-grid">
+      <mat-card class="rig-card" *ngFor="let rig of rigs" (click)="viewRig(rig)">
+        <mat-card-header>
+          <mat-icon mat-card-avatar>precision_manufacturing</mat-icon>
+          <mat-card-title>{{ rig.rigCode }}</mat-card-title>
+          <mat-card-subtitle>{{ rig.rigName }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="rig-status">
+            <span class="status-badge" [style.background-color]="getStatusColor(rig.operationalStatus)">
+              {{ rig.operationalStatus }}
+            </span>
+          </div>
+          <div class="rig-info">
+            <div class="info-row">
+              <span class="label">Type:</span>
+              <span class="value">{{ rig.rigType }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Location:</span>
+              <span class="value">{{ rig.currentLocation || 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Current Well:</span>
+              <span class="value">{{ rig.currentWellName || 'None' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Wells Drilled:</span>
+              <span class="value">{{ rig.totalWellsDrilled || 0 }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div *ngIf="rigs.length === 0" class="no-data">
+      <mat-icon>precision_manufacturing</mat-icon>
+      <h3>No Rigs Found</h3>
+      <p>Add rigs to start managing your drilling fleet.</p>
+    </div>
+  </div>
+</div>

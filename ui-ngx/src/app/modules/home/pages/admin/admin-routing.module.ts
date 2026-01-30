@@ -363,6 +363,16 @@ const routes: Routes = [
           }
         }
       },
+      {
+        path: 'nexus-modules',
+        loadChildren: () => import('@home/pages/admin/nexus-modules/nexus-modules.module').then(m => m.NexusModulesModule),
+        data: {
+          auth: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN],
+          breadcrumb: {
+            menuId: MenuId.nexus_modules
+          }
+        }
+      },
       ...aiModelRoutes,
       {
         path: 'security-settings',

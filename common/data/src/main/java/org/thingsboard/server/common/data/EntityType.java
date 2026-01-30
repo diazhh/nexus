@@ -74,7 +74,19 @@ public enum EntityType {
     },
     API_KEY(44),
     ROLE(45),
-    TEMPLATE(46);
+    TEMPLATE(46),
+    NEXUS_MODULE(47, "nx_module") {
+        @Override
+        public String getNormalName() {
+            return "Nexus Module";
+        }
+    },
+    TENANT_MODULE(48, "nx_tenant_module") {
+        @Override
+        public String getNormalName() {
+            return "Tenant Module";
+        }
+    };
 
     @Getter
     private final int protoNumber; // Corresponds to EntityTypeProto

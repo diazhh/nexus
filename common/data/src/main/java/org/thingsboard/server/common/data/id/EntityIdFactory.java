@@ -86,6 +86,8 @@ public class EntityIdFactory {
             case API_KEY -> new ApiKeyId(uuid);
             case ROLE -> new RoleId(uuid);
             case TEMPLATE -> new TemplateId(uuid);
+            case NEXUS_MODULE -> new NexusModuleId(uuid);
+            case TENANT_MODULE -> new TenantModuleId(uuid);
         };
     }
 

@@ -53,6 +53,7 @@
         <module>discovery-api</module>
         <module>ct-module</module>
         <module>rv-module</module>
+        <module>dr-module</module>
     </modules>
 
 </project>

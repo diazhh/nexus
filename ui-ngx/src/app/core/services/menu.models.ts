@@ -31,6 +31,7 @@ export interface MenuSection {
   opened?: boolean;
   rootOnly?: boolean;
   customTranslate?: boolean;
+  moduleKey?: string; // NEXUS module key for filtering (CT, RV, DR, etc.)
 }
 
 export interface MenuReference {
@@ -128,7 +129,20 @@ export enum MenuId {
   rv_fields = 'rv_fields',
   rv_reservoirs = 'rv_reservoirs',
   rv_wells = 'rv_wells',
-  rv_calculator = 'rv_calculator'
+  rv_calculator = 'rv_calculator',
+  // NEXUS Module Management
+  nexus_modules = 'nexus_modules',
+  // Drilling Module (dr-module)
+  drilling_module = 'drilling_module',
+  dr_dashboards = 'dr_dashboards',
+  dr_realtime_dashboard = 'dr_realtime_dashboard',
+  dr_fleet_dashboard = 'dr_fleet_dashboard',
+  dr_directional_dashboard = 'dr_directional_dashboard',
+  dr_mudlog_dashboard = 'dr_mudlog_dashboard',
+  dr_rigs = 'dr_rigs',
+  dr_runs = 'dr_runs',
+  dr_bhas = 'dr_bhas',
+  dr_wellcontrol_monitor = 'dr_wellcontrol_monitor'
 }
 
 declare type MenuFilter = (authState: AuthState) => boolean;
@@ -320,13 +334,25 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
     }
   ],
   [
+    MenuId.nexus_modules,
+    {
+      id: MenuId.nexus_modules,
+      name: 'nexus-module.nexus-modules',
+      fullName: 'nexus-module.module-management',
+      type: 'link',
+      path: '/settings/nexus-modules',
+      icon: 'extension'
+    }
+  ],
+  [
     MenuId.coiled_tubing,
     {
       id: MenuId.coiled_tubing,
       name: 'ct.coiled-tubing',
       type: 'toggle',
       path: '/ct',
-      icon: 'mdi:pipe'
+      icon: 'mdi:pipe',
+      moduleKey: 'CT'
     }
   ],
   [
@@ -831,7 +857,8 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
       name: 'rv.reservoir-module',
       type: 'toggle',
       path: '/rv',
-      icon: 'mdi:oil'
+      icon: 'mdi:oil',
+      moduleKey: 'RV'
     }
   ],
   [
@@ -899,6 +926,106 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
       path: '/rv/calculator',
       icon: 'mdi:calculator'
     }
+  ],
+  // Drilling Module (dr-module)
+  [
+    MenuId.drilling_module,
+    {
+      id: MenuId.drilling_module,
+      name: 'dr.drilling-module',
+      type: 'toggle',
+      path: '/dr',
+      icon: 'mdi:oil-lamp',
+      moduleKey: 'DR'
+    }
+  ],
+  [
+    MenuId.dr_rigs,
+    {
+      id: MenuId.dr_rigs,
+      name: 'dr.rigs',
+      fullName: 'dr.dr-rigs',
+      type: 'link',
+      path: '/dr/rigs',
+      icon: 'precision_manufacturing'
+    }
+  ],
+  [
+    MenuId.dr_runs,
+    {
+      id: MenuId.dr_runs,
+      name: 'dr.runs',
+      fullName: 'dr.dr-runs',
+      type: 'link',
+      path: '/dr/runs',
+      icon: 'mdi:timer-sand'
+    }
+  ],
+  [
+    MenuId.dr_bhas,
+    {
+      id: MenuId.dr_bhas,
+      name: 'dr.bhas',
+      fullName: 'dr.dr-bhas',
+      type: 'link',
+      path: '/dr/bhas',
+      icon: 'mdi:pipe-wrench'
+    }
+  ],
+  [
+    MenuId.dr_realtime_dashboard,
+    {
+      id: MenuId.dr_realtime_dashboard,
+      name: 'dr.realtime',
+      fullName: 'dr.realtime-dashboard',
+      type: 'link',
+      path: '/dr/dashboards/realtime',
+      icon: 'dashboard'
+    }
+  ],
+  [
+    MenuId.dr_fleet_dashboard,
+    {
+      id: MenuId.dr_fleet_dashboard,
+      name: 'dr.fleet',
+      fullName: 'dr.fleet-dashboard',
+      type: 'link',
+      path: '/dr/dashboards/fleet',
+      icon: 'dashboard'
+    }
+  ],
+  [
+    MenuId.dr_directional_dashboard,
+    {
+      id: MenuId.dr_directional_dashboard,
+      name: 'dr.directional',
+      fullName: 'dr.directional-dashboard',
+      type: 'link',
+      path: '/dr/dashboards/directional',
+      icon: 'explore'
+    }
+  ],
+  [
+    MenuId.dr_mudlog_dashboard,
+    {
+      id: MenuId.dr_mudlog_dashboard,
+      name: 'dr.mudlog',
+      fullName: 'dr.mudlog-dashboard',
+      type: 'link',
+      path: '/dr/dashboards/mudlog',
+      icon: 'analytics'
+    }
+  ],
+  [
+    MenuId.dr_wellcontrol_monitor,
+    {
+      id: MenuId.dr_wellcontrol_monitor,
+      name: 'dr.wellcontrol',
+      fullName: 'dr.wellcontrol-monitor',
+      type: 'link',
+      path: '/dr/dashboards/wellcontrol',
+      icon: 'security'
+    }
   ]
 ]);
 
@@ -941,6 +1068,17 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         ]
       },
       {
+        id: MenuId.drilling_module,
+        pages: [
+          {id: MenuId.dr_realtime_dashboard},
+          {id: MenuId.dr_fleet_dashboard},
+          {id: MenuId.dr_wellcontrol_monitor},
+          {id: MenuId.dr_rigs},
+          {id: MenuId.dr_runs},
+          {id: MenuId.dr_bhas}
+        ]
+      },
+      {
         id: MenuId.resources,
         pages: [
           {
@@ -980,7 +1118,8 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
           {id: MenuId.general},
           {id: MenuId.mail_server},
           {id: MenuId.notification_settings},
-          {id: MenuId.queues}
+          {id: MenuId.queues},
+          {id: MenuId.nexus_modules}
         ]
       },
       {
@@ -1052,6 +1191,17 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         ]
       },
       {
+        id: MenuId.drilling_module,
+        pages: [
+          {id: MenuId.dr_realtime_dashboard},
+          {id: MenuId.dr_fleet_dashboard},
+          {id: MenuId.dr_wellcontrol_monitor},
+          {id: MenuId.dr_rigs},
+          {id: MenuId.dr_runs},
+          {id: MenuId.dr_bhas}
+        ]
+      },
+      {
         id: MenuId.edge_management,
         pages: [
           {id: MenuId.edges},
@@ -1108,7 +1258,8 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
           {id: MenuId.repository_settings},
           {id: MenuId.auto_commit_settings},
           {id: MenuId.trendz_settings},
-          {id: MenuId.ai_models}
+          {id: MenuId.ai_models},
+          {id: MenuId.nexus_modules}
         ]
       },
       {
@@ -1299,3 +1450,104 @@ const homeReferenceToHomeSection = (availableMenuSections: MenuSection[], refere
     return undefined;
   }
 };
+
+/**
+ * Filters menu sections based on active module keys for the tenant.
+ * Removes menu items that require a module the tenant doesn't have access to.
+ *
+ * @param menuSections The menu sections to filter
+ * @param activeModuleKeys Set of module keys the tenant has access to (e.g., ['CT', 'RV', 'DR'])
+ * @returns Filtered menu sections
+ */
+export const filterMenuByModules = (menuSections: MenuSection[], activeModuleKeys: Set<string>): MenuSection[] => {
+  return menuSections
+    .filter(section => {
+      // If section has a moduleKey, check if tenant has access
+      if (section.moduleKey) {
+        return activeModuleKeys.has(section.moduleKey);
+      }
+      return true;
+    })
+    .map(section => {
+      // If section has pages, filter them recursively
+      if (section.pages?.length) {
+        const filteredPages = filterMenuByModules(section.pages, activeModuleKeys);
+        // Only include section if it has remaining pages (for toggle types)
+        if (section.type === 'toggle' && filteredPages.length === 0) {
+          return null;
+        }
+        return {
+          ...section,
+          pages: filteredPages
+        };
+      }
+      return section;
+    })
+    .filter(section => section !== null) as MenuSection[];
+};
+
+/**
+ * Build user menu with module filtering for TENANT_ADMIN and CUSTOMER_USER.
+ * SYS_ADMIN sees all modules regardless of tenant assignments.
+ *
+ * @param authState Current auth state
+ * @param activeModuleKeys Optional set of module keys (only needed for non-SYS_ADMIN)
+ * @returns Filtered menu sections
+ */
+export const buildUserMenuWithModules = (authState: AuthState, activeModuleKeys?: Set<string>): Array<MenuSection> => {
+  // Build base menu
+  const baseMenu = buildUserMenu(authState);
+
+  // SYS_ADMIN sees all modules
+  if (authState.authUser.authority === Authority.SYS_ADMIN) {
+    return baseMenu;
+  }
+
+  // For other authorities, filter by module access
+  if (activeModuleKeys && activeModuleKeys.size > 0) {
+    return filterMenuByModules(baseMenu, activeModuleKeys);
+  }
+
+  // If no module keys provided, show only non-module menu items
+  return filterMenuByModules(baseMenu, new Set());
+};
+
+/**
+ * Gets the module key associated with a menu section ID
+ */
+export const getMenuModuleKey = (menuId: MenuId): string | undefined => {
+  const section = menuSectionMap.get(menuId);
+  return section?.moduleKey;
+};
+
+/**
+ * Map of MenuId to module key for quick lookup
+ */
+export const menuModuleKeyMap = new Map<MenuId, string>([
+  [MenuId.coiled_tubing, 'CT'],
+  [MenuId.ct_units, 'CT'],
+  [MenuId.ct_reels, 'CT'],
+  [MenuId.ct_jobs, 'CT'],
+  [MenuId.ct_dashboards, 'CT'],
+  [MenuId.ct_realtime_dashboard, 'CT'],
+  [MenuId.ct_fleet_dashboard, 'CT'],
+  [MenuId.ct_analytics_dashboard, 'CT'],
+  [MenuId.ct_reports, 'CT'],
+  [MenuId.reservoir_module, 'RV'],
+  [MenuId.rv_dashboard, 'RV'],
+  [MenuId.rv_basins, 'RV'],
+  [MenuId.rv_fields, 'RV'],
+  [MenuId.rv_reservoirs, 'RV'],
+  [MenuId.rv_wells, 'RV'],
+  [MenuId.rv_calculator, 'RV'],
+  [MenuId.drilling_module, 'DR'],
+  [MenuId.dr_dashboards, 'DR'],
+  [MenuId.dr_realtime_dashboard, 'DR'],
+  [MenuId.dr_fleet_dashboard, 'DR'],
+  [MenuId.dr_directional_dashboard, 'DR'],
+  [MenuId.dr_mudlog_dashboard, 'DR'],
+  [MenuId.dr_rigs, 'DR'],
+  [MenuId.dr_runs, 'DR'],
+  [MenuId.dr_bhas, 'DR'],
+  [MenuId.dr_wellcontrol_monitor, 'DR']
+]);

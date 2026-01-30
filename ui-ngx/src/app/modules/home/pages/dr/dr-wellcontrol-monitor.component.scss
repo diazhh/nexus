@@ -1,0 +1,391 @@
+/**
+ * Copyright © 2016-2026 The Thingsboard Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+.dr-wellcontrol-monitor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #1a1a2e;
+
+  .monitor-toolbar {
+    background: #16213e;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+
+    h2 {
+      margin: 0 0 0 8px;
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .fill-space {
+      flex: 1 1 auto;
+    }
+
+    .overall-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: white;
+      font-weight: 600;
+      margin-right: 16px;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    button {
+      color: white;
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px;
+  }
+
+  .monitor-content {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+  }
+
+  .alerts-section {
+    margin-bottom: 24px;
+
+    .alert-card {
+      background: linear-gradient(135deg, #b71c1c 0%, #f44336 100%);
+      color: white;
+
+      .alert-icon {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+
+      .alert-list {
+        .alert-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+          }
+        }
+      }
+    }
+  }
+
+  .indicators-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .indicator-card {
+    background: #16213e;
+    color: white;
+    border-left: 4px solid #4caf50;
+    transition: transform 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+
+    &.normal {
+      border-left-color: #4caf50;
+    }
+
+    &.caution {
+      border-left-color: #ff9800;
+    }
+
+    &.warning {
+      border-left-color: #f44336;
+    }
+
+    &.critical {
+      border-left-color: #b71c1c;
+      animation: pulse 1s infinite;
+    }
+
+    .indicator-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+
+      .indicator-name {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.7);
+      }
+    }
+
+    .indicator-value {
+      font-size: 32px;
+      font-weight: 600;
+      font-family: 'Roboto Mono', monospace;
+
+      .indicator-unit {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.5);
+        margin-left: 4px;
+      }
+    }
+
+    .indicator-threshold {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 8px;
+    }
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .detail-card {
+    background: #16213e;
+    color: white;
+
+    mat-card-title {
+      font-size: 16px;
+      color: white;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+
+      .detail-item {
+        display: flex;
+        flex-direction: column;
+
+        .label {
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.5);
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+
+        .value {
+          font-size: 18px;
+          font-weight: 500;
+          font-family: 'Roboto Mono', monospace;
+
+          &.danger {
+            color: #f44336;
+          }
+        }
+      }
+    }
+
+    .pressure-window {
+      display: flex;
+      gap: 24px;
+
+      .pressure-bar {
+        width: 80px;
+        height: 300px;
+        display: flex;
+        flex-direction: column;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+
+        .pressure-zone {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          &.fracture {
+            background: linear-gradient(to bottom, #f44336, #ff5722);
+          }
+
+          &.operating {
+            background: linear-gradient(to bottom, #4caf50, #8bc34a);
+          }
+
+          &.pore {
+            background: linear-gradient(to bottom, #2196f3, #03a9f4);
+          }
+
+          .zone-label {
+            font-size: 10px;
+            color: white;
+            text-align: center;
+            padding: 4px;
+          }
+        }
+
+        .current-marker,
+        .mud-weight-marker {
+          position: absolute;
+          left: 100%;
+          margin-left: 8px;
+          white-space: nowrap;
+          font-size: 11px;
+          padding: 2px 6px;
+          border-radius: 3px;
+
+          &::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 4px solid transparent;
+          }
+        }
+
+        .current-marker {
+          background: #ff5722;
+
+          &::before {
+            border-right-color: #ff5722;
+          }
+        }
+
+        .mud-weight-marker {
+          background: #2196f3;
+
+          &::before {
+            border-right-color: #2196f3;
+          }
+        }
+      }
+
+      .pressure-legend {
+        flex: 1;
+
+        .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+          font-size: 13px;
+
+          .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+
+            &.fracture {
+              background: #f44336;
+            }
+
+            &.operating {
+              background: #4caf50;
+            }
+
+            &.pore {
+              background: #2196f3;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .simulation-card {
+    background: #16213e;
+    color: white;
+
+    mat-card-title {
+      color: white;
+    }
+
+    mat-card-subtitle {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .simulation-controls {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .simulation-inputs {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+
+      mat-form-field {
+        flex: 1 1 200px;
+
+        ::ng-deep {
+          .mat-mdc-text-field-wrapper {
+            background: rgba(255, 255, 255, 0.05);
+          }
+
+          .mat-mdc-form-field-flex {
+            color: white;
+          }
+
+          .mdc-floating-label {
+            color: rgba(255, 255, 255, 0.7);
+          }
+
+          .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__leading,
+          .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__notch,
+          .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__trailing {
+            border-color: rgba(255, 255, 255, 0.3);
+          }
+
+          input {
+            color: white;
+          }
+        }
+      }
+    }
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(183, 28, 28, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(183, 28, 28, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(183, 28, 28, 0);
+    }
+  }
+}

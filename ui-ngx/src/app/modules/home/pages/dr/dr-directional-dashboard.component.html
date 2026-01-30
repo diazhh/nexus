@@ -1,0 +1,276 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="dr-directional-dashboard">
+  <mat-toolbar class="dashboard-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2>Directional Drilling Dashboard</h2>
+    <span class="fill-space"></span>
+    <button mat-button (click)="loadData()">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  </mat-toolbar>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div class="dashboard-content" *ngIf="!isLoading">
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ formatNumber(totalMd, 0) }}</div>
+          <div class="stat-label">Total MD (ft)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ formatNumber(totalTvd, 0) }}</div>
+          <div class="stat-label">Total TVD (ft)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ formatNumber(maxInclination, 1) }}°</div>
+          <div class="stat-label">Max Inclination</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ formatNumber(totalDisplacement, 0) }}</div>
+          <div class="stat-label">Displacement (ft)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ formatNumber(maxDls, 2) }}</div>
+          <div class="stat-label">Max DLS (°/100ft)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ surveys.length }}</div>
+          <div class="stat-label">Survey Points</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Survey Table -->
+      <mat-card class="survey-table-card">
+        <mat-card-header>
+          <mat-card-title>Survey Data</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="table-container">
+            <table mat-table [dataSource]="surveys" *ngIf="surveys.length > 0">
+              <!-- MD Column -->
+              <ng-container matColumnDef="md">
+                <th mat-header-cell *matHeaderCellDef>MD (ft)</th>
+                <td mat-cell *matCellDef="let survey">{{ formatNumber(survey.mdFt, 1) }}</td>
+              </ng-container>
+
+              <!-- TVD Column -->
+              <ng-container matColumnDef="tvd">
+                <th mat-header-cell *matHeaderCellDef>TVD (ft)</th>
+                <td mat-cell *matCellDef="let survey">{{ formatNumber(survey.tvdFt, 1) }}</td>
+              </ng-container>
+
+              <!-- Inclination Column -->
+              <ng-container matColumnDef="inc">
+                <th mat-header-cell *matHeaderCellDef>Inc (°)</th>
+                <td mat-cell *matCellDef="let survey">{{ formatNumber(survey.inclinationDeg, 2) }}</td>
+              </ng-container>
+
+              <!-- Azimuth Column -->
+              <ng-container matColumnDef="azi">
+                <th mat-header-cell *matHeaderCellDef>Azi (°)</th>
+                <td mat-cell *matCellDef="let survey">{{ formatNumber(survey.azimuthDeg, 2) }}</td>
+              </ng-container>
+
+              <!-- North Column -->
+              <ng-container matColumnDef="north">
+                <th mat-header-cell *matHeaderCellDef>N/S (ft)</th>
+                <td mat-cell *matCellDef="let survey">{{ formatNumber(survey.northFt, 1) }}</td>
+              </ng-container>
+
+              <!-- East Column -->
+              <ng-container matColumnDef="east">
+                <th mat-header-cell *matHeaderCellDef>E/W (ft)</th>
+                <td mat-cell *matCellDef="let survey">{{ formatNumber(survey.eastFt, 1) }}</td>
+              </ng-container>
+
+              <!-- DLS Column -->
+              <ng-container matColumnDef="dls">
+                <th mat-header-cell *matHeaderCellDef>DLS</th>
+                <td mat-cell *matCellDef="let survey">{{ formatNumber(survey.dlsDegPer100ft, 2) }}</td>
+              </ng-container>
+
+              <!-- Type Column -->
+              <ng-container matColumnDef="type">
+                <th mat-header-cell *matHeaderCellDef>Type</th>
+                <td mat-cell *matCellDef="let survey">
+                  <span class="type-badge" [style.background-color]="getSurveyTypeColor(survey.surveyType)">
+                    {{ survey.surveyType }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <!-- Quality Column -->
+              <ng-container matColumnDef="quality">
+                <th mat-header-cell *matHeaderCellDef>Quality</th>
+                <td mat-cell *matCellDef="let survey">
+                  <span class="quality-badge" [style.background-color]="getQualityColor(survey.surveyQuality)">
+                    {{ survey.surveyQuality }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="['md', 'tvd', 'inc', 'azi', 'north', 'east', 'dls', 'type', 'quality']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['md', 'tvd', 'inc', 'azi', 'north', 'east', 'dls', 'type', 'quality']"
+                  class="clickable-row"
+                  [class.selected]="selectedSurvey === row"
+                  (click)="selectSurvey(row)"></tr>
+            </table>
+
+            <div *ngIf="surveys.length === 0" class="no-data">
+              <mat-icon>explore</mat-icon>
+              <p>No survey data available</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Selected Survey Details -->
+      <mat-card class="survey-details-card" *ngIf="selectedSurvey">
+        <mat-card-header>
+          <mat-card-title>Survey Details - {{ formatNumber(selectedSurvey.mdFt, 1) }} ft</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Measured Depth</span>
+              <span class="value">{{ formatNumber(selectedSurvey.mdFt, 2) }} ft</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">True Vertical Depth</span>
+              <span class="value">{{ formatNumber(selectedSurvey.tvdFt, 2) }} ft</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Inclination</span>
+              <span class="value">{{ formatNumber(selectedSurvey.inclinationDeg, 2) }}°</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Azimuth</span>
+              <span class="value">{{ formatNumber(selectedSurvey.azimuthDeg, 2) }}°</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Toolface</span>
+              <span class="value">{{ formatNumber(selectedSurvey.toolfaceDeg, 2) }}°</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">North/South</span>
+              <span class="value">{{ formatNumber(selectedSurvey.northFt, 2) }} ft</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">East/West</span>
+              <span class="value">{{ formatNumber(selectedSurvey.eastFt, 2) }} ft</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Vertical Section</span>
+              <span class="value">{{ formatNumber(selectedSurvey.verticalSectionFt, 2) }} ft</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Dog Leg Severity</span>
+              <span class="value">{{ formatNumber(selectedSurvey.dlsDegPer100ft, 2) }} °/100ft</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Survey Type</span>
+              <span class="value">{{ selectedSurvey.surveyType }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Quality</span>
+              <span class="value">{{ selectedSurvey.surveyQuality }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Definitive</span>
+              <span class="value">{{ selectedSurvey.isDefinitive ? 'Yes' : 'No' }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Trajectory Points (if loaded from well trajectory) -->
+    <mat-card class="trajectory-card" *ngIf="trajectory && trajectory.points.length > 0">
+      <mat-card-header>
+        <mat-card-title>Trajectory - {{ trajectory.wellName || 'Well' }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="table-container">
+          <table mat-table [dataSource]="trajectory.points">
+            <ng-container matColumnDef="md">
+              <th mat-header-cell *matHeaderCellDef>MD (ft)</th>
+              <td mat-cell *matCellDef="let point">{{ formatNumber(point.mdFt, 1) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="tvd">
+              <th mat-header-cell *matHeaderCellDef>TVD (ft)</th>
+              <td mat-cell *matCellDef="let point">{{ formatNumber(point.tvdFt, 1) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="inc">
+              <th mat-header-cell *matHeaderCellDef>Inc (°)</th>
+              <td mat-cell *matCellDef="let point">{{ formatNumber(point.inclinationDeg, 2) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="azi">
+              <th mat-header-cell *matHeaderCellDef>Azi (°)</th>
+              <td mat-cell *matCellDef="let point">{{ formatNumber(point.azimuthDeg, 2) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="north">
+              <th mat-header-cell *matHeaderCellDef>N/S (ft)</th>
+              <td mat-cell *matCellDef="let point">{{ formatNumber(point.northFt, 1) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="east">
+              <th mat-header-cell *matHeaderCellDef>E/W (ft)</th>
+              <td mat-cell *matCellDef="let point">{{ formatNumber(point.eastFt, 1) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="vs">
+              <th mat-header-cell *matHeaderCellDef>VS (ft)</th>
+              <td mat-cell *matCellDef="let point">{{ formatNumber(point.verticalSectionFt, 1) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="dls">
+              <th mat-header-cell *matHeaderCellDef>DLS</th>
+              <td mat-cell *matCellDef="let point">{{ formatNumber(point.dlsDegPer100ft, 2) }}</td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="['md', 'tvd', 'inc', 'azi', 'north', 'east', 'vs', 'dls']"></tr>
+            <tr mat-row *matRowDef="let row; columns: ['md', 'tvd', 'inc', 'azi', 'north', 'east', 'vs', 'dls']"></tr>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

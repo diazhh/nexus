@@ -1,0 +1,322 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="dr-rig-details-container">
+  <!-- Header -->
+  <mat-toolbar class="page-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="header-info" *ngIf="rig">
+      <h2>{{ rig.rigCode }} - {{ rig.rigName }}</h2>
+      <span class="status-badge" [style.background-color]="getStatusColor(rig.operationalStatus)">
+        {{ getStatusLabel(rig.operationalStatus) }}
+      </span>
+    </div>
+    <span class="fill-space"></span>
+    <button mat-icon-button [matMenuTriggerFor]="statusMenu" matTooltip="Change Status">
+      <mat-icon>sync</mat-icon>
+    </button>
+    <mat-menu #statusMenu="matMenu">
+      <button mat-menu-item (click)="updateStatus(RigStatus.DRILLING)">Drilling</button>
+      <button mat-menu-item (click)="updateStatus(RigStatus.STANDBY)">Standby</button>
+      <button mat-menu-item (click)="updateStatus(RigStatus.TRIPPING)">Tripping</button>
+      <button mat-menu-item (click)="updateStatus(RigStatus.CIRCULATING)">Circulating</button>
+      <button mat-menu-item (click)="updateStatus(RigStatus.MAINTENANCE)">Maintenance</button>
+    </mat-menu>
+    <button mat-icon-button (click)="editRig()" matTooltip="Edit Rig">
+      <mat-icon>edit</mat-icon>
+    </button>
+    <button mat-icon-button [matMenuTriggerFor]="moreMenu">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #moreMenu="matMenu">
+      <button mat-menu-item (click)="recordBopTest()">
+        <mat-icon>verified_user</mat-icon>
+        <span>Record BOP Test</span>
+      </button>
+      <button mat-menu-item (click)="recordInspection()">
+        <mat-icon>assignment_turned_in</mat-icon>
+        <span>Record Inspection</span>
+      </button>
+      <mat-divider></mat-divider>
+      <button mat-menu-item (click)="assignWell()" *ngIf="!rig?.currentWellId">
+        <mat-icon>link</mat-icon>
+        <span>Assign Well</span>
+      </button>
+      <button mat-menu-item (click)="releaseWell()" *ngIf="rig?.currentWellId">
+        <mat-icon>link_off</mat-icon>
+        <span>Release Well</span>
+      </button>
+    </mat-menu>
+  </mat-toolbar>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <!-- Content -->
+  <div class="content" *ngIf="!isLoading && rig">
+    <!-- KPI Cards -->
+    <div class="kpi-cards">
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-value">{{ rig.totalWellsDrilled || 0 }}</div>
+          <div class="kpi-label">Wells Drilled</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-value">{{ rig.totalFootageDrilledFt?.toFixed(0) || 0 }}</div>
+          <div class="kpi-label">Total Footage (ft)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-value">{{ rig.totalOperationalHours?.toFixed(1) || 0 }}</div>
+          <div class="kpi-label">Operational Hours</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-value">{{ rigKpis?.avgRopFtHr?.toFixed(1) || 'N/A' }}</div>
+          <div class="kpi-label">Avg ROP (ft/hr)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-value">{{ rigKpis?.nptPercentage?.toFixed(1) || 0 }}%</div>
+          <div class="kpi-label">NPT %</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Tabs -->
+    <mat-tab-group [(selectedIndex)]="selectedTab">
+      <!-- Overview Tab -->
+      <mat-tab label="Overview">
+        <div class="tab-content">
+          <div class="info-grid">
+            <!-- Basic Info -->
+            <mat-card>
+              <mat-card-header>
+                <mat-card-title>Rig Information</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-row">
+                  <span class="label">Rig Type:</span>
+                  <span class="value">{{ getRigTypeLabel(rig.rigType) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Contractor:</span>
+                  <span class="value">{{ rig.contractor || 'N/A' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Manufacturer:</span>
+                  <span class="value">{{ rig.manufacturer || 'N/A' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Model:</span>
+                  <span class="value">{{ rig.model || 'N/A' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Year Built:</span>
+                  <span class="value">{{ rig.yearBuilt || 'N/A' }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Specifications -->
+            <mat-card>
+              <mat-card-header>
+                <mat-card-title>Specifications</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-row">
+                  <span class="label">Max Hookload:</span>
+                  <span class="value">{{ rig.maxHookloadLbs?.toLocaleString() || 'N/A' }} lbs</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Max Rotary Torque:</span>
+                  <span class="value">{{ rig.maxRotaryTorqueFtLbs?.toLocaleString() || 'N/A' }} ft-lbs</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Max Depth Capability:</span>
+                  <span class="value">{{ rig.maxDepthCapabilityFt?.toLocaleString() || 'N/A' }} ft</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Current Assignment -->
+            <mat-card>
+              <mat-card-header>
+                <mat-card-title>Current Assignment</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-row">
+                  <span class="label">Location:</span>
+                  <span class="value">{{ rig.currentLocation || 'N/A' }}</span>
+                </div>
+                <div class="info-row" *ngIf="rig.latitude && rig.longitude">
+                  <span class="label">Coordinates:</span>
+                  <span class="value">{{ rig.latitude }}, {{ rig.longitude }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Current Well:</span>
+                  <span class="value">{{ rig.currentWellName || 'No well assigned' }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Maintenance -->
+            <mat-card>
+              <mat-card-header>
+                <mat-card-title>Maintenance & Certifications</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="info-row">
+                  <span class="label">Last BOP Test:</span>
+                  <span class="value">{{ rig.bopTestDate ? (rig.bopTestDate | date:'mediumDate') : 'N/A' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Last Inspection:</span>
+                  <span class="value">{{ rig.lastRigInspectionDate ? (rig.lastRigInspectionDate | date:'mediumDate') : 'N/A' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Next Inspection Due:</span>
+                  <span class="value">{{ rig.nextRigInspectionDue ? (rig.nextRigInspectionDue | date:'mediumDate') : 'N/A' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Certification Expiry:</span>
+                  <span class="value">{{ rig.certificationExpiryDate ? (rig.certificationExpiryDate | date:'mediumDate') : 'N/A' }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Runs Tab -->
+      <mat-tab label="Drilling Runs">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Recent Drilling Runs</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="recentRuns" class="runs-table">
+                <ng-container matColumnDef="runNumber">
+                  <th mat-header-cell *matHeaderCellDef>Run #</th>
+                  <td mat-cell *matCellDef="let run">{{ run.runNumber }}</td>
+                </ng-container>
+                <ng-container matColumnDef="wellName">
+                  <th mat-header-cell *matHeaderCellDef>Well</th>
+                  <td mat-cell *matCellDef="let run">{{ run.wellName || 'N/A' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="holeSection">
+                  <th mat-header-cell *matHeaderCellDef>Section</th>
+                  <td mat-cell *matCellDef="let run">{{ run.holeSection }}</td>
+                </ng-container>
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let run">{{ run.status }}</td>
+                </ng-container>
+                <ng-container matColumnDef="footage">
+                  <th mat-header-cell *matHeaderCellDef>Footage (ft)</th>
+                  <td mat-cell *matCellDef="let run">{{ run.totalFootageFt?.toFixed(0) || 0 }}</td>
+                </ng-container>
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef></th>
+                  <td mat-cell *matCellDef="let run">
+                    <button mat-icon-button (click)="viewRun(run)">
+                      <mat-icon>visibility</mat-icon>
+                    </button>
+                  </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="['runNumber', 'wellName', 'holeSection', 'status', 'footage', 'actions']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['runNumber', 'wellName', 'holeSection', 'status', 'footage', 'actions'];"></tr>
+              </table>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Subsystems Tab -->
+      <mat-tab label="Digital Twin">
+        <div class="tab-content">
+          <div class="subsystems-grid">
+            <mat-card class="subsystem-card" *ngIf="rig.drawworksAssetId">
+              <mat-card-header>
+                <mat-icon mat-card-avatar>precision_manufacturing</mat-icon>
+                <mat-card-title>Drawworks</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <p>Asset ID: {{ rig.drawworksAssetId }}</p>
+              </mat-card-content>
+            </mat-card>
+            <mat-card class="subsystem-card" *ngIf="rig.topDriveAssetId">
+              <mat-card-header>
+                <mat-icon mat-card-avatar>rotate_right</mat-icon>
+                <mat-card-title>Top Drive</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <p>Asset ID: {{ rig.topDriveAssetId }}</p>
+              </mat-card-content>
+            </mat-card>
+            <mat-card class="subsystem-card" *ngIf="rig.mudPump1AssetId">
+              <mat-card-header>
+                <mat-icon mat-card-avatar>water_pump</mat-icon>
+                <mat-card-title>Mud Pump 1</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <p>Asset ID: {{ rig.mudPump1AssetId }}</p>
+              </mat-card-content>
+            </mat-card>
+            <mat-card class="subsystem-card" *ngIf="rig.mudSystemAssetId">
+              <mat-card-header>
+                <mat-icon mat-card-avatar>opacity</mat-icon>
+                <mat-card-title>Mud System</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <p>Asset ID: {{ rig.mudSystemAssetId }}</p>
+              </mat-card-content>
+            </mat-card>
+            <mat-card class="subsystem-card" *ngIf="rig.bopStackAssetId">
+              <mat-card-header>
+                <mat-icon mat-card-avatar>security</mat-icon>
+                <mat-card-title>BOP Stack</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <p>Asset ID: {{ rig.bopStackAssetId }}</p>
+              </mat-card-content>
+            </mat-card>
+            <mat-card class="subsystem-card" *ngIf="rig.gasDetectorAssetId">
+              <mat-card-header>
+                <mat-icon mat-card-avatar>air</mat-icon>
+                <mat-card-title>Gas Detection</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <p>Asset ID: {{ rig.gasDetectorAssetId }}</p>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>

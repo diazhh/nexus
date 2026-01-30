@@ -1,0 +1,136 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="dr-run-details-container">
+  <mat-toolbar class="page-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="header-info" *ngIf="run">
+      <h2>Run {{ run.runNumber }}</h2>
+      <span class="status-badge" [style.background-color]="getStatusColor(run.status)">
+        {{ getStatusLabel(run.status) }}
+      </span>
+    </div>
+    <span class="fill-space"></span>
+  </mat-toolbar>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div class="content" *ngIf="!isLoading && run">
+    <!-- KPI Cards -->
+    <div class="kpi-cards">
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-value">{{ run.currentDepthMdFt?.toFixed(0) || 0 }}</div>
+          <div class="kpi-label">Current Depth (ft)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-value">{{ run.totalFootageFt?.toFixed(0) || 0 }}</div>
+          <div class="kpi-label">Total Footage (ft)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-value">{{ run.avgRopFtHr?.toFixed(1) || 'N/A' }}</div>
+          <div class="kpi-label">Avg ROP (ft/hr)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-value">{{ run.drillingEfficiencyPercent?.toFixed(1) || 0 }}%</div>
+          <div class="kpi-label">Efficiency</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Tabs -->
+    <mat-tab-group [(selectedIndex)]="selectedTab">
+      <mat-tab label="Overview">
+        <div class="tab-content">
+          <div class="info-grid">
+            <mat-card>
+              <mat-card-header><mat-card-title>Run Information</mat-card-title></mat-card-header>
+              <mat-card-content>
+                <div class="info-row"><span class="label">Well:</span><span class="value">{{ run.wellName || 'N/A' }}</span></div>
+                <div class="info-row"><span class="label">Rig:</span><span class="value">{{ run.rigCode || 'N/A' }}</span></div>
+                <div class="info-row"><span class="label">Hole Section:</span><span class="value">{{ run.holeSection }}</span></div>
+                <div class="info-row"><span class="label">Hole Size:</span><span class="value">{{ run.holeSizeIn || 'N/A' }}"</span></div>
+                <div class="info-row"><span class="label">BHA:</span><span class="value">{{ run.bhaNumber || 'Not assigned' }}</span></div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card>
+              <mat-card-header><mat-card-title>Depth Information</mat-card-title></mat-card-header>
+              <mat-card-content>
+                <div class="info-row"><span class="label">Start Depth MD:</span><span class="value">{{ run.startDepthMdFt?.toFixed(0) || 0 }} ft</span></div>
+                <div class="info-row"><span class="label">Current Depth MD:</span><span class="value">{{ run.currentDepthMdFt?.toFixed(0) || 0 }} ft</span></div>
+                <div class="info-row"><span class="label">End Depth MD:</span><span class="value">{{ run.endDepthMdFt?.toFixed(0) || 'TBD' }} ft</span></div>
+                <div class="info-row"><span class="label">Total Footage:</span><span class="value">{{ run.totalFootageFt?.toFixed(0) || 0 }} ft</span></div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Surveys">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header><mat-card-title>Recent Surveys</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="recentSurveys" class="surveys-table">
+                <ng-container matColumnDef="mdFt"><th mat-header-cell *matHeaderCellDef>MD (ft)</th><td mat-cell *matCellDef="let s">{{ s.mdFt }}</td></ng-container>
+                <ng-container matColumnDef="tvdFt"><th mat-header-cell *matHeaderCellDef>TVD (ft)</th><td mat-cell *matCellDef="let s">{{ s.tvdFt?.toFixed(1) }}</td></ng-container>
+                <ng-container matColumnDef="inc"><th mat-header-cell *matHeaderCellDef>Inc (°)</th><td mat-cell *matCellDef="let s">{{ s.inclinationDeg?.toFixed(2) }}</td></ng-container>
+                <ng-container matColumnDef="azm"><th mat-header-cell *matHeaderCellDef>Azm (°)</th><td mat-cell *matCellDef="let s">{{ s.azimuthDeg?.toFixed(2) }}</td></ng-container>
+                <ng-container matColumnDef="dls"><th mat-header-cell *matHeaderCellDef>DLS</th><td mat-cell *matCellDef="let s">{{ s.dlsDegPer100ft?.toFixed(2) }}</td></ng-container>
+                <tr mat-header-row *matHeaderRowDef="['mdFt', 'tvdFt', 'inc', 'azm', 'dls']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['mdFt', 'tvdFt', 'inc', 'azm', 'dls'];"></tr>
+              </table>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Mud Logging">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header><mat-card-title>Recent Mud Log Entries</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="recentMudLogs" class="mudlog-table">
+                <ng-container matColumnDef="depthFt"><th mat-header-cell *matHeaderCellDef>Depth (ft)</th><td mat-cell *matCellDef="let m">{{ m.depthFt }}</td></ng-container>
+                <ng-container matColumnDef="rop"><th mat-header-cell *matHeaderCellDef>ROP</th><td mat-cell *matCellDef="let m">{{ m.ropFtHr?.toFixed(1) }}</td></ng-container>
+                <ng-container matColumnDef="totalGas"><th mat-header-cell *matHeaderCellDef>Total Gas</th><td mat-cell *matCellDef="let m">{{ m.totalGasUnits?.toFixed(0) }}</td></ng-container>
+                <ng-container matColumnDef="lithology"><th mat-header-cell *matHeaderCellDef>Lithology</th><td mat-cell *matCellDef="let m">{{ m.lithology || 'N/A' }}</td></ng-container>
+                <ng-container matColumnDef="shows"><th mat-header-cell *matHeaderCellDef>Shows</th><td mat-cell *matCellDef="let m">
+                  <mat-icon *ngIf="m.hasOilShow" color="primary">opacity</mat-icon>
+                  <mat-icon *ngIf="m.hasGasShow" color="warn">air</mat-icon>
+                </td></ng-container>
+                <tr mat-header-row *matHeaderRowDef="['depthFt', 'rop', 'totalGas', 'lithology', 'shows']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['depthFt', 'rop', 'totalGas', 'lithology', 'shows'];"></tr>
+              </table>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>

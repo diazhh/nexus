@@ -1,0 +1,292 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="dr-mudlog-dashboard">
+  <mat-toolbar class="dashboard-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2>Mud Logging Dashboard</h2>
+    <span class="fill-space"></span>
+    <button mat-button (click)="loadData()">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  </mat-toolbar>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div class="dashboard-content" *ngIf="!isLoading">
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ totalEntries }}</div>
+          <div class="stat-label">Total Entries</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ formatNumber(currentDepth, 0) }}</div>
+          <div class="stat-label">Current Depth (ft)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card" [ngClass]="getGasLevelClass(maxGasReading)">
+        <mat-card-content>
+          <div class="stat-value">{{ formatNumber(maxGasReading, 0) }}</div>
+          <div class="stat-label">Max Gas (units)</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-value">{{ formatNumber(avgRop, 1) }}</div>
+          <div class="stat-label">Avg ROP (ft/hr)</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Filters -->
+    <mat-card class="filters-card">
+      <mat-card-content>
+        <div class="filters-row">
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>From Depth (ft)</mat-label>
+            <input matInput type="number" [(ngModel)]="depthFromFt">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>To Depth (ft)</mat-label>
+            <input matInput type="number" [(ngModel)]="depthToFt">
+          </mat-form-field>
+          <button mat-raised-button color="primary" (click)="applyFilter()">
+            <mat-icon>filter_list</mat-icon> Apply Filter
+          </button>
+          <button mat-button (click)="clearFilter()">
+            <mat-icon>clear</mat-icon> Clear
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="dashboard-grid">
+      <!-- Mud Log Table -->
+      <mat-card class="mudlog-table-card">
+        <mat-card-header>
+          <mat-card-title>Mud Log Entries</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="table-container">
+            <table mat-table [dataSource]="mudLogs" *ngIf="mudLogs.length > 0">
+              <!-- Depth Column -->
+              <ng-container matColumnDef="depth">
+                <th mat-header-cell *matHeaderCellDef>Depth (ft)</th>
+                <td mat-cell *matCellDef="let log">{{ formatNumber(log.depthFt, 1) }}</td>
+              </ng-container>
+
+              <!-- Time Column -->
+              <ng-container matColumnDef="time">
+                <th mat-header-cell *matHeaderCellDef>Time</th>
+                <td mat-cell *matCellDef="let log">{{ formatTimestamp(log.logTime) }}</td>
+              </ng-container>
+
+              <!-- ROP Column -->
+              <ng-container matColumnDef="rop">
+                <th mat-header-cell *matHeaderCellDef>ROP (ft/hr)</th>
+                <td mat-cell *matCellDef="let log">{{ formatNumber(log.ropFtHr, 1) }}</td>
+              </ng-container>
+
+              <!-- WOB Column -->
+              <ng-container matColumnDef="wob">
+                <th mat-header-cell *matHeaderCellDef>WOB (klb)</th>
+                <td mat-cell *matCellDef="let log">{{ formatNumber(log.wobKlbs, 1) }}</td>
+              </ng-container>
+
+              <!-- RPM Column -->
+              <ng-container matColumnDef="rpm">
+                <th mat-header-cell *matHeaderCellDef>RPM</th>
+                <td mat-cell *matCellDef="let log">{{ formatNumber(log.rpm, 0) }}</td>
+              </ng-container>
+
+              <!-- Torque Column -->
+              <ng-container matColumnDef="torque">
+                <th mat-header-cell *matHeaderCellDef>Torque (kft-lb)</th>
+                <td mat-cell *matCellDef="let log">{{ formatNumber(log.torqueFtLbs, 1) }}</td>
+              </ng-container>
+
+              <!-- SPP Column -->
+              <ng-container matColumnDef="spp">
+                <th mat-header-cell *matHeaderCellDef>SPP (psi)</th>
+                <td mat-cell *matCellDef="let log">{{ formatNumber(log.sppPsi, 0) }}</td>
+              </ng-container>
+
+              <!-- Total Gas Column -->
+              <ng-container matColumnDef="gas">
+                <th mat-header-cell *matHeaderCellDef>Gas (units)</th>
+                <td mat-cell *matCellDef="let log">
+                  <span class="gas-value" [ngClass]="getGasLevelClass(log.totalGasUnits)">
+                    {{ formatNumber(log.totalGasUnits, 0) }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <!-- Lithology Column -->
+              <ng-container matColumnDef="lithology">
+                <th mat-header-cell *matHeaderCellDef>Lithology</th>
+                <td mat-cell *matCellDef="let log">
+                  <span class="lithology-badge"
+                        [style.background-color]="getLithologyColor(log.lithology)"
+                        [style.color]="log.lithology === 'COAL' ? 'white' : 'black'">
+                    {{ log.lithology || 'N/A' }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="['depth', 'time', 'rop', 'wob', 'rpm', 'torque', 'spp', 'gas', 'lithology']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['depth', 'time', 'rop', 'wob', 'rpm', 'torque', 'spp', 'gas', 'lithology']"
+                  class="clickable-row"
+                  [class.selected]="selectedMudLog === row"
+                  (click)="selectMudLog(row)"></tr>
+            </table>
+
+            <div *ngIf="mudLogs.length === 0" class="no-data">
+              <mat-icon>analytics</mat-icon>
+              <p>No mud log data available</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Selected Entry Details -->
+      <mat-card class="details-card" *ngIf="selectedMudLog">
+        <mat-card-header>
+          <mat-card-title>Entry Details - {{ formatNumber(selectedMudLog.depthFt, 1) }} ft</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="detail-section">
+            <h4>Drilling Parameters</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Depth</span>
+                <span class="value">{{ formatNumber(selectedMudLog.depthFt, 2) }} ft</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">ROP</span>
+                <span class="value">{{ formatNumber(selectedMudLog.ropFtHr, 2) }} ft/hr</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">WOB</span>
+                <span class="value">{{ formatNumber(selectedMudLog.wobKlbs, 2) }} klb</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">RPM</span>
+                <span class="value">{{ formatNumber(selectedMudLog.rpm, 0) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Torque</span>
+                <span class="value">{{ formatNumber(selectedMudLog.torqueFtLbs, 2) }} kft-lb</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">SPP</span>
+                <span class="value">{{ formatNumber(selectedMudLog.sppPsi, 0) }} psi</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Lag Depth</span>
+                <span class="value">{{ formatNumber(selectedMudLog.lagDepthFt, 2) }} ft</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Gas Analysis</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Total Gas</span>
+                <span class="value" [ngClass]="getGasLevelClass(selectedMudLog.totalGasUnits)">
+                  {{ formatNumber(selectedMudLog.totalGasUnits, 0) }} units
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="label">C1 (Methane)</span>
+                <span class="value">{{ formatNumber(selectedMudLog.c1MethanePpm, 0) }} ppm</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">C2 (Ethane)</span>
+                <span class="value">{{ formatNumber(selectedMudLog.c2EthanePpm, 0) }} ppm</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">C3 (Propane)</span>
+                <span class="value">{{ formatNumber(selectedMudLog.c3PropanePpm, 0) }} ppm</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">C4 (Butane)</span>
+                <span class="value">{{ formatNumber(selectedMudLog.ic4IsobutanePpm, 0) }} ppm</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">C5 (Pentane)</span>
+                <span class="value">{{ formatNumber(selectedMudLog.c5PentanePpm, 0) }} ppm</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Formation</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Lithology</span>
+                <span class="value">{{ selectedMudLog.lithology || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Lithology %</span>
+                <span class="value">{{ formatNumber(selectedMudLog.lithologyPercent, 0) }}%</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Oil Show</span>
+                <span class="value">{{ selectedMudLog.hasOilShow ? 'Yes' : 'No' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Gas Show</span>
+                <span class="value">{{ selectedMudLog.hasGasShow ? 'Yes' : 'No' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Gas Ratios</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Wetness Ratio</span>
+                <span class="value">{{ formatNumber(selectedMudLog.wetnessRatio, 2) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Balance Ratio</span>
+                <span class="value">{{ formatNumber(selectedMudLog.balanceRatio, 2) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Character Ratio</span>
+                <span class="value">{{ formatNumber(selectedMudLog.characterRatio, 2) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">H2S</span>
+                <span class="value">{{ formatNumber(selectedMudLog.h2sPpm, 0) }} ppm</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
