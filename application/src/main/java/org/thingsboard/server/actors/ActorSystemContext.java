@@ -110,6 +110,7 @@ import org.thingsboard.server.dao.usagerecord.ApiLimitService;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.dao.widget.WidgetTypeService;
 import org.thingsboard.server.dao.widget.WidgetsBundleService;
+import org.thingsboard.server.dao.nexus.DataDistributionService;
 import org.thingsboard.server.queue.discovery.DiscoveryService;
 import org.thingsboard.server.queue.discovery.PartitionService;
 import org.thingsboard.server.queue.discovery.TbServiceInfoProvider;
@@ -320,6 +321,10 @@ public class ActorSystemContext {
     @Autowired
     @Getter
     private AiModelService aiModelService;
+
+    @Autowired
+    @Getter
+    private DataDistributionService dataDistributionService;
 
     @Autowired
     @Getter

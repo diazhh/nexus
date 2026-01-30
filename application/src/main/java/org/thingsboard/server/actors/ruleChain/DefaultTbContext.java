@@ -121,6 +121,7 @@ import org.thingsboard.server.dao.timeseries.TimeseriesService;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.dao.widget.WidgetTypeService;
 import org.thingsboard.server.dao.widget.WidgetsBundleService;
+import org.thingsboard.server.dao.nexus.DataDistributionService;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.queue.TbQueueCallback;
 import org.thingsboard.server.queue.common.SimpleTbQueueCallback;
@@ -1053,6 +1054,11 @@ public class DefaultTbContext implements TbContext {
     @Override
     public MqttClientSettings getMqttClientSettings() {
         return mainCtx.getMqttClientSettings();
+    }
+
+    @Override
+    public DataDistributionService getDataDistributionService() {
+        return mainCtx.getDataDistributionService();
     }
 
     private TbMsgMetaData getActionMetaData(RuleNodeId ruleNodeId) {

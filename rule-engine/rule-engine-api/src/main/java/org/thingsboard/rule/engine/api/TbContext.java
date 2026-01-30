@@ -88,6 +88,7 @@ import org.thingsboard.server.dao.timeseries.TimeseriesService;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.dao.widget.WidgetTypeService;
 import org.thingsboard.server.dao.widget.WidgetsBundleService;
+import org.thingsboard.server.dao.nexus.DataDistributionService;
 
 import java.util.List;
 import java.util.Set;
@@ -436,6 +437,9 @@ public interface TbContext {
     RuleEngineAiChatModelService getAiChatModelService();
 
     AiModelService getAiModelService();
+
+    // NEXUS Data Distribution Service
+    DataDistributionService getDataDistributionService();
 
     // Configuration parameters for the MQTT client that is used in the MQTT node and Azure IoT hub node
 

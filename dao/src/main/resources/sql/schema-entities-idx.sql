@@ -126,3 +126,23 @@ CREATE INDEX IF NOT EXISTS idx_user_role_id ON tb_user(role_id) WHERE role_id IS
 CREATE INDEX IF NOT EXISTS idx_role_permission_role_id ON role_permission(role_id);
 CREATE INDEX IF NOT EXISTS idx_role_permission_resource ON role_permission(resource_type);
 CREATE INDEX IF NOT EXISTS idx_role_permission_composite ON role_permission(role_id, resource_type, operation);
+
+-- Indexes for NEXUS Data Distribution tables
+CREATE INDEX IF NOT EXISTS idx_nx_data_source_tenant ON nx_data_source_config(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_nx_data_source_device ON nx_data_source_config(device_id);
+CREATE INDEX IF NOT EXISTS idx_nx_data_source_module ON nx_data_source_config(module_key);
+CREATE INDEX IF NOT EXISTS idx_nx_data_source_active ON nx_data_source_config(tenant_id, is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_nx_mapping_source ON nx_data_mapping_rule(data_source_config_id);
+CREATE INDEX IF NOT EXISTS idx_nx_mapping_source_key ON nx_data_mapping_rule(source_key);
+CREATE INDEX IF NOT EXISTS idx_nx_mapping_active ON nx_data_mapping_rule(data_source_config_id, is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_nx_aggregation_tenant ON nx_data_aggregation(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_nx_aggregation_module ON nx_data_aggregation(module_key);
+CREATE INDEX IF NOT EXISTS idx_nx_aggregation_source_type ON nx_data_aggregation(source_asset_type);
+CREATE INDEX IF NOT EXISTS idx_nx_aggregation_active ON nx_data_aggregation(tenant_id, is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_nx_dist_log_tenant_time ON nx_distribution_log(tenant_id, created_time DESC);
+CREATE INDEX IF NOT EXISTS idx_nx_dist_log_device ON nx_distribution_log(device_id);
+CREATE INDEX IF NOT EXISTS idx_nx_dist_log_status ON nx_distribution_log(status);
+CREATE INDEX IF NOT EXISTS idx_nx_dist_log_module ON nx_distribution_log(module_key);

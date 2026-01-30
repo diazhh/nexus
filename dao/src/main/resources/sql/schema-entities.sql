@@ -1003,3 +1003,97 @@ CREATE TABLE IF NOT EXISTS ai_model (
     CONSTRAINT ai_model_name_unq_key        UNIQUE (tenant_id, name),
     CONSTRAINT ai_model_external_id_unq_key UNIQUE (tenant_id, external_id)
 );
+
+-- =====================================================
+-- NEXUS DATA DISTRIBUTION SYSTEM
+-- Schema for data distribution from devices to Digital Twins
+-- =====================================================
+
+-- -----------------------------------------------------
+-- Table: nx_data_source_config
+-- Configures relationship between device and Digital Twin assets
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS nx_data_source_config (
+    id UUID NOT NULL,
+    created_time BIGINT NOT NULL,
+    tenant_id UUID NOT NULL,
+    device_id UUID NOT NULL,
+    module_key VARCHAR(50) NOT NULL,
+    target_asset_id UUID,
+    target_asset_type VARCHAR(100),
+    distribution_mode VARCHAR(50) DEFAULT 'MAPPED',
+    mapping_config VARCHAR,
+    is_active BOOLEAN DEFAULT TRUE,
+    additional_info VARCHAR,
+    CONSTRAINT nx_data_source_config_pkey PRIMARY KEY (id),
+    CONSTRAINT nx_data_source_config_device_unq UNIQUE (tenant_id, device_id),
+    CONSTRAINT fk_nx_data_source_tenant FOREIGN KEY (tenant_id)
+        REFERENCES tenant(id) ON DELETE CASCADE,
+    CONSTRAINT fk_nx_data_source_device FOREIGN KEY (device_id)
+        REFERENCES device(id) ON DELETE CASCADE
+);
+
+-- -----------------------------------------------------
+-- Table: nx_data_mapping_rule
+-- Defines how telemetry is transformed and distributed
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS nx_data_mapping_rule (
+    id UUID NOT NULL,
+    created_time BIGINT NOT NULL,
+    data_source_config_id UUID NOT NULL,
+    source_key VARCHAR(255) NOT NULL,
+    target_key VARCHAR(255) NOT NULL,
+    target_asset_id UUID,
+    target_asset_relation VARCHAR(100),
+    transformation_type VARCHAR(50) DEFAULT 'DIRECT',
+    transformation_config VARCHAR,
+    priority INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    CONSTRAINT nx_data_mapping_rule_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_nx_mapping_data_source FOREIGN KEY (data_source_config_id)
+        REFERENCES nx_data_source_config(id) ON DELETE CASCADE
+);
+
+-- -----------------------------------------------------
+-- Table: nx_data_aggregation
+-- Defines aggregation rules from child to parent assets
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS nx_data_aggregation (
+    id UUID NOT NULL,
+    created_time BIGINT NOT NULL,
+    tenant_id UUID NOT NULL,
+    module_key VARCHAR(50) NOT NULL,
+    aggregation_name VARCHAR(255) NOT NULL,
+    source_asset_type VARCHAR(100) NOT NULL,
+    target_asset_type VARCHAR(100) NOT NULL,
+    source_key VARCHAR(255) NOT NULL,
+    target_key VARCHAR(255) NOT NULL,
+    aggregation_type VARCHAR(50) NOT NULL,
+    aggregation_window BIGINT DEFAULT 60000,
+    filter_expression VARCHAR,
+    is_active BOOLEAN DEFAULT TRUE,
+    additional_info VARCHAR,
+    CONSTRAINT nx_data_aggregation_pkey PRIMARY KEY (id),
+    CONSTRAINT nx_data_aggregation_name_unq UNIQUE (tenant_id, aggregation_name),
+    CONSTRAINT fk_nx_aggregation_tenant FOREIGN KEY (tenant_id)
+        REFERENCES tenant(id) ON DELETE CASCADE
+);
+
+-- -----------------------------------------------------
+-- Table: nx_distribution_log
+-- Audit log for data distribution operations
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS nx_distribution_log (
+    id UUID NOT NULL,
+    created_time BIGINT NOT NULL,
+    tenant_id UUID NOT NULL,
+    device_id UUID,
+    target_asset_id UUID,
+    module_key VARCHAR(50),
+    operation_type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    keys_processed INTEGER DEFAULT 0,
+    error_message TEXT,
+    processing_time_ms BIGINT,
+    CONSTRAINT nx_distribution_log_pkey PRIMARY KEY (id)
+);

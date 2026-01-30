@@ -86,6 +86,30 @@ public enum EntityType {
         public String getNormalName() {
             return "Tenant Module";
         }
+    },
+    DATA_SOURCE_CONFIG(49, "nx_data_source_config") {
+        @Override
+        public String getNormalName() {
+            return "Data Source Config";
+        }
+    },
+    DATA_MAPPING_RULE(50, "nx_data_mapping_rule") {
+        @Override
+        public String getNormalName() {
+            return "Data Mapping Rule";
+        }
+    },
+    DATA_AGGREGATION(51, "nx_data_aggregation") {
+        @Override
+        public String getNormalName() {
+            return "Data Aggregation";
+        }
+    },
+    DISTRIBUTION_LOG(52, "nx_distribution_log") {
+        @Override
+        public String getNormalName() {
+            return "Distribution Log";
+        }
     };
 
     @Getter

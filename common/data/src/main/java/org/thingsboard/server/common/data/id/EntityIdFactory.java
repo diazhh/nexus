@@ -88,6 +88,10 @@ public class EntityIdFactory {
             case TEMPLATE -> new TemplateId(uuid);
             case NEXUS_MODULE -> new NexusModuleId(uuid);
             case TENANT_MODULE -> new TenantModuleId(uuid);
+            case DATA_SOURCE_CONFIG -> new DataSourceConfigId(uuid);
+            case DATA_MAPPING_RULE -> new DataMappingRuleId(uuid);
+            case DATA_AGGREGATION -> new DataAggregationId(uuid);
+            case DISTRIBUTION_LOG -> new DistributionLogId(uuid);
         };
     }
 
