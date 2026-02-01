@@ -67,6 +67,11 @@ public interface DataDistributionService {
     List<DataSourceConfig> findDataSourceConfigsByModuleKey(TenantId tenantId, String moduleKey);
 
     /**
+     * Find data source configurations by module key with pagination
+     */
+    PageData<DataSourceConfig> findDataSourceConfigsByModuleKey(TenantId tenantId, String moduleKey, PageLink pageLink);
+
+    /**
      * Find active data source configurations for a tenant
      */
     List<DataSourceConfig> findActiveDataSourceConfigs(TenantId tenantId);

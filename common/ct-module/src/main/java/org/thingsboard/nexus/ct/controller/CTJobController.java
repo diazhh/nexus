@@ -28,6 +28,7 @@ import org.thingsboard.nexus.ct.dto.CTJobDto;
 import org.thingsboard.nexus.ct.model.CTJob;
 import org.thingsboard.nexus.ct.model.JobStatus;
 import org.thingsboard.nexus.ct.service.CTJobService;
+import org.thingsboard.server.common.data.page.PageData;
 
 import jakarta.validation.Valid;
 import java.util.List;
@@ -56,25 +57,25 @@ public class CTJobController {
     }
 
     @GetMapping("/tenant/{tenantId}")
-    public ResponseEntity<Page<CTJobDto>> getJobsByTenant(
+    public ResponseEntity<PageData<CTJobDto>> getJobsByTenant(
             @PathVariable UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdTime") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDir) {
-        
+
         log.debug("REST request to get CT Jobs for tenant: {}", tenantId);
-        
-        Sort sort = sortDir.equalsIgnoreCase("DESC") ? 
+
+        Sort sort = sortDir.equalsIgnoreCase("DESC") ?
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        
+
         Page<CTJobDto> jobs = jobService.getByTenant(tenantId, pageable);
-        return ResponseEntity.ok(jobs);
+        return ResponseEntity.ok(toPageData(jobs));
     }
 
     @GetMapping("/tenant/{tenantId}/filter")
-    public ResponseEntity<Page<CTJobDto>> getJobsByFilters(
+    public ResponseEntity<PageData<CTJobDto>> getJobsByFilters(
             @PathVariable UUID tenantId,
             @RequestParam(required = false) JobStatus status,
             @RequestParam(required = false) String jobType,
@@ -84,16 +85,16 @@ public class CTJobController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdTime") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDir) {
-        
+
         log.debug("REST request to get CT Jobs with filters");
-        
-        Sort sort = sortDir.equalsIgnoreCase("DESC") ? 
+
+        Sort sort = sortDir.equalsIgnoreCase("DESC") ?
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        
-        Page<CTJobDto> jobs = jobService.getByFilters(tenantId, status, jobType, 
+
+        Page<CTJobDto> jobs = jobService.getByFilters(tenantId, status, jobType,
                                                        unitId, wellName, pageable);
-        return ResponseEntity.ok(jobs);
+        return ResponseEntity.ok(toPageData(jobs));
     }
 
     @GetMapping("/tenant/{tenantId}/status/{status}")
@@ -114,31 +115,35 @@ public class CTJobController {
     }
 
     @GetMapping("/tenant/{tenantId}/unit/{unitId}")
-    public ResponseEntity<Page<CTJobDto>> getJobsByUnit(
+    public ResponseEntity<PageData<CTJobDto>> getJobsByUnit(
             @PathVariable UUID tenantId,
             @PathVariable UUID unitId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        
+
         log.debug("REST request to get CT Jobs for unit: {}", unitId);
-        
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("actualStartDate").descending());
         Page<CTJobDto> jobs = jobService.getJobsByUnit(tenantId, unitId, pageable);
-        return ResponseEntity.ok(jobs);
+        return ResponseEntity.ok(toPageData(jobs));
     }
 
     @GetMapping("/tenant/{tenantId}/reel/{reelId}")
-    public ResponseEntity<Page<CTJobDto>> getJobsByReel(
+    public ResponseEntity<PageData<CTJobDto>> getJobsByReel(
             @PathVariable UUID tenantId,
             @PathVariable UUID reelId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        
+
         log.debug("REST request to get CT Jobs for reel: {}", reelId);
-        
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("actualStartDate").descending());
         Page<CTJobDto> jobs = jobService.getJobsByReel(tenantId, reelId, pageable);
-        return ResponseEntity.ok(jobs);
+        return ResponseEntity.ok(toPageData(jobs));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     @GetMapping("/tenant/{tenantId}/date-range")

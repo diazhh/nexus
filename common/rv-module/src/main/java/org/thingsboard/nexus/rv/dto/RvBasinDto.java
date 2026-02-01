@@ -64,7 +64,7 @@ public class RvBasinDto {
     private Long updatedTime;
 
     // Constants for attribute keys
-    public static final String ASSET_TYPE = "rv_basin";
+    public static final String ASSET_TYPE = "RV_BASIN";
     public static final String ATTR_CODE = "code";
     public static final String ATTR_BASIN_TYPE = "basin_type";
     public static final String ATTR_COUNTRY = "country";

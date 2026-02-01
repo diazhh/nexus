@@ -53,7 +53,7 @@ public class JpaDataMappingRuleDao extends JpaAbstractDao<DataMappingRuleEntity,
 
     @Override
     public DataMappingRule save(TenantId tenantId, DataMappingRule rule) {
-        return save(tenantId, rule);
+        return super.save(tenantId, rule);
     }
 
     @Override

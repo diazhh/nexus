@@ -1,0 +1,155 @@
+#
+# Copyright © 2016-2026 The Thingsboard Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# ═══════════════════════════════════════════════════
+# NEXUS Simulators - Docker Compose Configuration
+# ═══════════════════════════════════════════════════
+
+version: '3.8'
+
+services:
+  # ===================================================
+  # RV Simulator - Reservoir Production
+  # ===================================================
+  rv-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nexus/rv-simulator:latest
+    container_name: nexus-rv-simulator
+    environment:
+      - SIMULATOR=rv-simulator
+      - CONFIG_FILE=/app/config/config.yaml
+      - MQTT_BROKER=${MQTT_BROKER:-tcp://host.docker.internal:1883}
+    volumes:
+      # Mount your configuration file
+      - ./rv-simulator/config.yaml:/app/config/config.yaml:ro
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    # depends_on:
+    #   - mqtt-broker  # Uncomment if using local MQTT broker below
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===================================================
+  # CT Simulator - Coiled Tubing
+  # ===================================================
+  ct-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nexus/ct-simulator:latest
+    container_name: nexus-ct-simulator
+    environment:
+      - SIMULATOR=ct-simulator
+      - CONFIG_FILE=/app/config/config.yaml
+      - MQTT_BROKER=${MQTT_BROKER:-tcp://host.docker.internal:1883}
+    volumes:
+      - ./ct-simulator/config.yaml:/app/config/config.yaml:ro
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    # depends_on:
+    #   - mqtt-broker  # Uncomment if using local MQTT broker below
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===================================================
+  # DR Simulator - Drilling
+  # ===================================================
+  dr-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nexus/dr-simulator:latest
+    container_name: nexus-dr-simulator
+    environment:
+      - SIMULATOR=dr-simulator
+      - CONFIG_FILE=/app/config/config.yaml
+      - MQTT_BROKER=${MQTT_BROKER:-tcp://host.docker.internal:1883}
+    volumes:
+      - ./dr-simulator/config.yaml:/app/config/config.yaml:ro
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    # depends_on:
+    #   - mqtt-broker  # Uncomment if using local MQTT broker below
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===================================================
+  # Local MQTT Broker (Optional - for testing)
+  # ===================================================
+  # Uncomment if you want a local Mosquitto broker for testing
+  # mqtt-broker:
+  #   image: eclipse-mosquitto:2.0
+  #   container_name: nexus-mqtt-broker
+  #   ports:
+  #     - "1883:1883"
+  #     - "9001:9001"
+  #   volumes:
+  #     - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+  #     - mosquitto-data:/mosquitto/data
+  #     - mosquitto-logs:/mosquitto/log
+  #   networks:
+  #     - nexus-network
+  #   restart: unless-stopped
+
+networks:
+  nexus-network:
+    driver: bridge
+    name: nexus-simulators
+
+# volumes:
+#   mosquitto-data:
+#   mosquitto-logs:
+
+# ═══════════════════════════════════════════════════
+# Usage:
+# ═══════════════════════════════════════════════════
+#
+# Build images:
+#   docker-compose build
+#
+# Start RV simulator:
+#   docker-compose up rv-simulator
+#
+# Start all simulators:
+#   docker-compose up
+#
+# Run in background:
+#   docker-compose up -d
+#
+# View logs:
+#   docker-compose logs -f rv-simulator
+#
+# Stop all:
+#   docker-compose down
+#
+# Environment Variables (.env file):
+#   MQTT_BROKER=tcp://your-thingsboard-host:1883
+#
+# ═══════════════════════════════════════════════════

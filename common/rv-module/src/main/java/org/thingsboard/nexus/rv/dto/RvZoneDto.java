@@ -98,7 +98,7 @@ public class RvZoneDto {
     private Long updatedTime;
 
     // Constants for attribute keys
-    public static final String ASSET_TYPE = "rv_zone";
+    public static final String ASSET_TYPE = "RV_ZONE";
     public static final String ATTR_CODE = "code";
     public static final String ATTR_ZONE_NUMBER = "zone_number";
     public static final String ATTR_TOP_DEPTH_MD_M = "top_depth_md_m";

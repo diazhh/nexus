@@ -112,7 +112,7 @@ public class RvDeclineAnalysisDto {
     private Long updatedTime;
 
     // Constants for attribute keys
-    public static final String ASSET_TYPE = "rv_decline_analysis";
+    public static final String ASSET_TYPE = "RV_DECLINE_ANALYSIS";
     public static final String ATTR_ANALYSIS_CODE = "analysis_code";
     public static final String ATTR_ANALYSIS_DATE = "analysis_date";
     public static final String ATTR_DECLINE_TYPE = "decline_type";

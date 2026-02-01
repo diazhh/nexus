@@ -28,6 +28,7 @@ import org.thingsboard.nexus.ct.dto.CTUnitDto;
 import org.thingsboard.nexus.ct.model.CTUnit;
 import org.thingsboard.nexus.ct.model.UnitStatus;
 import org.thingsboard.nexus.ct.service.CTUnitService;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.template.CreateFromTemplateRequest;
 
 import jakarta.validation.Valid;
@@ -57,7 +58,7 @@ public class CTUnitController {
     }
 
     @GetMapping("/tenant/{tenantId}")
-    public ResponseEntity<Page<CTUnitDto>> getUnitsByTenant(
+    public ResponseEntity<PageData<CTUnitDto>> getUnitsByTenant(
             @PathVariable UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -71,11 +72,15 @@ public class CTUnitController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<CTUnitDto> units = unitService.getByTenant(tenantId, pageable);
-        return ResponseEntity.ok(units);
+        return ResponseEntity.ok(toPageData(units));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     @GetMapping("/tenant/{tenantId}/filter")
-    public ResponseEntity<Page<CTUnitDto>> getUnitsByFilters(
+    public ResponseEntity<PageData<CTUnitDto>> getUnitsByFilters(
             @PathVariable UUID tenantId,
             @RequestParam(required = false) UnitStatus status,
             @RequestParam(required = false) String location,
@@ -91,7 +96,7 @@ public class CTUnitController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<CTUnitDto> units = unitService.getByFilters(tenantId, status, location, pageable);
-        return ResponseEntity.ok(units);
+        return ResponseEntity.ok(toPageData(units));
     }
 
     @GetMapping("/tenant/{tenantId}/status/{status}")

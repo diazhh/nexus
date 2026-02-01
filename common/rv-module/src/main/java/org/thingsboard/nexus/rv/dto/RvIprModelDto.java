@@ -109,7 +109,7 @@ public class RvIprModelDto {
     private Long updatedTime;
 
     // Constants for attribute keys
-    public static final String ASSET_TYPE = "rv_ipr_model";
+    public static final String ASSET_TYPE = "RV_IPR_MODEL";
     public static final String ATTR_MODEL_CODE = "model_code";
     public static final String ATTR_ANALYSIS_DATE = "analysis_date";
     public static final String ATTR_IPR_METHOD = "ipr_method";

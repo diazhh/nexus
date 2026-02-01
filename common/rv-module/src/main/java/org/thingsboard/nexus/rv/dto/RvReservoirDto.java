@@ -114,7 +114,7 @@ public class RvReservoirDto {
     private Long updatedTime;
 
     // Constants for attribute keys
-    public static final String ASSET_TYPE = "rv_reservoir";
+    public static final String ASSET_TYPE = "RV_RESERVOIR";
     public static final String ATTR_CODE = "code";
     public static final String ATTR_FORMATION_NAME = "formation_name";
     public static final String ATTR_GEOLOGIC_AGE = "geologic_age";

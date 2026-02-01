@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvWellDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.exception.RvEntityNotFoundException;
 import org.thingsboard.nexus.rv.service.RvWellService;
 
@@ -70,13 +71,17 @@ public class RvWellController {
      * Get all Wells for a tenant.
      */
     @GetMapping
-    public ResponseEntity<Page<RvWellDto>> getAllWells(
+    public ResponseEntity<PageData<RvWellDto>> getAllWells(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /api/nexus/rv/wells - tenantId={}", tenantId);
         Page<RvWellDto> wells = wellService.getAllWells(tenantId, page, size);
-        return ResponseEntity.ok(wells);
+        return ResponseEntity.ok(toPageData(wells));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     /**

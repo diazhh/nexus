@@ -190,10 +190,11 @@ export class MappingTemplateRulesDialogComponent implements OnInit, OnDestroy {
         next: () => {
           this.isSaving = false;
           this.showRuleForm = false;
+          const wasEditing = !!this.editingRule;
           this.editingRule = null;
           this.hasChanges = true;
           this.showNotification(
-            this.editingRule ? 'data-mapping.rule-updated' : 'data-mapping.rule-created'
+            wasEditing ? 'data-mapping.rule-updated' : 'data-mapping.rule-created'
           );
           this.loadRules();
         },

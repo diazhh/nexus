@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvPvtStudyDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.exception.RvEntityNotFoundException;
 import org.thingsboard.nexus.rv.service.RvPvtStudyService;
 
@@ -70,13 +71,17 @@ public class RvPvtStudyController {
      * Get all PVT Studies for a tenant.
      */
     @GetMapping
-    public ResponseEntity<Page<RvPvtStudyDto>> getAllPvtStudies(
+    public ResponseEntity<PageData<RvPvtStudyDto>> getAllPvtStudies(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /api/nexus/rv/pvt-studies - tenantId={}", tenantId);
         Page<RvPvtStudyDto> studies = pvtStudyService.getAllPvtStudies(tenantId, page, size);
-        return ResponseEntity.ok(studies);
+        return ResponseEntity.ok(toPageData(studies));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     /**

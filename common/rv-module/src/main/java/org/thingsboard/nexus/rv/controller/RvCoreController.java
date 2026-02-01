@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvCoreDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.service.RvCoreService;
 
 import java.math.BigDecimal;
@@ -44,12 +45,16 @@ public class RvCoreController {
 
     @GetMapping
     @Operation(summary = "Get all cores")
-    public ResponseEntity<Page<RvCoreDto>> getAllCores(
+    public ResponseEntity<PageData<RvCoreDto>> getAllCores(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /cores - tenantId={}, page={}, size={}", tenantId, page, size);
-        return ResponseEntity.ok(coreService.getAllCores(tenantId, page, size));
+        return ResponseEntity.ok(toPageData(coreService.getAllCores(tenantId, page, size)));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     @GetMapping("/{id}")

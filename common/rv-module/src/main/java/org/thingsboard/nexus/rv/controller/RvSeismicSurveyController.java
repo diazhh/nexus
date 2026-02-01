@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvSeismicSurveyDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.service.RvSeismicSurveyService;
 
 import java.util.List;
@@ -44,12 +45,16 @@ public class RvSeismicSurveyController {
 
     @GetMapping
     @Operation(summary = "Get all seismic surveys")
-    public ResponseEntity<Page<RvSeismicSurveyDto>> getAllSeismicSurveys(
+    public ResponseEntity<PageData<RvSeismicSurveyDto>> getAllSeismicSurveys(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /seismic-surveys - tenantId={}, page={}, size={}", tenantId, page, size);
-        return ResponseEntity.ok(seismicSurveyService.getAllSeismicSurveys(tenantId, page, size));
+        return ResponseEntity.ok(toPageData(seismicSurveyService.getAllSeismicSurveys(tenantId, page, size)));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     @GetMapping("/{id}")

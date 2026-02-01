@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvWellLogRunDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.service.RvWellLogService;
 
 import java.math.BigDecimal;
@@ -44,12 +45,16 @@ public class RvWellLogController {
 
     @GetMapping
     @Operation(summary = "Get all well log runs")
-    public ResponseEntity<Page<RvWellLogRunDto>> getAllWellLogRuns(
+    public ResponseEntity<PageData<RvWellLogRunDto>> getAllWellLogRuns(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /well-logs - tenantId={}, page={}, size={}", tenantId, page, size);
-        return ResponseEntity.ok(wellLogService.getAllWellLogRuns(tenantId, page, size));
+        return ResponseEntity.ok(toPageData(wellLogService.getAllWellLogRuns(tenantId, page, size)));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     @GetMapping("/{id}")

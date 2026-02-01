@@ -53,7 +53,7 @@ public class JpaMappingTemplateRuleDao extends JpaAbstractDao<MappingTemplateRul
 
     @Override
     public MappingTemplateRule save(TenantId tenantId, MappingTemplateRule rule) {
-        return save(tenantId, rule);
+        return super.save(tenantId, rule);
     }
 
     @Override

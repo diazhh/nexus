@@ -26,6 +26,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.AssetId;
+import org.thingsboard.server.common.data.id.DataSourceConfigId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.MappingTemplateId;
 import org.thingsboard.server.common.data.id.MappingTemplateRuleId;
@@ -34,6 +35,7 @@ import org.thingsboard.server.common.data.nexus.MappingTemplate;
 import org.thingsboard.server.common.data.nexus.MappingTemplateRule;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
+import org.thingsboard.server.dao.nexus.DataDistributionService;
 import org.thingsboard.server.dao.nexus.MappingTemplateService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.security.model.SecurityUser;
@@ -54,6 +56,7 @@ import static org.thingsboard.server.controller.ControllerConstants.*;
 public class NexusDataMappingController extends BaseController {
 
     private final MappingTemplateService mappingTemplateService;
+    private final DataDistributionService dataDistributionService;
 
     // ========================
     // Mapping Templates
@@ -310,5 +313,67 @@ public class NexusDataMappingController extends BaseController {
         AssetId aid = new AssetId(toUUID(targetAssetId));
 
         return checkNotNull(mappingTemplateService.applyMappingTemplate(currentUser.getTenantId(), tid, did, aid));
+    }
+
+    // ========================
+    // Data Source Configurations
+    // ========================
+
+    @Operation(summary = "Get all data source configurations", description = "Returns a page of all data source configurations for the current tenant. " + TENANT_AUTHORITY_PARAGRAPH)
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @PreAuthorize("hasAuthority('TENANT_ADMIN')")
+    @GetMapping("/dataSources")
+    public PageData<DataSourceConfig> getDataSources(
+            @Parameter(description = PAGE_SIZE_DESCRIPTION, required = true) @RequestParam int pageSize,
+            @Parameter(description = PAGE_NUMBER_DESCRIPTION, required = true) @RequestParam int page,
+            @Parameter(description = "Module key filter (CT, DR, RV)") @RequestParam(required = false) String moduleKey,
+            @Parameter(description = "Text search term") @RequestParam(required = false) String textSearch,
+            @Parameter(description = SORT_PROPERTY_DESCRIPTION) @RequestParam(required = false) String sortProperty,
+            @Parameter(description = SORT_ORDER_DESCRIPTION) @RequestParam(required = false) String sortOrder
+    ) throws ThingsboardException {
+        SecurityUser currentUser = getCurrentUser();
+        PageLink pageLink = createPageLink(pageSize, page, textSearch, sortProperty, sortOrder);
+
+        if (moduleKey != null && !moduleKey.isEmpty()) {
+            return checkNotNull(dataDistributionService.findDataSourceConfigsByModuleKey(currentUser.getTenantId(), moduleKey, pageLink));
+        } else {
+            return checkNotNull(dataDistributionService.findDataSourceConfigsByTenantId(currentUser.getTenantId(), pageLink));
+        }
+    }
+
+    @Operation(summary = "Get data source configuration by ID", description = "Returns a single data source configuration by its ID. " + TENANT_AUTHORITY_PARAGRAPH)
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Data source found"),
+        @ApiResponse(responseCode = "404", description = "Data source not found"),
+        @ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @PreAuthorize("hasAuthority('TENANT_ADMIN')")
+    @GetMapping("/dataSource/{id}")
+    public DataSourceConfig getDataSourceById(
+            @Parameter(description = "Data Source Config ID", required = true) @PathVariable String id
+    ) throws ThingsboardException {
+        checkParameter("id", id);
+        DataSourceConfigId dataSourceId = new DataSourceConfigId(toUUID(id));
+        return checkNotNull(dataDistributionService.findDataSourceConfigById(dataSourceId));
+    }
+
+    @Operation(summary = "Delete data source configuration", description = "Deletes a data source configuration and all its mapping rules. " + TENANT_AUTHORITY_PARAGRAPH)
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Data source deleted successfully"),
+        @ApiResponse(responseCode = "404", description = "Data source not found"),
+        @ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @PreAuthorize("hasAuthority('TENANT_ADMIN')")
+    @DeleteMapping("/dataSource/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public void deleteDataSource(
+            @Parameter(description = "Data Source Config ID", required = true) @PathVariable String id
+    ) throws ThingsboardException {
+        checkParameter("id", id);
+        DataSourceConfigId dataSourceId = new DataSourceConfigId(toUUID(id));
+        dataDistributionService.deleteDataSourceConfig(dataSourceId);
     }
 }

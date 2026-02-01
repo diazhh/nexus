@@ -22,6 +22,7 @@ import { DataMappingService } from '@core/http/data-mapping.service';
 import { DataSourceConfig, DataSourceConfigInfo } from '@shared/models/data-mapping.models';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { PageLink } from '@shared/models/page/page-link';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
@@ -78,12 +79,27 @@ export class DataMappingSourcesComponent extends PageComponent implements OnInit
 
   loadSources(): void {
     this.isLoading = true;
-    // Note: This would need an API endpoint to get data sources
-    // For now, we'll show an empty state or placeholder
-    // The actual implementation would call: this.dataMappingService.getDataSources(...)
-    this.isLoading = false;
-    this.sources = [];
-    this.dataSource.data = [];
+    const pageLink = new PageLink(1000); // Load all for now
+
+    const request$ = this.selectedModule
+      ? this.dataMappingService.getDataSourcesByModule(this.selectedModule as any, pageLink)
+      : this.dataMappingService.getDataSources(pageLink);
+
+    request$.pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (pageData) => {
+          this.sources = pageData.data as DataSourceConfigInfo[];
+          this.dataSource.data = this.sources;
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading data sources:', error);
+          this.showNotification('data-mapping.error-loading-sources', 'error');
+          this.isLoading = false;
+          this.sources = [];
+          this.dataSource.data = [];
+        }
+      });
   }
 
   onModuleFilterChange(): void {
@@ -127,9 +143,18 @@ export class DataMappingSourcesComponent extends PageComponent implements OnInit
       this.translate.instant('action.yes')
     ).subscribe(confirmed => {
       if (confirmed) {
-        // Would call: this.dataMappingService.deleteDataSource(source.id.id)
-        this.showNotification('data-mapping.data-source-deleted');
-        this.loadSources();
+        this.dataMappingService.deleteDataSource(source.id.id)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: () => {
+              this.showNotification('data-mapping.data-source-deleted');
+              this.loadSources();
+            },
+            error: (error) => {
+              console.error('Error deleting data source:', error);
+              this.showNotification('data-mapping.error-deleting-source', 'error');
+            }
+          });
       }
     });
   }

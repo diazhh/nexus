@@ -1,0 +1,122 @@
+#
+# Copyright © 2016-2026 The Thingsboard Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# ═══════════════════════════════════════════════════
+# NEXUS CT Simulator Configuration
+# ═══════════════════════════════════════════════════
+
+mqtt:
+  broker_url: "tcp://localhost:1883"
+  reconnect_period_ms: 5000
+
+simulation:
+  # Frequency of telemetry generation (Hz)
+  rate_hz: 0.2  # 1 data point every 5 seconds
+
+  # Simulation speed multiplier
+  # 1.0 = real-time, 10.0 = 10x faster
+  realtime_factor: 60.0  # 1 simulated hour per real minute
+
+# CT Units configuration
+units:
+  # Unit 1: Standard depth job with CT80
+  - deviceToken: "CT_UNIT_001_TOKEN"
+    unitName: "CT Unit 1"
+    material: "CT80"           # CT80, CT90, CT100, or CT110
+    outerDiameter: 2.0         # inches
+    wallThickness: 0.156       # inches
+    targetDepth: 12000         # feet
+    pipeWeight: 1.08           # lbf/ft (for 2.0" CT80)
+    workPressure: 3000         # psi during work
+    workFlowRate: 4.0          # bbl/min
+    rihSpeed: 120              # ft/min run-in speed
+    poohSpeed: 150             # ft/min pull-out speed
+    workDuration: 1800         # seconds (30 minutes at depth)
+
+  # Unit 2: Deep well with higher grade material
+  - deviceToken: "CT_UNIT_002_TOKEN"
+    unitName: "CT Unit 2"
+    material: "CT110"
+    outerDiameter: 2.375       # inches
+    wallThickness: 0.175       # inches
+    targetDepth: 18000         # feet
+    pipeWeight: 1.70           # lbf/ft (for 2.375" CT110)
+    workPressure: 5000         # psi
+    workFlowRate: 6.0          # bbl/min
+    rihSpeed: 100              # ft/min (slower for deep well)
+    poohSpeed: 120             # ft/min
+    workDuration: 3600         # seconds (1 hour at depth)
+
+  # Unit 3: Shallow well, frequent trips
+  - deviceToken: "CT_UNIT_003_TOKEN"
+    unitName: "CT Unit 3"
+    material: "CT90"
+    outerDiameter: 1.75        # inches
+    wallThickness: 0.134       # inches
+    targetDepth: 8000          # feet
+    pipeWeight: 0.82           # lbf/ft
+    workPressure: 2500         # psi
+    workFlowRate: 3.5          # bbl/min
+    rihSpeed: 150              # ft/min (faster for shallow)
+    poohSpeed: 180             # ft/min
+    workDuration: 900          # seconds (15 minutes at depth)
+
+# ═══════════════════════════════════════════════════
+# Notes:
+# ═══════════════════════════════════════════════════
+#
+# CT Material Grades:
+# - CT80:  80,000 psi yield, standard grade
+# - CT90:  90,000 psi yield, medium strength
+# - CT100: 100,000 psi yield, high strength
+# - CT110: 110,000 psi yield, ultra-high strength
+#
+# Common CT Sizes (OD x Wall Thickness):
+# - 1.25" x 0.109" = 0.51 lbf/ft
+# - 1.50" x 0.125" = 0.68 lbf/ft
+# - 1.75" x 0.134" = 0.82 lbf/ft
+# - 2.00" x 0.156" = 1.08 lbf/ft
+# - 2.375" x 0.175" = 1.70 lbf/ft
+# - 2.875" x 0.203" = 2.40 lbf/ft
+#
+# Job Phases (automatic state machine):
+# 1. Idle:  At surface, no activity
+# 2. RIH:   Running into hole at rihSpeed
+# 3. Work:  At targetDepth, circulating at workPressure
+# 4. POOH:  Pulling out of hole at poohSpeed
+# 5. Back to Idle (cycle repeats)
+#
+# Fatigue Tracking:
+# - Uses Palmgren-Miner cumulative damage rule
+# - D = Σ(n/N) where n=cycles at stress, N=cycles to failure
+# - Failure occurs when D ≥ 1.0
+# - remaining_life = (1-D) * 100%
+#
+# Typical Parameters:
+# - Target Depth: 5,000-20,000 ft
+# - Work Pressure: 2,000-7,000 psi
+# - Flow Rate: 2-8 bbl/min
+# - RIH Speed: 80-150 ft/min
+# - POOH Speed: 100-200 ft/min
+# - Work Duration: 15-120 minutes
+#
+# ThingsBoard Integration:
+# 1. Create Device for each CT unit in ThingsBoard
+# 2. Get access token from Device credentials
+# 3. Replace deviceToken values above
+# 4. Create Assets (digital twins) for each unit
+# 5. Configure DataSourceConfig via UI to map Device → Asset
+# ═══════════════════════════════════════════════════

@@ -55,7 +55,7 @@ public class JpaDataAggregationDao extends JpaAbstractDao<DataAggregationEntity,
 
     @Override
     public DataAggregation save(TenantId tenantId, DataAggregation aggregation) {
-        return save(tenantId, aggregation);
+        return super.save(tenantId, aggregation);
     }
 
     @Override

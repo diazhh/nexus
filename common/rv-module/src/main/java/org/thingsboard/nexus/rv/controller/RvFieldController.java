@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvFieldDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.exception.RvEntityNotFoundException;
 import org.thingsboard.nexus.rv.service.RvFieldService;
 
@@ -69,13 +70,17 @@ public class RvFieldController {
      * Get all Fields for a tenant with pagination.
      */
     @GetMapping
-    public ResponseEntity<Page<RvFieldDto>> getAllFields(
+    public ResponseEntity<PageData<RvFieldDto>> getAllFields(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /api/nexus/rv/fields - tenantId={}, page={}, size={}", tenantId, page, size);
         Page<RvFieldDto> fields = fieldService.getAllFields(tenantId, page, size);
-        return ResponseEntity.ok(fields);
+        return ResponseEntity.ok(toPageData(fields));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     /**

@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvBasinDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.exception.RvEntityNotFoundException;
 import org.thingsboard.nexus.rv.service.RvBasinService;
 
@@ -68,27 +69,31 @@ public class RvBasinController {
      * Get all Basins for a tenant with pagination.
      */
     @GetMapping
-    public ResponseEntity<Page<RvBasinDto>> getAllBasins(
+    public ResponseEntity<PageData<RvBasinDto>> getAllBasins(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /api/nexus/rv/basins - tenantId={}, page={}, size={}", tenantId, page, size);
         Page<RvBasinDto> basins = basinService.getAllBasins(tenantId, page, size);
-        return ResponseEntity.ok(basins);
+        return ResponseEntity.ok(toPageData(basins));
     }
 
     /**
      * Search Basins by name.
      */
     @GetMapping("/search")
-    public ResponseEntity<Page<RvBasinDto>> searchBasins(
+    public ResponseEntity<PageData<RvBasinDto>> searchBasins(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /api/nexus/rv/basins/search - q={}", q);
         Page<RvBasinDto> basins = basinService.searchBasins(tenantId, q, page, size);
-        return ResponseEntity.ok(basins);
+        return ResponseEntity.ok(toPageData(basins));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     /**

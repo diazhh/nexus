@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvZoneDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.exception.RvEntityNotFoundException;
 import org.thingsboard.nexus.rv.service.RvZoneService;
 
@@ -69,13 +70,17 @@ public class RvZoneController {
      * Get all Zones for a tenant.
      */
     @GetMapping
-    public ResponseEntity<Page<RvZoneDto>> getAllZones(
+    public ResponseEntity<PageData<RvZoneDto>> getAllZones(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /api/nexus/rv/zones - tenantId={}", tenantId);
         Page<RvZoneDto> zones = zoneService.getAllZones(tenantId, page, size);
-        return ResponseEntity.ok(zones);
+        return ResponseEntity.ok(toPageData(zones));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     /**

@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvDeclineAnalysisDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.exception.RvEntityNotFoundException;
 import org.thingsboard.nexus.rv.service.RvDeclineAnalysisService;
 
@@ -70,13 +71,17 @@ public class RvDeclineAnalysisController {
      * Get all Decline Analyses for a tenant.
      */
     @GetMapping
-    public ResponseEntity<Page<RvDeclineAnalysisDto>> getAllDeclineAnalyses(
+    public ResponseEntity<PageData<RvDeclineAnalysisDto>> getAllDeclineAnalyses(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /api/nexus/rv/decline-analyses - tenantId={}", tenantId);
         Page<RvDeclineAnalysisDto> analyses = declineService.getAllDeclineAnalyses(tenantId, page, size);
-        return ResponseEntity.ok(analyses);
+        return ResponseEntity.ok(toPageData(analyses));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     /**

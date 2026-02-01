@@ -1,0 +1,30 @@
+{
+  "name": "nexus-simulators",
+  "version": "1.0.0",
+  "description": "Telemetry simulators for NEXUS petroleum modules",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "ct-simulator",
+    "dr-simulator",
+    "rv-simulator"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "start:rv": "npm run start -w rv-simulator",
+    "start:ct": "npm run start -w ct-simulator",
+    "start:dr": "npm run start -w dr-simulator",
+    "start:all": "concurrently \"npm run start:rv\" \"npm run start:ct\" \"npm run start:dr\"",
+    "clean": "npm run clean --workspaces && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "concurrently": "^8.2.2",
+    "ts-node": "^10.9.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

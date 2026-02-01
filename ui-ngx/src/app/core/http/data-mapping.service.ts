@@ -192,4 +192,48 @@ export class DataMappingService {
       defaultHttpOptionsFromConfig(config)
     );
   }
+
+  // ========================
+  // Data Source Configurations
+  // ========================
+
+  /**
+   * Get all data source configurations with pagination
+   */
+  getDataSources(pageLink: PageLink, config?: RequestConfig): Observable<PageData<DataSourceConfig>> {
+    return this.http.get<PageData<DataSourceConfig>>(
+      `${this.BASE_URL}/dataSources${pageLink.toQuery()}`,
+      defaultHttpOptionsFromConfig(config)
+    );
+  }
+
+  /**
+   * Get data source configurations by module key with pagination
+   */
+  getDataSourcesByModule(moduleKey: DataMappingModuleKey, pageLink: PageLink, config?: RequestConfig): Observable<PageData<DataSourceConfig>> {
+    return this.http.get<PageData<DataSourceConfig>>(
+      `${this.BASE_URL}/dataSources${pageLink.toQuery()}&moduleKey=${moduleKey}`,
+      defaultHttpOptionsFromConfig(config)
+    );
+  }
+
+  /**
+   * Get data source configuration by ID
+   */
+  getDataSourceById(id: string, config?: RequestConfig): Observable<DataSourceConfig> {
+    return this.http.get<DataSourceConfig>(
+      `${this.BASE_URL}/dataSource/${id}`,
+      defaultHttpOptionsFromConfig(config)
+    );
+  }
+
+  /**
+   * Delete data source configuration
+   */
+  deleteDataSource(id: string, config?: RequestConfig): Observable<void> {
+    return this.http.delete<void>(
+      `${this.BASE_URL}/dataSource/${id}`,
+      defaultHttpOptionsFromConfig(config)
+    );
+  }
 }

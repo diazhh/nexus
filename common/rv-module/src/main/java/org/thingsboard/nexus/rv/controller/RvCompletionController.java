@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvCompletionDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.exception.RvEntityNotFoundException;
 import org.thingsboard.nexus.rv.service.RvCompletionService;
 
@@ -69,13 +70,17 @@ public class RvCompletionController {
      * Get all Completions for a tenant.
      */
     @GetMapping
-    public ResponseEntity<Page<RvCompletionDto>> getAllCompletions(
+    public ResponseEntity<PageData<RvCompletionDto>> getAllCompletions(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /api/nexus/rv/completions - tenantId={}", tenantId);
         Page<RvCompletionDto> completions = completionService.getAllCompletions(tenantId, page, size);
-        return ResponseEntity.ok(completions);
+        return ResponseEntity.ok(toPageData(completions));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     /**

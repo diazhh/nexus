@@ -1,0 +1,206 @@
+#
+# Copyright © 2016-2026 The Thingsboard Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# ═══════════════════════════════════════════════════
+# NEXUS DR Simulator Configuration
+# ═══════════════════════════════════════════════════
+
+mqtt:
+  broker_url: "tcp://localhost:1883"
+  reconnect_period_ms: 5000
+
+simulation:
+  # Frequency of telemetry generation (Hz)
+  rate_hz: 0.5  # 1 data point every 2 seconds
+
+  # Simulation speed multiplier
+  # 1.0 = real-time, 10.0 = 10x faster
+  realtime_factor: 100.0  # Drill 100 ft in real time = 1 ft simulated
+
+# Drilling Rigs configuration
+rigs:
+  # Rig 1: Vertical well through typical formations
+  - deviceToken: "RIG_001_TOKEN"
+    rigName: "Rig 1"
+
+    # Bit geometry
+    bitDiameter: 12.25          # inches (12-1/4" PDC bit)
+    bitNozzles: 5
+    bitTFA: 0.85                # Total Flow Area (in²)
+
+    # Well geometry
+    holeSize: 12.25             # inches
+    drillpipeOD: 5.0            # inches (5" drillpipe)
+    drillpipeID: 4.276          # inches
+
+    # Operating parameters
+    targetWOB: 30000            # lbf (30 klbf)
+    targetRPM: 120              # RPM
+    targetFlowRate: 600         # gpm
+    mudWeight: 10.5             # ppg
+
+    # Starting depth
+    startDepth: 5000            # ft (start at 5000 ft)
+
+    # Geological formations
+    formations:
+      # Shallow shale
+      - name: "Shale"
+        topDepth: 0
+        bottomDepth: 8000
+        compressiveStrength: 8000     # psi UCS
+        drillability: 0.7             # Easy to drill
+        porePressureGradient: 0.465   # psi/ft (normal pressure)
+        fractureGradient: 0.85        # psi/ft
+
+      # Sandstone interval
+      - name: "Sandstone"
+        topDepth: 8000
+        bottomDepth: 10500
+        compressiveStrength: 12000    # psi UCS
+        drillability: 0.6
+        porePressureGradient: 0.465
+        fractureGradient: 0.80
+
+      # Limestone (harder)
+      - name: "Limestone"
+        topDepth: 10500
+        bottomDepth: 13000
+        compressiveStrength: 18000    # psi UCS
+        drillability: 0.4             # Harder to drill
+        porePressureGradient: 0.465
+        fractureGradient: 0.75
+
+      # Target formation (shale with overpressure)
+      - name: "Target Shale"
+        topDepth: 13000
+        bottomDepth: 15000
+        compressiveStrength: 10000    # psi UCS
+        drillability: 0.5
+        porePressureGradient: 0.650   # Overpressured!
+        fractureGradient: 0.85
+
+  # Rig 2: Challenging well with hard formations
+  - deviceToken: "RIG_002_TOKEN"
+    rigName: "Rig 2"
+
+    bitDiameter: 8.5
+    bitNozzles: 4
+    bitTFA: 0.45
+
+    holeSize: 8.5
+    drillpipeOD: 5.0
+    drillpipeID: 4.276
+
+    targetWOB: 20000
+    targetRPM: 150
+    targetFlowRate: 400
+    mudWeight: 12.0             # Heavier mud
+
+    startDepth: 10000
+
+    formations:
+      # Hard granite section
+      - name: "Granite"
+        topDepth: 10000
+        bottomDepth: 12000
+        compressiveStrength: 25000    # Very hard
+        drillability: 0.2
+        porePressureGradient: 0.465
+        fractureGradient: 0.90
+
+      # Dolomite
+      - name: "Dolomite"
+        topDepth: 12000
+        bottomDepth: 14000
+        compressiveStrength: 22000
+        drillability: 0.3
+        porePressureGradient: 0.520
+        fractureGradient: 0.85
+
+      # Salt section (easy drilling)
+      - name: "Salt"
+        topDepth: 14000
+        bottomDepth: 16000
+        compressiveStrength: 3000     # Soft
+        drillability: 0.9
+        porePressureGradient: 0.465
+        fractureGradient: 1.00
+
+# ═══════════════════════════════════════════════════
+# Notes:
+# ═══════════════════════════════════════════════════
+#
+# Bit Sizes (Common):
+# - 17-1/2" (17.5): Surface hole
+# - 12-1/4" (12.25): Intermediate hole
+# - 8-1/2" (8.5): Production hole
+# - 6-1/8" (6.125): Slim hole
+#
+# Drillpipe Sizes:
+# - 5" OD x 4.276" ID: Common
+# - 5-1/2" OD x 4.778" ID: Heavy duty
+# - 3-1/2" OD x 2.764" ID: Slim hole
+#
+# Operating Parameters:
+# - WOB: 10,000-50,000 lbf (typical 20-40 klbf)
+# - RPM: 60-200 RPM (typical 100-150)
+# - Flow Rate: 200-800 gpm (depends on hole size)
+# - Mud Weight: 8.5-16 ppg (varies with pressure)
+#
+# Formation Properties:
+# - UCS (Unconfined Compressive Strength):
+#   - Soft: 1,000-5,000 psi (salt, shale)
+#   - Medium: 5,000-15,000 psi (sandstone, limestone)
+#   - Hard: 15,000-30,000 psi (granite, basalt)
+#
+# - Drillability (0-1 scale):
+#   - 0.9-1.0: Very easy (salt)
+#   - 0.6-0.8: Medium (shale, sandstone)
+#   - 0.3-0.5: Hard (limestone, dolomite)
+#   - 0.1-0.2: Very hard (granite, basalt)
+#
+# - Pressure Gradients:
+#   - Normal pore pressure: 0.433-0.465 psi/ft
+#   - Overpressure: 0.500-0.800 psi/ft
+#   - Fracture gradient: 0.70-1.00 psi/ft
+#
+# Generated Telemetry:
+# - Controllable: WOB, RPM, flow_rate, mud_weight
+# - Measured: ROP, torque, SPP, hook_load
+# - Calculated: MSE, ECD
+# - Formation: name, UCS, drillability, pressures
+# - Problems: HIGH_MSE, HIGH_ECD, LOW_ECD, STICK_SLIP, LOW_ROP
+#
+# MSE (Mechanical Specific Energy):
+# - Measures drilling efficiency
+# - Optimal MSE ≈ Formation UCS
+# - High MSE = inefficient (wrong parameters or dull bit)
+# - Low MSE = very efficient
+#
+# ECD (Equivalent Circulating Density):
+# - Must stay in pressure window:
+#   Pore Pressure < ECD < Fracture Pressure
+# - Too low: kick risk (influx)
+# - Too high: lost circulation (fracture formation)
+#
+# ThingsBoard Integration:
+# 1. Create Device for each rig in ThingsBoard
+# 2. Get access token from Device credentials
+# 3. Replace deviceToken values above
+# 4. Create Assets (digital twins) for each rig
+# 5. Configure DataSourceConfig via UI to map Device → Asset
+# ═══════════════════════════════════════════════════

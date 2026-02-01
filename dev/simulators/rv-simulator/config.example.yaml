@@ -1,0 +1,97 @@
+#
+# Copyright © 2016-2026 The Thingsboard Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# ═══════════════════════════════════════════════════
+# NEXUS RV Simulator Configuration
+# ═══════════════════════════════════════════════════
+
+mqtt:
+  broker_url: "tcp://localhost:1883"
+  reconnect_period_ms: 5000
+
+simulation:
+  # Frequency of telemetry generation (Hz)
+  rate_hz: 0.1  # 1 data point every 10 seconds
+
+  # Simulation speed multiplier
+  # 1.0 = real-time, 10.0 = 10x faster, 365.0 = 1 year per day
+  realtime_factor: 365.0  # 1 simulated year per real day
+
+# Wells configuration
+wells:
+  # Well 1: Exponential decline (typical tight oil/gas)
+  - deviceToken: "WELL_RV_001_TOKEN"
+    wellName: "Eagle Ford 1H"
+    declineType: "exponential"
+    initialRate: 1200.0        # bbl/day
+    declineRate: 0.35           # 35% annual decline
+    startDate: "2024-01-01T00:00:00Z"
+
+  # Well 2: Hyperbolic decline (common in conventional reservoirs)
+  - deviceToken: "WELL_RV_002_TOKEN"
+    wellName: "Permian 2H"
+    declineType: "hyperbolic"
+    initialRate: 800.0          # bbl/day
+    declineRate: 0.45           # 45% initial decline
+    hyperbolicExponent: 0.6     # b-factor
+    startDate: "2023-06-15T00:00:00Z"
+
+  # Well 3: Harmonic decline (long-life wells, natural flow)
+  - deviceToken: "WELL_RV_003_TOKEN"
+    wellName: "Bakken 3H"
+    declineType: "harmonic"
+    initialRate: 600.0          # bbl/day
+    declineRate: 0.25           # 25% annual decline
+    startDate: "2022-03-20T00:00:00Z"
+
+  # Well 4: Another exponential (mature well)
+  - deviceToken: "WELL_RV_004_TOKEN"
+    wellName: "Niobrara 4H"
+    declineType: "exponential"
+    initialRate: 450.0          # bbl/day
+    declineRate: 0.28           # 28% annual decline
+    startDate: "2021-09-10T00:00:00Z"
+
+# ═══════════════════════════════════════════════════
+# Notes:
+# ═══════════════════════════════════════════════════
+#
+# Decline Types:
+# - exponential: q(t) = qi * exp(-Di * t)
+#   - Typical for tight oil/gas, unconventional wells
+#   - Steepest decline, finite EUR
+#
+# - hyperbolic: q(t) = qi / (1 + b*Di*t)^(1/b)
+#   - Common in conventional reservoirs
+#   - b=0 → exponential, b=1 → harmonic
+#   - Typical b values: 0.3-0.8
+#
+# - harmonic: q(t) = qi / (1 + Di*t)
+#   - Long-life wells, pressure maintenance
+#   - Slowest decline, infinite theoretical EUR
+#
+# Typical Parameters:
+# - initialRate: 100-2000 bbl/day (oil) or MCF/day (gas)
+# - declineRate: 0.15-0.60 /year (15%-60% annual decline)
+# - hyperbolicExponent: 0.3-0.8 for conventional wells
+#
+# ThingsBoard Integration:
+# 1. Create Device for each well in ThingsBoard
+# 2. Get access token from Device credentials
+# 3. Replace deviceToken values above
+# 4. Create Assets (digital twins) for each well
+# 5. Configure DataSourceConfig via UI to map Device → Asset
+# ═══════════════════════════════════════════════════

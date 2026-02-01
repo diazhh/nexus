@@ -29,6 +29,7 @@ import org.thingsboard.nexus.dr.model.DrRun;
 import org.thingsboard.nexus.dr.model.enums.HoleSection;
 import org.thingsboard.nexus.dr.model.enums.RunStatus;
 import org.thingsboard.nexus.dr.service.DrRunService;
+import org.thingsboard.server.common.data.page.PageData;
 
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
@@ -63,7 +64,7 @@ public class DrRunController {
     }
 
     @GetMapping("/tenant/{tenantId}")
-    public ResponseEntity<Page<DrRunDto>> getRunsByTenant(
+    public ResponseEntity<PageData<DrRunDto>> getRunsByTenant(
             @PathVariable UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -77,7 +78,7 @@ public class DrRunController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<DrRunDto> runs = runService.getByTenant(tenantId, pageable);
-        return ResponseEntity.ok(runs);
+        return ResponseEntity.ok(toPageData(runs));
     }
 
     @GetMapping("/rig/{rigId}")
@@ -88,7 +89,7 @@ public class DrRunController {
     }
 
     @GetMapping("/rig/{rigId}/paged")
-    public ResponseEntity<Page<DrRunDto>> getRunsByRigPaged(
+    public ResponseEntity<PageData<DrRunDto>> getRunsByRigPaged(
             @PathVariable UUID rigId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -102,7 +103,7 @@ public class DrRunController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<DrRunDto> runs = runService.getByRig(rigId, pageable);
-        return ResponseEntity.ok(runs);
+        return ResponseEntity.ok(toPageData(runs));
     }
 
     @GetMapping("/well/{wellId}")
@@ -113,7 +114,7 @@ public class DrRunController {
     }
 
     @GetMapping("/well/{wellId}/paged")
-    public ResponseEntity<Page<DrRunDto>> getRunsByWellPaged(
+    public ResponseEntity<PageData<DrRunDto>> getRunsByWellPaged(
             @PathVariable UUID wellId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -127,7 +128,7 @@ public class DrRunController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<DrRunDto> runs = runService.getByWell(wellId, pageable);
-        return ResponseEntity.ok(runs);
+        return ResponseEntity.ok(toPageData(runs));
     }
 
     @GetMapping("/bha/{bhaId}")
@@ -175,7 +176,7 @@ public class DrRunController {
     }
 
     @GetMapping("/tenant/{tenantId}/filter")
-    public ResponseEntity<Page<DrRunDto>> getRunsByFilters(
+    public ResponseEntity<PageData<DrRunDto>> getRunsByFilters(
             @PathVariable UUID tenantId,
             @RequestParam(required = false) RunStatus status,
             @RequestParam(required = false) UUID rigId,
@@ -193,7 +194,11 @@ public class DrRunController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<DrRunDto> runs = runService.getByFilters(tenantId, status, rigId, wellId, holeSection, pageable);
-        return ResponseEntity.ok(runs);
+        return ResponseEntity.ok(toPageData(runs));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     @GetMapping("/tenant/{tenantId}/date-range")

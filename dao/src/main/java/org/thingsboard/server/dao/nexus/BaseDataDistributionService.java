@@ -138,6 +138,15 @@ public class BaseDataDistributionService implements DataDistributionService {
     }
 
     @Override
+    public PageData<DataSourceConfig> findDataSourceConfigsByModuleKey(TenantId tenantId, String moduleKey, PageLink pageLink) {
+        log.trace("Executing findDataSourceConfigsByModuleKey [{}] [{}] [{}]", tenantId, moduleKey, pageLink);
+        validateId(tenantId, id -> INCORRECT_TENANT_ID + id);
+        validateString(moduleKey, k -> MODULE_KEY_REQUIRED);
+        validatePageLink(pageLink);
+        return dataSourceConfigDao.findByModuleKey(tenantId.getId(), moduleKey, pageLink);
+    }
+
+    @Override
     public List<DataSourceConfig> findActiveDataSourceConfigs(TenantId tenantId) {
         log.trace("Executing findActiveDataSourceConfigs [{}]", tenantId);
         validateId(tenantId, id -> INCORRECT_TENANT_ID + id);

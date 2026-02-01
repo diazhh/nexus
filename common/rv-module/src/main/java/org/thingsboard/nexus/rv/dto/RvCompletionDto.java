@@ -120,7 +120,7 @@ public class RvCompletionDto {
     private Long updatedTime;
 
     // Constants for attribute keys
-    public static final String ASSET_TYPE = "rv_completion";
+    public static final String ASSET_TYPE = "RV_COMPLETION";
     public static final String ATTR_COMPLETION_CODE = "completion_code";
     public static final String ATTR_COMPLETION_NUMBER = "completion_number";
     public static final String ATTR_COMPLETION_DATE = "completion_date";

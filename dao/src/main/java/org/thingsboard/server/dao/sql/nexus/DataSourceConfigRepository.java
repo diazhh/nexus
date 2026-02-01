@@ -55,6 +55,16 @@ public interface DataSourceConfigRepository extends JpaRepository<DataSourceConf
     List<DataSourceConfigEntity> findByTenantIdAndModuleKey(@Param("tenantId") UUID tenantId, @Param("moduleKey") String moduleKey);
 
     /**
+     * Find configurations by module key with pagination and search
+     */
+    @Query("SELECT c FROM DataSourceConfigEntity c WHERE c.tenantId = :tenantId AND c.moduleKey = :moduleKey " +
+            "AND (:searchText IS NULL OR ilike(c.targetAssetType, CONCAT('%', :searchText, '%')) = true)")
+    Page<DataSourceConfigEntity> findByTenantIdAndModuleKey(@Param("tenantId") UUID tenantId,
+                                                              @Param("moduleKey") String moduleKey,
+                                                              @Param("searchText") String searchText,
+                                                              Pageable pageable);
+
+    /**
      * Find active configurations for a tenant
      */
     @Query("SELECT c FROM DataSourceConfigEntity c WHERE c.tenantId = :tenantId AND c.isActive = true")

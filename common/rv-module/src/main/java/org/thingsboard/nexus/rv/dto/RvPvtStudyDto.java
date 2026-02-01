@@ -122,7 +122,7 @@ public class RvPvtStudyDto {
     private Long updatedTime;
 
     // Constants for attribute keys
-    public static final String ASSET_TYPE = "rv_pvt_study";
+    public static final String ASSET_TYPE = "RV_PVT_STUDY";
     public static final String ATTR_STUDY_CODE = "study_code";
     public static final String ATTR_SAMPLE_DATE = "sample_date";
     public static final String ATTR_LABORATORY = "laboratory_name";

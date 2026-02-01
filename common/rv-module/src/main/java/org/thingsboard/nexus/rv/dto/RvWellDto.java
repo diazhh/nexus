@@ -135,7 +135,7 @@ public class RvWellDto {
     private Long updatedTime;
 
     // Constants for attribute keys
-    public static final String ASSET_TYPE = "rv_well";
+    public static final String ASSET_TYPE = "RV_WELL";
     public static final String ATTR_WELL_CODE = "well_code";
     public static final String ATTR_WELL_TYPE = "well_type";
     public static final String ATTR_WELL_STATUS = "well_status";

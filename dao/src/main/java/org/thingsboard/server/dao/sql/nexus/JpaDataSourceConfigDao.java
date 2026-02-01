@@ -56,7 +56,7 @@ public class JpaDataSourceConfigDao extends JpaAbstractDao<DataSourceConfigEntit
 
     @Override
     public DataSourceConfig save(TenantId tenantId, DataSourceConfig config) {
-        return save(tenantId, config);
+        return super.save(tenantId, config);
     }
 
     @Override
@@ -81,6 +81,15 @@ public class JpaDataSourceConfigDao extends JpaAbstractDao<DataSourceConfigEntit
     @Override
     public List<DataSourceConfig> findByModuleKey(UUID tenantId, String moduleKey) {
         return DaoUtil.convertDataList(repository.findByTenantIdAndModuleKey(tenantId, moduleKey));
+    }
+
+    @Override
+    public PageData<DataSourceConfig> findByModuleKey(UUID tenantId, String moduleKey, PageLink pageLink) {
+        return DaoUtil.toPageData(repository.findByTenantIdAndModuleKey(
+                tenantId,
+                moduleKey,
+                pageLink.getTextSearch(),
+                DaoUtil.toPageable(pageLink)));
     }
 
     @Override

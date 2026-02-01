@@ -1,0 +1,23 @@
+{
+  "name": "@simulators/rv-simulator",
+  "version": "1.0.0",
+  "description": "NEXUS Reservoir (RV) Telemetry Simulator",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": ["nexus", "simulator", "reservoir", "rv", "thingsboard"],
+  "author": "ThingsBoard Authors",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@simulators/shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

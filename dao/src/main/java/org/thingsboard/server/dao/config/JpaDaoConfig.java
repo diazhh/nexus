@@ -46,7 +46,7 @@ import java.util.Objects;
 @Configuration
 @TbAutoConfiguration
 @ComponentScan({"org.thingsboard.server.dao.sql", "org.thingsboard.server.dao.attributes", "org.thingsboard.server.dao.sqlts.dictionary", "org.thingsboard.server.dao.cache", "org.thingsboard.server.cache"})
-@EnableJpaRepositories(value = {"org.thingsboard.server.dao.sql", "org.thingsboard.server.dao.sqlts.dictionary", "org.thingsboard.nexus.ct.repository"},
+@EnableJpaRepositories(value = {"org.thingsboard.server.dao.sql", "org.thingsboard.server.dao.sqlts.dictionary", "org.thingsboard.nexus.ct.repository", "org.thingsboard.nexus.dr.repository", "org.thingsboard.nexus.rv.repository"},
         excludeFilters = @Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {EventRepository.class, AuditLogRepository.class}),
         bootstrapMode = BootstrapMode.LAZY)
 public class JpaDaoConfig {
@@ -76,6 +76,8 @@ public class JpaDaoConfig {
         packages.add("org.thingsboard.server.dao.model.sql");
         packages.add("org.thingsboard.server.dao.model.sqlts.dictionary");
         packages.add("org.thingsboard.nexus.ct.model");
+        packages.add("org.thingsboard.nexus.dr.model");
+        packages.add("org.thingsboard.nexus.rv.model");
         if (tsLatestDaoConfig != null) {
             packages.add("org.thingsboard.server.dao.model.sqlts.latest");
         }

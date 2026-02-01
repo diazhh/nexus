@@ -29,6 +29,7 @@ import org.thingsboard.nexus.dr.model.DrRig;
 import org.thingsboard.nexus.dr.model.enums.RigStatus;
 import org.thingsboard.nexus.dr.model.enums.RigType;
 import org.thingsboard.nexus.dr.service.DrRigService;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.template.CreateFromTemplateRequest;
 
 import jakarta.validation.Valid;
@@ -68,7 +69,7 @@ public class DrRigController {
     }
 
     @GetMapping("/tenant/{tenantId}")
-    public ResponseEntity<Page<DrRigDto>> getRigsByTenant(
+    public ResponseEntity<PageData<DrRigDto>> getRigsByTenant(
             @PathVariable UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -82,11 +83,11 @@ public class DrRigController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<DrRigDto> rigs = rigService.getByTenant(tenantId, pageable);
-        return ResponseEntity.ok(rigs);
+        return ResponseEntity.ok(toPageData(rigs));
     }
 
     @GetMapping("/tenant/{tenantId}/filter")
-    public ResponseEntity<Page<DrRigDto>> getRigsByFilters(
+    public ResponseEntity<PageData<DrRigDto>> getRigsByFilters(
             @PathVariable UUID tenantId,
             @RequestParam(required = false) RigStatus status,
             @RequestParam(required = false) RigType rigType,
@@ -104,7 +105,11 @@ public class DrRigController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<DrRigDto> rigs = rigService.getByFilters(tenantId, status, rigType, contractor, location, pageable);
-        return ResponseEntity.ok(rigs);
+        return ResponseEntity.ok(toPageData(rigs));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     @GetMapping("/tenant/{tenantId}/status/{status}")

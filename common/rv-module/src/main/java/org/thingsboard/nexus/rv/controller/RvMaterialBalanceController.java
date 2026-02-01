@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.rv.dto.RvMaterialBalanceDto;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.nexus.rv.service.RvMaterialBalanceService;
 
 import java.util.List;
@@ -46,12 +47,16 @@ public class RvMaterialBalanceController {
 
     @GetMapping
     @Operation(summary = "Get all material balance studies")
-    public ResponseEntity<Page<RvMaterialBalanceDto>> getAllMaterialBalanceStudies(
+    public ResponseEntity<PageData<RvMaterialBalanceDto>> getAllMaterialBalanceStudies(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         log.debug("GET /material-balance - tenantId={}, page={}, size={}", tenantId, page, size);
-        return ResponseEntity.ok(materialBalanceService.getAllMaterialBalanceStudies(tenantId, page, size));
+        return ResponseEntity.ok(toPageData(materialBalanceService.getAllMaterialBalanceStudies(tenantId, page, size)));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     @GetMapping("/{id}")

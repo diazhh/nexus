@@ -56,7 +56,7 @@ public class JpaDistributionLogDao extends JpaAbstractDao<DistributionLogEntity,
 
     @Override
     public DistributionLog save(TenantId tenantId, DistributionLog log) {
-        return save(tenantId, log);
+        return super.save(tenantId, log);
     }
 
     @Override

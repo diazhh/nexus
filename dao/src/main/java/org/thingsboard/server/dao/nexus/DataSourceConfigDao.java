@@ -56,6 +56,11 @@ public interface DataSourceConfigDao extends Dao<DataSourceConfig> {
     List<DataSourceConfig> findByModuleKey(UUID tenantId, String moduleKey);
 
     /**
+     * Find configurations by module key with pagination
+     */
+    PageData<DataSourceConfig> findByModuleKey(UUID tenantId, String moduleKey, PageLink pageLink);
+
+    /**
      * Find active configurations for a tenant
      */
     List<DataSourceConfig> findActiveByTenantId(UUID tenantId);

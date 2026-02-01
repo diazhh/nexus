@@ -92,7 +92,7 @@ public class RvFieldDto {
     private Long updatedTime;
 
     // Constants for attribute keys
-    public static final String ASSET_TYPE = "rv_field";
+    public static final String ASSET_TYPE = "RV_FIELD";
     public static final String ATTR_CODE = "code";
     public static final String ATTR_OPERATIONAL_STATUS = "operational_status";
     public static final String ATTR_OPERATOR_COMPANY = "operator_company";

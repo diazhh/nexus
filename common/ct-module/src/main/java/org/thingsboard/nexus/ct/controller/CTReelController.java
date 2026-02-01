@@ -28,6 +28,7 @@ import org.thingsboard.nexus.ct.dto.CTReelDto;
 import org.thingsboard.nexus.ct.model.CTReel;
 import org.thingsboard.nexus.ct.model.ReelStatus;
 import org.thingsboard.nexus.ct.service.CTReelService;
+import org.thingsboard.server.common.data.page.PageData;
 
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
@@ -57,25 +58,25 @@ public class CTReelController {
     }
 
     @GetMapping("/tenant/{tenantId}")
-    public ResponseEntity<Page<CTReelDto>> getReelsByTenant(
+    public ResponseEntity<PageData<CTReelDto>> getReelsByTenant(
             @PathVariable UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "reelCode") String sortBy,
             @RequestParam(defaultValue = "ASC") String sortDir) {
-        
+
         log.debug("REST request to get CT Reels for tenant: {}", tenantId);
-        
-        Sort sort = sortDir.equalsIgnoreCase("DESC") ? 
+
+        Sort sort = sortDir.equalsIgnoreCase("DESC") ?
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        
+
         Page<CTReelDto> reels = reelService.getByTenant(tenantId, pageable);
-        return ResponseEntity.ok(reels);
+        return ResponseEntity.ok(toPageData(reels));
     }
 
     @GetMapping("/tenant/{tenantId}/filter")
-    public ResponseEntity<Page<CTReelDto>> getReelsByFilters(
+    public ResponseEntity<PageData<CTReelDto>> getReelsByFilters(
             @PathVariable UUID tenantId,
             @RequestParam(required = false) ReelStatus status,
             @RequestParam(required = false) BigDecimal odInch,
@@ -85,16 +86,20 @@ public class CTReelController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "reelCode") String sortBy,
             @RequestParam(defaultValue = "ASC") String sortDir) {
-        
+
         log.debug("REST request to get CT Reels with filters");
-        
-        Sort sort = sortDir.equalsIgnoreCase("DESC") ? 
+
+        Sort sort = sortDir.equalsIgnoreCase("DESC") ?
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        
-        Page<CTReelDto> reels = reelService.getByFilters(tenantId, status, odInch, 
+
+        Page<CTReelDto> reels = reelService.getByFilters(tenantId, status, odInch,
                                                          fatigueMin, fatigueMax, pageable);
-        return ResponseEntity.ok(reels);
+        return ResponseEntity.ok(toPageData(reels));
+    }
+
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     @GetMapping("/tenant/{tenantId}/status/{status}")
