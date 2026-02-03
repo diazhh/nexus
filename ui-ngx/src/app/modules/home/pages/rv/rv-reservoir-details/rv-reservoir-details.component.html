@@ -1,0 +1,318 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="rv-details-container">
+  <mat-toolbar color="primary" class="details-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <mat-icon>layers</mat-icon>
+    <span class="toolbar-title">{{ reservoir?.name || 'Cargando...' }}</span>
+    <span class="toolbar-spacer"></span>
+    <button mat-icon-button (click)="editReservoir()" *ngIf="reservoir">
+      <mat-icon>edit</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="!isLoading && reservoir" class="details-content">
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <mat-card class="summary-card">
+        <mat-card-header>
+          <mat-icon mat-card-avatar>oil_barrel</mat-icon>
+          <mat-card-title>OOIP Estimado</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="metric-value">{{ formatNumber(reservoir.ooipEstimateMmbbl, 2) }}</div>
+          <div class="metric-unit">MMbbl</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-header>
+          <mat-icon mat-card-avatar>analytics</mat-icon>
+          <mat-card-title>Porosidad Prom.</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="metric-value">{{ formatPercentage(reservoir.averagePorosityFrac) }}</div>
+          <div class="metric-unit">Fracción</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-header>
+          <mat-icon mat-card-avatar>waves</mat-icon>
+          <mat-card-title>Permeabilidad</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="metric-value">{{ formatNumber(reservoir.averagePermeabilityMd, 0) }}</div>
+          <div class="metric-unit">mD</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-header>
+          <mat-icon mat-card-avatar>water_drop</mat-icon>
+          <mat-card-title>Sw Promedio</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="metric-value">{{ formatPercentage(reservoir.averageWaterSaturationFrac) }}</div>
+          <div class="metric-unit">Fracción</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Tabs -->
+    <mat-tab-group [(selectedIndex)]="selectedTabIndex" class="details-tabs">
+      <!-- General Tab -->
+      <mat-tab label="General">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Información General</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="info-grid">
+                <div class="info-item">
+                  <label>Nombre:</label>
+                  <span>{{ reservoir.name }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Código:</label>
+                  <span>{{ reservoir.code || 'N/A' }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Tipo:</label>
+                  <span>{{ reservoir.reservoirType || 'N/A' }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Estado:</label>
+                  <span class="status-badge">{{ reservoir.status || 'N/A' }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Profundidad Promedio:</label>
+                  <span>{{ formatNumber(reservoir.averageDepthFt, 0) }} ft</span>
+                </div>
+                <div class="info-item">
+                  <label>Presión Inicial:</label>
+                  <span>{{ formatNumber(reservoir.initialPressurePsi, 0) }} psi</span>
+                </div>
+                <div class="info-item">
+                  <label>Temperatura:</label>
+                  <span>{{ formatNumber(reservoir.temperatureF, 0) }} °F</span>
+                </div>
+                <div class="info-item">
+                  <label>API Gravity:</label>
+                  <span>{{ formatNumber(reservoir.apiGravity, 1) }} °API</span>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Propiedades Petrofísicas</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="info-grid">
+                <div class="info-item">
+                  <label>Porosidad:</label>
+                  <span>{{ formatPercentage(reservoir.averagePorosityFrac) }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Permeabilidad:</label>
+                  <span>{{ formatNumber(reservoir.averagePermeabilityMd, 0) }} mD</span>
+                </div>
+                <div class="info-item">
+                  <label>Saturación Agua:</label>
+                  <span>{{ formatPercentage(reservoir.averageWaterSaturationFrac) }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Net-to-Gross:</label>
+                  <span>{{ formatPercentage(reservoir.netToGrossFrac) }}</span>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Zones Tab -->
+      <mat-tab label="Zonas">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Zonas del Yacimiento ({{ zones.length }})</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="zones" class="compact-table" *ngIf="zones.length > 0">
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Nombre</th>
+                  <td mat-cell *matCellDef="let zone">{{ zone.name }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="topDepthMd">
+                  <th mat-header-cell *matHeaderCellDef>Top MD (ft)</th>
+                  <td mat-cell *matCellDef="let zone">{{ formatNumber(zone.topDepthMd, 0) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="baseDepthMd">
+                  <th mat-header-cell *matHeaderCellDef>Base MD (ft)</th>
+                  <td mat-cell *matCellDef="let zone">{{ formatNumber(zone.baseDepthMd, 0) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="netThicknessFt">
+                  <th mat-header-cell *matHeaderCellDef>Espesor Neto (ft)</th>
+                  <td mat-cell *matCellDef="let zone">{{ formatNumber(zone.netThicknessFt, 1) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="porosity">
+                  <th mat-header-cell *matHeaderCellDef>Porosidad</th>
+                  <td mat-cell *matCellDef="let zone">{{ formatPercentage(zone.averagePorosityFrac) }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="['name', 'topDepthMd', 'baseDepthMd', 'netThicknessFt', 'porosity']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['name', 'topDepthMd', 'baseDepthMd', 'netThicknessFt', 'porosity'];"></tr>
+              </table>
+              <p *ngIf="zones.length === 0" class="no-data">No hay zonas registradas para este yacimiento</p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Wells Tab -->
+      <mat-tab label="Pozos">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Pozos del Yacimiento ({{ wells.length }})</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="wells" class="compact-table" *ngIf="wells.length > 0">
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Nombre</th>
+                  <td mat-cell *matCellDef="let well">{{ well.name }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="wellType">
+                  <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                  <td mat-cell *matCellDef="let well">{{ well.wellType }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Estado</th>
+                  <td mat-cell *matCellDef="let well">
+                    <span class="status-badge">{{ well.status }}</span>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="totalDepthMd">
+                  <th mat-header-cell *matHeaderCellDef>TD MD (ft)</th>
+                  <td mat-cell *matCellDef="let well">{{ formatNumber(well.totalDepthMd, 0) }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="['name', 'wellType', 'status', 'totalDepthMd']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['name', 'wellType', 'status', 'totalDepthMd'];" class="clickable-row" [routerLink]="['/rv/wells', row.assetId]"></tr>
+              </table>
+              <p *ngIf="wells.length === 0" class="no-data">No hay pozos registrados en este yacimiento</p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- PVT Studies Tab -->
+      <mat-tab label="Estudios PVT">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Estudios PVT ({{ pvtStudies.length }})</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="pvtStudies" class="compact-table" *ngIf="pvtStudies.length > 0">
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Nombre</th>
+                  <td mat-cell *matCellDef="let pvt">{{ pvt.name }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="bubblePointPressurePsi">
+                  <th mat-header-cell *matHeaderCellDef>Pb (psi)</th>
+                  <td mat-cell *matCellDef="let pvt">{{ formatNumber(pvt.bubblePointPressurePsi, 0) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="apiGravity">
+                  <th mat-header-cell *matHeaderCellDef>API</th>
+                  <td mat-cell *matCellDef="let pvt">{{ formatNumber(pvt.apiGravity, 1) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="gasSpecificGravity">
+                  <th mat-header-cell *matHeaderCellDef>γg</th>
+                  <td mat-cell *matCellDef="let pvt">{{ formatNumber(pvt.gasSpecificGravity, 3) }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="['name', 'bubblePointPressurePsi', 'apiGravity', 'gasSpecificGravity']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['name', 'bubblePointPressurePsi', 'apiGravity', 'gasSpecificGravity'];"></tr>
+              </table>
+              <p *ngIf="pvtStudies.length === 0" class="no-data">No hay estudios PVT para este yacimiento</p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Material Balance Tab -->
+      <mat-tab label="Balance de Materiales">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Estudios de Balance de Materiales ({{ materialBalance.length }})</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="materialBalance" class="compact-table" *ngIf="materialBalance.length > 0">
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Nombre</th>
+                  <td mat-cell *matCellDef="let mb">{{ mb.name }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="initialPressurePsi">
+                  <th mat-header-cell *matHeaderCellDef>Pi (psi)</th>
+                  <td mat-cell *matCellDef="let mb">{{ formatNumber(mb.initialPressurePsi, 0) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="calculatedOoipMmbbl">
+                  <th mat-header-cell *matHeaderCellDef>OOIP (MMbbl)</th>
+                  <td mat-cell *matCellDef="let mb">{{ formatNumber(mb.calculatedOoipMmbbl, 2) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="primaryDriveMechanism">
+                  <th mat-header-cell *matHeaderCellDef>Mecanismo</th>
+                  <td mat-cell *matCellDef="let mb">{{ mb.primaryDriveMechanism || 'N/A' }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="['name', 'initialPressurePsi', 'calculatedOoipMmbbl', 'primaryDriveMechanism']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['name', 'initialPressurePsi', 'calculatedOoipMmbbl', 'primaryDriveMechanism'];"></tr>
+              </table>
+              <p *ngIf="materialBalance.length === 0" class="no-data">No hay estudios de balance de materiales</p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>

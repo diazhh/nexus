@@ -1,0 +1,154 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="rv-dialog-container">
+  <h2 mat-dialog-title><mat-icon>map</mat-icon> {{ isEditMode ? 'Editar Estudio Sísmico' : 'Nuevo Estudio Sísmico' }}</h2>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="form">
+      <div class="section-title">Identificación</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="name" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Código</mat-label>
+          <input matInput formControlName="surveyCode">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Campo</mat-label>
+          <mat-select formControlName="fieldAssetId" required>
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let field of fields" [value]="field.assetId">{{ field.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de Sísmica</mat-label>
+          <mat-select formControlName="surveyType" required>
+            <mat-option *ngFor="let type of surveyTypes" [value]="type">
+              {{ surveyTypeLabels[type] }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha de Adquisición</mat-label>
+          <input matInput [matDatepicker]="acquisitionDatePicker" formControlName="acquisitionDate">
+          <mat-datepicker-toggle matSuffix [for]="acquisitionDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #acquisitionDatePicker></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Cobertura</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Área (km²)</mat-label>
+          <input matInput type="number" step="0.1" formControlName="coverageAreaKm2">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Líneas-Km</mat-label>
+          <input matInput type="number" step="0.1" formControlName="lineKm">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fold</mat-label>
+          <input matInput type="number" formControlName="fold">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Calidad</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>S/N Ratio</mat-label>
+          <input matInput type="number" step="0.1" formControlName="snRatio">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Calificación de Calidad</mat-label>
+          <mat-select formControlName="qualityRating">
+            <mat-option value="EXCELLENT">Excelente</mat-option>
+            <mat-option value="GOOD">Buena</mat-option>
+            <mat-option value="FAIR">Regular</mat-option>
+            <mat-option value="POOR">Pobre</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Procesamiento</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Secuencia de Procesamiento</mat-label>
+          <textarea matInput formControlName="processingSequence" rows="2"></textarea>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-checkbox formControlName="isPsdm">PSDM (Migración Pre-Stack en Profundidad)</mat-checkbox>
+      </div>
+
+      <div class="section-title">Interpretación</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Estado de Interpretación</mat-label>
+          <mat-select formControlName="interpretationStatus">
+            <mat-option value="NOT_STARTED">No Iniciado</mat-option>
+            <mat-option value="IN_PROGRESS">En Progreso</mat-option>
+            <mat-option value="COMPLETED">Completado</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Intérprete</mat-label>
+          <input matInput formControlName="interpreterName">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Horizontes Identificados</mat-label>
+          <textarea matInput formControlName="horizonsIdentified" rows="2"></textarea>
+          <mat-hint>Separados por comas</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fallas Identificadas</mat-label>
+          <textarea matInput formControlName="faultsIdentified" rows="2"></textarea>
+          <mat-hint>Separadas por comas</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Notas</mat-label>
+          <textarea matInput formControlName="notes" rows="3"></textarea>
+        </mat-form-field>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="cancel()" [disabled]="isLoading">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="!form.valid || isLoading">
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Actualizar' : 'Guardar' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

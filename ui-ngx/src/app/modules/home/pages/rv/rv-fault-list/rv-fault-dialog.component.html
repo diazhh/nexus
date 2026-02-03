@@ -1,0 +1,169 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="rv-dialog-container">
+  <h2 mat-dialog-title><mat-icon>waves</mat-icon> {{ isEditMode ? 'Editar Falla' : 'Nueva Falla' }}</h2>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="form">
+      <div class="section-title">Identificación</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="name" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Código</mat-label>
+          <input matInput formControlName="faultCode">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Campo</mat-label>
+          <mat-select formControlName="fieldAssetId">
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let field of fields" [value]="field.assetId">{{ field.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Yacimiento</mat-label>
+          <mat-select formControlName="reservoirAssetId">
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let r of reservoirs" [value]="r.assetId">{{ r.name }}</mat-option>
+          </mat-select>
+          <mat-hint>Opcional - si afecta yacimiento específico</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Tipo de Falla</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Tipo</mat-label>
+          <mat-select formControlName="faultType" required>
+            <mat-option *ngFor="let type of faultTypes" [value]="type">
+              {{ faultTypeLabels[type] }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Geometría</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Strike (°)</mat-label>
+          <input matInput type="number" step="1" min="0" max="360" formControlName="strikeDeg">
+          <mat-hint>Azimut de la traza de la falla</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Dip (°)</mat-label>
+          <input matInput type="number" step="1" min="0" max="90" formControlName="dipDeg">
+          <mat-hint>Ángulo de inclinación</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Longitud (m)</mat-label>
+          <input matInput type="number" step="10" formControlName="lengthM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Throw (m)</mat-label>
+          <input matInput type="number" step="1" formControlName="throwM">
+          <mat-hint>Desplazamiento vertical</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Heave (m)</mat-label>
+          <input matInput type="number" step="1" formControlName="heaveM">
+          <mat-hint>Desplazamiento horizontal</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Análisis de Sello</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Potencial de Sello</mat-label>
+          <mat-select formControlName="sealingPotential">
+            <mat-option *ngFor="let potential of sealingPotentials" [value]="potential">
+              {{ sealingPotentialLabels[potential] }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-checkbox formControlName="shaleSmearedGouge">Shale Smeared Gouge</mat-checkbox>
+        <mat-checkbox formControlName="juxtapositionSeal">Juxtaposition Seal</mat-checkbox>
+      </div>
+
+      <div class="section-title">Compartamentalización</div>
+
+      <div class="form-row">
+        <mat-checkbox formControlName="causesCompartmentalization">Causa Compartamentalización</mat-checkbox>
+      </div>
+
+      <div class="form-row" *ngIf="form.get('causesCompartmentalization').value">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Nombres de Compartimentos</mat-label>
+          <textarea matInput formControlName="compartmentNames" rows="2"></textarea>
+          <mat-hint>Separados por comas (ej: Block A, Block B)</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Interpretación</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Calidad Sísmica</mat-label>
+          <mat-select formControlName="seismicQuality">
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option value="EXCELLENT">Excelente</mat-option>
+            <mat-option value="GOOD">Buena</mat-option>
+            <mat-option value="FAIR">Regular</mat-option>
+            <mat-option value="POOR">Pobre</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Interpretación</mat-label>
+          <textarea matInput formControlName="interpretation" rows="3"></textarea>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Notas</mat-label>
+          <textarea matInput formControlName="notes" rows="2"></textarea>
+        </mat-form-field>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="cancel()" [disabled]="isLoading">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="!form.valid || isLoading">
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Actualizar' : 'Guardar' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

@@ -1,0 +1,191 @@
+/**
+ * Copyright © 2016-2026 The Thingsboard Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+///
+/// Copyright © 2016-2026 The Thingsboard Authors
+///
+/// Licensed under the Apache License, Version 2.0 (the "License");
+/// you may not use this file except in compliance with the License.
+/// You may obtain a copy of the License at
+///
+///     http://www.apache.org/licenses/LICENSE-2.0
+///
+/// Unless required by applicable law or agreed to in writing, software
+/// distributed under the License is distributed on an "AS IS" BASIS,
+/// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+/// See the License for the specific language governing permissions and
+/// limitations under the License.
+///
+
+.log-viewer-container {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.log-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+
+  .depth-range {
+    margin-left: auto;
+    font-size: 12px;
+    color: #666;
+    font-family: monospace;
+  }
+}
+
+.log-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px;
+
+  svg {
+    display: block;
+    font-family: 'Roboto', sans-serif;
+  }
+}
+
+// Headers
+.header-bg {
+  fill: #e8e8e8;
+  stroke: #333;
+  stroke-width: 1;
+}
+
+.header-text {
+  font-size: 11px;
+  font-weight: 500;
+  fill: #333;
+}
+
+.header-unit {
+  font-size: 9px;
+  fill: #666;
+}
+
+.curve-label {
+  font-size: 8px;
+  font-weight: 500;
+}
+
+// Track styles
+.track-bg {
+  fill: #fafafa;
+}
+
+.track-border {
+  stroke: #333;
+  stroke-width: 1;
+}
+
+// Grid lines
+.grid-line {
+  stroke: #ddd;
+  stroke-width: 0.5;
+}
+
+.grid-line-vertical {
+  stroke: #eee;
+  stroke-width: 0.5;
+  stroke-dasharray: 2, 2;
+}
+
+// Depth labels
+.depth-label {
+  font-size: 9px;
+  fill: #333;
+  font-family: monospace;
+}
+
+// Curve paths
+.curve-path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+// Scale labels
+.scale-min, .scale-max {
+  font-size: 8px;
+  font-family: monospace;
+}
+
+// Legend
+.log-legend {
+  padding: 12px 16px;
+  background: #f9f9f9;
+  border-top: 1px solid #ddd;
+
+  .legend-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 8px;
+  }
+
+  .legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .legend-color {
+    width: 16px;
+    height: 3px;
+    border-radius: 1px;
+  }
+
+  .legend-name {
+    font-weight: 500;
+    color: #333;
+  }
+
+  .legend-range {
+    color: #666;
+    font-size: 10px;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .log-toolbar {
+    padding: 4px 8px;
+
+    button {
+      transform: scale(0.9);
+    }
+  }
+
+  .log-legend {
+    .legend-items {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
+}

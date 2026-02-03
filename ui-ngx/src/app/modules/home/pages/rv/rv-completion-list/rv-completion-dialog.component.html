@@ -1,0 +1,194 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="rv-dialog-container">
+  <h2 mat-dialog-title><mat-icon>settings_input_component</mat-icon> {{ isEditMode ? 'Editar Completacion' : 'Nueva Completacion' }}</h2>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="form">
+      <div class="section-title">Identificacion</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="name" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Numero</mat-label>
+          <input matInput type="number" formControlName="completionNumber">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Pozo</mat-label>
+          <mat-select formControlName="wellAssetId" required>
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let w of wells" [value]="w.assetId">{{ w.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Zona</mat-label>
+          <mat-select formControlName="zoneAssetId">
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let z of zones" [value]="z.assetId">{{ z.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Clasificacion</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de Completacion</mat-label>
+          <mat-select formControlName="completionType">
+            <mat-option *ngFor="let t of completionTypes" [value]="t">{{ t }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select formControlName="completionStatus">
+            <mat-option *ngFor="let s of completionStatuses" [value]="s">{{ s }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha Completacion</mat-label>
+          <input matInput [matDatepicker]="completionDatePicker" formControlName="completionDate">
+          <mat-datepicker-toggle matSuffix [for]="completionDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #completionDatePicker></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Intervalo Perforado</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Tope MD (m)</mat-label>
+          <input matInput type="number" formControlName="topPerforationMdM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Base MD (m)</mat-label>
+          <input matInput type="number" formControlName="bottomPerforationMdM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Intervalo (m)</mat-label>
+          <input matInput type="number" formControlName="perforationIntervalM" readonly>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Detalles de Perforacion</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Densidad (SPF)</mat-label>
+          <input matInput type="number" formControlName="perforationDensitySpf">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fase (grados)</mat-label>
+          <input matInput type="number" formControlName="shotPhasing">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Diametro (in)</mat-label>
+          <input matInput type="number" formControlName="perforationDiameterIn" step="0.01">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Disparos Totales</mat-label>
+          <input matInput type="number" formControlName="totalShots">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Disparos Abiertos</mat-label>
+          <input matInput type="number" formControlName="openShots">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Levantamiento Artificial</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Metodo</mat-label>
+          <mat-select formControlName="liftMethod">
+            <mat-option *ngFor="let m of liftMethods" [value]="m">{{ m }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Profundidad Equipo (m)</mat-label>
+          <input matInput type="number" formControlName="liftDepthM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Capacidad (bopd)</mat-label>
+          <input matInput type="number" formControlName="liftCapacityBopd">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Estimulacion</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de Estimulacion</mat-label>
+          <mat-select formControlName="lastStimulationType">
+            <mat-option value="">Ninguna</mat-option>
+            <mat-option value="ACID">Acidificacion</mat-option>
+            <mat-option value="FRACTURE">Fracturamiento</mat-option>
+            <mat-option value="ACID_FRACTURE">Acid-Fracture</mat-option>
+            <mat-option value="MATRIX">Tratamiento Matrix</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha Estimulacion</mat-label>
+          <input matInput [matDatepicker]="stimDatePicker" formControlName="lastStimulationDate">
+          <mat-datepicker-toggle matSuffix [for]="stimDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #stimDatePicker></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Skin Antes</mat-label>
+          <input matInput type="number" formControlName="skinBeforeStim">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Skin Despues</mat-label>
+          <input matInput type="number" formControlName="skinAfterStim">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Produccion Actual</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Tasa Actual (bopd)</mat-label>
+          <input matInput type="number" formControlName="currentRateBopd">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>PI (bpd/psi)</mat-label>
+          <input matInput type="number" formControlName="currentPiPbdPsi" step="0.01">
+        </mat-form-field>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="cancel()">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="!form.valid || isLoading">
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Actualizar' : 'Crear' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

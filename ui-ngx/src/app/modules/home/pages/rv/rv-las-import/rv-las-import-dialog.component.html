@@ -1,0 +1,159 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<h2 mat-dialog-title>
+  <mat-icon>upload_file</mat-icon> Importar Archivo LAS
+</h2>
+
+<mat-dialog-content>
+  <!-- Step 1: File Selection -->
+  <div *ngIf="step === 1" class="step-content">
+    <div class="upload-area" (click)="fileInput.click()" (dragover)="$event.preventDefault()" (drop)="$event.preventDefault()">
+      <mat-icon class="upload-icon">cloud_upload</mat-icon>
+      <p class="upload-text">Haz clic o arrastra un archivo LAS aquí</p>
+      <p class="upload-hint">Formato: LAS 2.0 o LAS 3.0</p>
+      <input #fileInput type="file" accept=".las,.LAS" (change)="onFileSelected($event)" hidden>
+    </div>
+
+    <div *ngIf="validationErrors.length > 0" class="validation-errors">
+      <mat-icon>error</mat-icon>
+      <div class="error-list">
+        <p *ngFor="let error of validationErrors">{{ error }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Review & Configure -->
+  <div *ngIf="step === 2" class="step-content">
+    <!-- File Info -->
+    <mat-card class="file-info-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>description</mat-icon>
+        <mat-card-title>{{ fileName }}</mat-card-title>
+        <mat-card-subtitle>{{ fileSize }} | LAS {{ lasFile?.header.version }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-grid">
+          <div class="info-item" *ngIf="lasFile?.wellInfo.wellName">
+            <span class="info-label">Pozo:</span>
+            <span class="info-value">{{ lasFile?.wellInfo.wellName }}</span>
+          </div>
+          <div class="info-item" *ngIf="lasFile?.wellInfo.uwi">
+            <span class="info-label">UWI:</span>
+            <span class="info-value">{{ lasFile?.wellInfo.uwi }}</span>
+          </div>
+          <div class="info-item" *ngIf="lasFile?.wellInfo.company">
+            <span class="info-label">Compañía:</span>
+            <span class="info-value">{{ lasFile?.wellInfo.company }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Rango:</span>
+            <span class="info-value">{{ getDepthRange() }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Curvas:</span>
+            <span class="info-value">{{ lasFile?.curves.length }}</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Configuration Form -->
+    <form [formGroup]="importForm" class="import-form">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Pozo destino</mat-label>
+        <mat-select formControlName="wellId" required>
+          <mat-option *ngFor="let well of wells" [value]="well.assetId">
+            {{ well.name }} <span *ngIf="well.uwi" class="option-subtitle">- {{ well.uwi }}</span>
+          </mat-option>
+        </mat-select>
+        <mat-error>Seleccione un pozo</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Nombre del registro</mat-label>
+        <input matInput formControlName="logRunName" placeholder="Ej: LWD Run 1">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo de registro</mat-label>
+        <mat-select formControlName="logType">
+          <mat-option value="COMPOSITE">Compuesto</mat-option>
+          <mat-option value="OPEN_HOLE">Open Hole</mat-option>
+          <mat-option value="CASED_HOLE">Cased Hole</mat-option>
+          <mat-option value="LWD">LWD (Logging While Drilling)</mat-option>
+          <mat-option value="MWD">MWD (Measurement While Drilling)</mat-option>
+          <mat-option value="PRODUCTION">Producción</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </form>
+
+    <!-- Curve Selection -->
+    <div class="curves-section">
+      <div class="curves-header">
+        <h3>Curvas a importar</h3>
+        <div class="curves-actions">
+          <button mat-button (click)="selectAllCurves()">Seleccionar todas</button>
+          <button mat-button (click)="deselectAllCurves()">Deseleccionar todas</button>
+        </div>
+      </div>
+
+      <div class="curves-list">
+        <div *ngFor="let curve of lasFile?.curves" class="curve-item"
+             [class.selected]="selectedCurves.has(curve.mnemonic)"
+             (click)="toggleCurve(curve.mnemonic)">
+          <mat-checkbox [checked]="selectedCurves.has(curve.mnemonic)" (click)="$event.stopPropagation()">
+          </mat-checkbox>
+          <mat-icon class="curve-icon">{{ getCurveIcon(curve) }}</mat-icon>
+          <div class="curve-info">
+            <span class="curve-name">{{ curve.mnemonic }}</span>
+            <span class="curve-desc">{{ getCurveDescription(curve) }}</span>
+          </div>
+          <div class="curve-meta">
+            <span class="curve-unit">{{ curve.unit || '-' }}</span>
+            <span class="curve-points">{{ getDataPointCount(curve) }} pts</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="curves-summary">{{ selectedCurves.size }} curva(s) seleccionada(s)</p>
+    </div>
+
+    <div *ngIf="validationErrors.length > 0" class="validation-errors">
+      <mat-icon>error</mat-icon>
+      <div class="error-list">
+        <p *ngFor="let error of validationErrors">{{ error }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Importing -->
+  <div *ngIf="step === 3" class="step-content importing">
+    <mat-spinner diameter="60"></mat-spinner>
+    <p>Importando datos...</p>
+    <p class="importing-detail">{{ selectedCurves.size }} curvas</p>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()" [disabled]="isLoading">Cancelar</button>
+  <button mat-raised-button color="primary" *ngIf="step === 2"
+          (click)="onImport()"
+          [disabled]="!importForm.valid || selectedCurves.size === 0 || isLoading">
+    <mat-icon>upload</mat-icon> Importar
+  </button>
+</mat-dialog-actions>

@@ -1,0 +1,207 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="rv-dialog-container">
+  <h2 mat-dialog-title><mat-icon>layers</mat-icon> {{ isEditMode ? 'Editar Muestra de Núcleo' : 'Nueva Muestra de Núcleo' }}</h2>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="form">
+      <div class="section-title">Identificación</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="name" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Número de Core</mat-label>
+          <input matInput formControlName="coreNumber">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Pozo</mat-label>
+          <mat-select formControlName="wellAssetId" required>
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let w of wells" [value]="w.assetId">{{ w.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de Core</mat-label>
+          <mat-select formControlName="coreType" required>
+            <mat-option *ngFor="let type of coreTypes" [value]="type">
+              {{ coreTypeLabels[type] }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Intervalo de Profundidad</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Tope MD (m)</mat-label>
+          <input matInput type="number" step="0.1" formControlName="topDepthMd">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Base MD (m)</mat-label>
+          <input matInput type="number" step="0.1" formControlName="bottomDepthMd">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Tope TVD (m)</mat-label>
+          <input matInput type="number" step="0.1" formControlName="topDepthTvd">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Base TVD (m)</mat-label>
+          <input matInput type="number" step="0.1" formControlName="bottomDepthTvd">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Recuperación</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Longitud Cortada (m)</mat-label>
+          <input matInput type="number" step="0.01" formControlName="cutLengthM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Longitud Recuperada (m)</mat-label>
+          <input matInput type="number" step="0.01" formControlName="recoveredLengthM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Recuperación (%)</mat-label>
+          <input matInput type="number" formControlName="recoveryPercentage" readonly>
+          <mat-hint>Calculado automáticamente</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Litología y Shows</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Litología</mat-label>
+          <mat-select formControlName="lithology">
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let lith of lithologies" [value]="lith">
+              {{ lithologyLabels[lith] }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Shows de Hidrocarburos</mat-label>
+          <textarea matInput formControlName="hydrocarbonShows" rows="2"></textarea>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-checkbox formControlName="fluorescence">Fluorescencia</mat-checkbox>
+        <mat-checkbox formControlName="odor">Olor a hidrocarburos</mat-checkbox>
+      </div>
+
+      <div class="section-title">Análisis Rutinario (RCA)</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Porosidad (frac)</mat-label>
+          <input matInput type="number" step="0.001" min="0" max="1" formControlName="porosityFrac">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Permeabilidad (md)</mat-label>
+          <input matInput type="number" step="0.1" min="0" formControlName="permeabilityMd">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Densidad de Grano (g/cc)</mat-label>
+          <input matInput type="number" step="0.01" formControlName="grainDensityGCc">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Densidad Bulk (g/cc)</mat-label>
+          <input matInput type="number" step="0.01" formControlName="bulkDensityGCc">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Análisis Especial (SCAL)</div>
+
+      <div class="form-row">
+        <mat-checkbox formControlName="hasScalData">Tiene datos SCAL</mat-checkbox>
+      </div>
+
+      <div class="form-row" *ngIf="form.get('hasScalData').value">
+        <mat-form-field appearance="outline">
+          <mat-label>Swirr</mat-label>
+          <input matInput type="number" step="0.01" min="0" max="1" formControlName="swirr">
+          <mat-hint>Saturación de agua irreducible</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Sor</mat-label>
+          <input matInput type="number" step="0.01" min="0" max="1" formControlName="sor">
+          <mat-hint>Saturación de aceite residual</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row" *ngIf="form.get('hasScalData').value">
+        <mat-form-field appearance="outline">
+          <mat-label>krw Endpoint</mat-label>
+          <input matInput type="number" step="0.01" min="0" max="1" formControlName="krwEndpoint">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>kro Endpoint</mat-label>
+          <input matInput type="number" step="0.01" min="0" max="1" formControlName="kroEndpoint">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Metadatos</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha de Análisis</mat-label>
+          <input matInput [matDatepicker]="analysisDatePicker" formControlName="analysisDate">
+          <mat-datepicker-toggle matSuffix [for]="analysisDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #analysisDatePicker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Laboratorio</mat-label>
+          <input matInput formControlName="laboratory">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Notas</mat-label>
+          <textarea matInput formControlName="notes" rows="3"></textarea>
+        </mat-form-field>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="cancel()" [disabled]="isLoading">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="!form.valid || isLoading">
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Actualizar' : 'Guardar' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

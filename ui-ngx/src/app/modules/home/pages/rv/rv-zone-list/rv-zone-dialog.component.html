@@ -1,0 +1,155 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="rv-dialog-container">
+  <h2 mat-dialog-title><mat-icon>view_column</mat-icon> {{ isEditMode ? 'Editar Zona' : 'Nueva Zona' }}</h2>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="form">
+      <div class="section-title">Identificacion</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="name" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Codigo</mat-label>
+          <input matInput formControlName="code">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Numero de Zona</mat-label>
+          <input matInput type="number" formControlName="zoneNumber">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Yacimiento</mat-label>
+          <mat-select formControlName="reservoirAssetId" required>
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let r of reservoirs" [value]="r.assetId">{{ r.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Profundidades</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Tope MD (m)</mat-label>
+          <input matInput type="number" formControlName="topDepthMdM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Base MD (m)</mat-label>
+          <input matInput type="number" formControlName="bottomDepthMdM">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Tope TVD (m)</mat-label>
+          <input matInput type="number" formControlName="topDepthTvdM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Base TVD (m)</mat-label>
+          <input matInput type="number" formControlName="bottomDepthTvdM">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Espesores</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Espesor Bruto (m)</mat-label>
+          <input matInput type="number" formControlName="grossThicknessM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Espesor Neto (m)</mat-label>
+          <input matInput type="number" formControlName="netPayThicknessM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>NTG (frac)</mat-label>
+          <input matInput type="number" formControlName="netToGrossRatio" step="0.01" min="0" max="1">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Propiedades Petrofisicas</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Porosidad (frac)</mat-label>
+          <input matInput type="number" formControlName="porosityFrac" step="0.01" min="0" max="1">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Permeabilidad (md)</mat-label>
+          <input matInput type="number" formControlName="permeabilityMd" min="0">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Saturacion de Agua (frac)</mat-label>
+          <input matInput type="number" formControlName="waterSaturationFrac" step="0.01" min="0" max="1">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Vshale (frac)</mat-label>
+          <input matInput type="number" formControlName="shaleFrac" step="0.01" min="0" max="1">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Clasificacion</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Litologia</mat-label>
+          <mat-select formControlName="lithology">
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let l of lithologies" [value]="l">{{ l }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de Fluido</mat-label>
+          <mat-select formControlName="fluidType">
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let f of fluidTypes" [value]="f">{{ f }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Estado de la Zona</mat-label>
+          <mat-select formControlName="zoneStatus">
+            <mat-option *ngFor="let s of zoneStatuses" [value]="s">{{ s }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <div class="toggle-container">
+          <mat-slide-toggle formControlName="isPerforated">Perforada</mat-slide-toggle>
+        </div>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="cancel()">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="!form.valid || isLoading">
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Actualizar' : 'Crear' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

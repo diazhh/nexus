@@ -1,0 +1,209 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="rv-dialog-container pvt-dialog">
+  <h2 mat-dialog-title><mat-icon>science</mat-icon> {{ isEditMode ? 'Editar Estudio PVT' : 'Nuevo Estudio PVT' }}</h2>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="form">
+      <div class="section-title">Informacion Basica</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="name" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Codigo</mat-label>
+          <input matInput formControlName="studyCode">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Laboratorio</mat-label>
+          <input matInput formControlName="laboratoryName">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Yacimiento</mat-label>
+          <mat-select formControlName="reservoirAssetId">
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let r of reservoirs" [value]="r.assetId">{{ r.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Pozo Muestreado</mat-label>
+          <mat-select formControlName="wellAssetId">
+            <mat-option value="">Seleccione...</mat-option>
+            <mat-option *ngFor="let w of wells" [value]="w.assetId">{{ w.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Informacion de Muestra</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha de Muestreo</mat-label>
+          <input matInput [matDatepicker]="sampleDatePicker" formControlName="sampleDate">
+          <mat-datepicker-toggle matSuffix [for]="sampleDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #sampleDatePicker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de Muestra</mat-label>
+          <mat-select formControlName="sampleType">
+            <mat-option *ngFor="let s of sampleTypes" [value]="s">{{ s }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Profundidad (m)</mat-label>
+          <input matInput type="number" formControlName="sampleDepthM">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Presion Muestra (psi)</mat-label>
+          <input matInput type="number" formControlName="samplePressurePsi">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Temperatura Muestra (°F)</mat-label>
+          <input matInput type="number" formControlName="sampleTemperatureF">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Propiedades del Petroleo</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Gravedad API</mat-label>
+          <input matInput type="number" formControlName="apiGravity" step="0.1">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Gravedad Especifica</mat-label>
+          <input matInput type="number" formControlName="specificGravityOil" step="0.0001">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Viscosidad Dead Oil (cp)</mat-label>
+          <input matInput type="number" formControlName="stockTankOilViscosityCp">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Propiedades en Punto de Burbuja</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Pb (psi)</mat-label>
+          <input matInput type="number" formControlName="bubblePointPressurePsi">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Rs &#64; Pb (scf/stb)</mat-label>
+          <input matInput type="number" formControlName="solutionGorAtPbScfStb">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Bo &#64; Pb (rb/stb)</mat-label>
+          <input matInput type="number" formControlName="oilFvfAtPbRbStb" step="0.001">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Viscosidad &#64; Pb (cp)</mat-label>
+          <input matInput type="number" formControlName="oilViscosityAtPbCp">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Propiedades del Gas</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Gravedad Especifica Gas</mat-label>
+          <input matInput type="number" formControlName="gasSpecificGravity" step="0.01">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Factor Z &#64; Pb</mat-label>
+          <input matInput type="number" formControlName="gasZFactorAtPb" step="0.01">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Condiciones de Yacimiento</div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Presion Inicial (psia)</mat-label>
+          <input matInput type="number" formControlName="initialPressurePsia">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Temperatura Yacimiento (°F)</mat-label>
+          <input matInput type="number" formControlName="reservoirTemperatureF">
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Correlaciones</div>
+
+      <div class="form-row">
+        <mat-slide-toggle formControlName="usesCorrelations">Usar Correlaciones</mat-slide-toggle>
+      </div>
+
+      <div class="form-row" *ngIf="form.get('usesCorrelations').value">
+        <mat-form-field appearance="outline">
+          <mat-label>Correlacion Pb</mat-label>
+          <mat-select formControlName="pbCorrelation">
+            <mat-option *ngFor="let c of correlations" [value]="c">{{ c }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Correlacion Bo</mat-label>
+          <mat-select formControlName="boCorrelation">
+            <mat-option *ngFor="let c of correlations" [value]="c">{{ c }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Correlacion Viscosidad</mat-label>
+          <mat-select formControlName="viscosityCorrelation">
+            <mat-option *ngFor="let c of correlations" [value]="c">{{ c }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="section-title">Propiedades Foamy Oil (Venezuela)</div>
+
+      <div class="form-row">
+        <mat-slide-toggle formControlName="hasFoamyBehavior">Comportamiento Foamy</mat-slide-toggle>
+      </div>
+
+      <div class="form-row" *ngIf="form.get('hasFoamyBehavior').value">
+        <mat-form-field appearance="outline">
+          <mat-label>Pseudo Pb (psi)</mat-label>
+          <input matInput type="number" formControlName="pseudoBubblePointPsi">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Factor Foamy</mat-label>
+          <input matInput type="number" formControlName="foamyOilFactor" step="0.01">
+        </mat-form-field>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="cancel()">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="!form.valid || isLoading">
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Actualizar' : 'Crear' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>
