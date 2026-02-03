@@ -67,6 +67,16 @@ enum EntityTypeProto {
   ADMIN_SETTINGS        = 42;
   AI_MODEL              = 43;
   API_KEY               = 44;
+  ROLE                  = 45;
+  TEMPLATE              = 46;
+  NEXUS_MODULE          = 47;
+  TENANT_MODULE         = 48;
+  DATA_SOURCE_CONFIG    = 49;
+  DATA_MAPPING_RULE     = 50;
+  DATA_AGGREGATION      = 51;
+  DISTRIBUTION_LOG      = 52;
+  MAPPING_TEMPLATE      = 53;
+  MAPPING_TEMPLATE_RULE = 54;
 }
 
 enum ApiUsageRecordKeyProto {
