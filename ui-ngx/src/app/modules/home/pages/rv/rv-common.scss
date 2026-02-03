@@ -31,10 +31,18 @@
 
 // Common styles for RV Module components
 
+// Host element styles - Apply to component :host
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .rv-list-container {
   padding: 16px;
-  max-width: 1400px;
-  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .mat-mdc-table-toolbar {
@@ -89,10 +97,12 @@
 }
 
 .table-container {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
   background: white;
   border-radius: 0 0 8px 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
 
   table {
     width: 100%;
@@ -398,5 +408,339 @@ mat-chip {
       color: #666;
       margin-top: 4px;
     }
+  }
+}
+
+// ========================================
+// FULL-SCREEN DETAILS LAYOUT STYLES
+// Following ThingsBoard pattern for entity details
+// ========================================
+
+// Host component must occupy full height
+.rv-details-host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+// Main container - full height flex layout
+.rv-details-full-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fafafa;
+}
+
+// Toolbar section - doesn't shrink
+.details-toolbar {
+  flex-shrink: 0;
+  flex-basis: auto;
+  background: #1976d2;
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  button {
+    color: white;
+  }
+
+  .toolbar-icon {
+    margin: 0 12px;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .toolbar-title {
+    margin-left: 0;
+    font-size: 20px;
+    font-weight: 500;
+    color: white;
+  }
+
+  .toolbar-spacer {
+    flex: 1 1 auto;
+  }
+}
+
+// Content section - takes remaining space and is scrollable
+.details-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0; // Important for flex children
+  padding: 16px;
+}
+
+// Summary cards section
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+
+  .summary-card {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    transition: box-shadow 0.2s;
+
+    &:hover {
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+    }
+
+    mat-card-header {
+      padding: 12px 16px 8px;
+      border-bottom: none;
+
+      mat-card-title {
+        font-size: 12px;
+        font-weight: 500;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0;
+      }
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: #1976d2;
+      }
+    }
+
+    mat-card-content {
+      padding: 0 16px 16px !important;
+
+      .metric-value {
+        font-size: 28px;
+        font-weight: 600;
+        color: #1976d2;
+        line-height: 1.2;
+        margin-bottom: 4px;
+      }
+
+      .metric-unit {
+        font-size: 12px;
+        color: #666;
+        margin-top: 2px;
+      }
+
+      .metric-label {
+        font-size: 11px;
+        color: #999;
+        text-transform: uppercase;
+      }
+    }
+  }
+}
+
+// Tabs section
+.details-tabs {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+
+  ::ng-deep {
+    .mat-mdc-tab-body-content {
+      overflow: visible !important;
+    }
+
+    .mat-mdc-tab-labels {
+      padding: 0 16px;
+    }
+  }
+}
+
+// Tab content
+.tab-content {
+  padding: 16px;
+
+  mat-card {
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    mat-card-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e0e0e0;
+      background: #f8f9fa;
+
+      mat-card-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+      }
+    }
+
+    mat-card-content {
+      padding: 16px !important;
+    }
+  }
+}
+
+// Info grid for displaying entity properties
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    label {
+      font-size: 11px;
+      color: #666;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    span {
+      font-size: 14px;
+      color: #333;
+      word-break: break-word;
+    }
+
+    &.highlight {
+      label {
+        color: #1976d2;
+      }
+
+      span {
+        font-weight: 600;
+        color: #1976d2;
+      }
+    }
+  }
+}
+
+// Compact tables for lists within details
+.compact-table {
+  width: 100%;
+
+  th {
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #666;
+    padding: 12px 16px !important;
+    background: #f8f9fa;
+  }
+
+  td {
+    font-size: 14px;
+    color: #333;
+    padding: 12px 16px !important;
+  }
+
+  .clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+
+  .no-data-message {
+    padding: 48px !important;
+    text-align: center;
+
+    mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      color: #ccc;
+      margin-bottom: 16px;
+    }
+
+    span {
+      display: block;
+      color: #888;
+      font-size: 16px;
+    }
+  }
+}
+
+// Status badges
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.status-active {
+    background-color: #e3f2fd;
+    color: #1976d2;
+  }
+
+  &.status-inactive {
+    background-color: #eeeeee;
+    color: #666;
+  }
+
+  &.status-warning {
+    background-color: #fff3e0;
+    color: #f57c00;
+  }
+
+  &.status-error {
+    background-color: #ffebee;
+    color: #d32f2f;
+  }
+
+  &.status-success {
+    background-color: #e8f5e9;
+    color: #388e3c;
+  }
+}
+
+// Action buttons in details
+.detail-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+// Empty state
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  text-align: center;
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #ccc;
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    margin: 0 0 8px;
+    color: #666;
+    font-weight: 500;
+  }
+
+  p {
+    margin: 0;
+    color: #999;
+    font-size: 14px;
   }
 }

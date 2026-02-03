@@ -16,6 +16,7 @@
 
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
@@ -27,6 +28,7 @@ import { RvExportService } from '@core/http/rv/rv-export.service';
 import { RvDeclineAnalysis, RvWell } from '@shared/models/rv/rv.models';
 import { PageLink } from '@shared/models/page/page-link';
 import { RvDeclineAnalysisDialogComponent } from './rv-decline-analysis-dialog.component';
+import { DialogService } from '@core/services/dialog.service';
 
 @Component({
   selector: 'tb-rv-decline-analysis-list',
@@ -55,6 +57,7 @@ export class RvDeclineAnalysisListComponent implements OnInit, AfterViewInit {
   totalElements = 0;
   pageSize = 10;
   tenantId: string;
+  searchText = '';
 
   wells: Map<string, string> = new Map();
 
@@ -62,7 +65,9 @@ export class RvDeclineAnalysisListComponent implements OnInit, AfterViewInit {
     private store: Store<AppState>,
     private rvService: RvService,
     private rvExportService: RvExportService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private dialogService: DialogService,
+    private snackBar: MatSnackBar
   ) {
     this.dataSource = new MatTableDataSource<RvDeclineAnalysis>([]);
   }
@@ -91,7 +96,8 @@ export class RvDeclineAnalysisListComponent implements OnInit, AfterViewInit {
 
   loadDeclineAnalyses(): void {
     this.isLoading = true;
-    const pageLink = new PageLink(this.pageSize, this.paginator?.pageIndex || 0);
+    const textSearch = this.searchText?.trim() || null;
+    const pageLink = new PageLink(this.pageSize, this.paginator?.pageIndex || 0, textSearch);
 
     this.rvService.getDeclineAnalyses(this.tenantId, pageLink).subscribe({
       next: (pageData) => {
@@ -111,13 +117,17 @@ export class RvDeclineAnalysisListComponent implements OnInit, AfterViewInit {
   }
 
   applyFilter(event: Event): void {
-    const filterValue = (event.target as HTMLInputElement).value;
-    this.dataSource.filter = filterValue.trim().toLowerCase();
+    this.searchText = (event.target as HTMLInputElement).value;
+    if (this.paginator) {
+      this.paginator.pageIndex = 0; // Reset to first page when filtering
+    }
+    this.loadDeclineAnalyses();
   }
 
   openDialog(analysis?: RvDeclineAnalysis): void {
     const dialogRef = this.dialog.open(RvDeclineAnalysisDialogComponent, {
-      width: '900px',
+      width: '90vw',
+      maxWidth: '900px',
       maxHeight: '90vh',
       data: { tenantId: this.tenantId, analysis }
     });
@@ -131,7 +141,7 @@ export class RvDeclineAnalysisListComponent implements OnInit, AfterViewInit {
 
   performAnalysis(analysis: RvDeclineAnalysis): void {
     if (!analysis.assetId || !analysis.qiBopd || !analysis.diPerYear || analysis.bExponent === undefined) {
-      alert('Faltan parámetros necesarios (Qi, Di, b) para realizar el analisis');
+      this.snackBar.open('Faltan parámetros necesarios (Qi, Di, b) para realizar el analisis', 'Cerrar', { duration: 4000 });
       return;
     }
 
@@ -145,23 +155,33 @@ export class RvDeclineAnalysisListComponent implements OnInit, AfterViewInit {
 
     this.rvService.performDeclineAnalysis(analysis.assetId, params).subscribe({
       next: (updated) => {
-        alert(`Analisis completado: EUR = ${updated.eurBbl?.toFixed(0)} bbl, Vida remanente = ${updated.remainingLifeMonths?.toFixed(1)} meses`);
+        this.snackBar.open(`Analisis completado: EUR = ${updated.eurBbl?.toFixed(0)} bbl, Vida remanente = ${updated.remainingLifeMonths?.toFixed(1)} meses`, 'Cerrar', { duration: 5000 });
         this.loadDeclineAnalyses();
       },
       error: (err) => {
         console.error('Error performing decline analysis:', err);
-        alert('Error al realizar el analisis de declinacion');
+        this.snackBar.open('Error al realizar el analisis de declinacion', 'Cerrar', { duration: 4000 });
       }
     });
   }
 
   delete(analysis: RvDeclineAnalysis): void {
-    if (confirm(`¿Está seguro que desea eliminar el analisis de declinacion "${analysis.name}"?`)) {
-      this.rvService.deleteDeclineAnalysis(this.tenantId, analysis.assetId).subscribe({
-        next: () => this.loadDeclineAnalyses(),
-        error: (err) => console.error('Error deleting decline analysis:', err)
-      });
-    }
+    this.dialogService.confirm(
+      'Confirmar eliminación',
+      `¿Está seguro que desea eliminar el analisis de declinacion "${analysis.name}"?`,
+      'Cancelar',
+      'Eliminar'
+    ).subscribe(result => {
+      if (result) {
+        this.rvService.deleteDeclineAnalysis(this.tenantId, analysis.assetId).subscribe({
+          next: () => {
+            this.snackBar.open('Analisis de declinacion eliminado correctamente', 'Cerrar', { duration: 3000 });
+            this.loadDeclineAnalyses();
+          },
+          error: (err) => console.error('Error deleting decline analysis:', err)
+        });
+      }
+    });
   }
 
   onPageChange(event: any): void {

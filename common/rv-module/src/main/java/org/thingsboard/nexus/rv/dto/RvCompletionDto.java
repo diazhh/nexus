@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -41,32 +42,65 @@ public class RvCompletionDto {
 
     // Asset identity
     private UUID assetId;
+
+    @NotNull(message = "El ID del tenant es requerido")
     private UUID tenantId;
+
+    @NotBlank(message = "El nombre es requerido")
+    @Size(min = 2, max = 255, message = "El nombre debe tener entre 2 y 255 caracteres")
     private String name;
+
     private String label;
 
     // Hierarchy
+    @NotNull(message = "El pozo (well) es requerido")
     private UUID wellAssetId;
+
     private UUID zoneAssetId;            // Target zone
 
     // Completion identification
+    @Size(max = 50, message = "El código de completación no debe exceder 50 caracteres")
     private String completionCode;
+
+    @Positive(message = "El número de completación debe ser > 0")
     private Integer completionNumber;    // 1, 2, 3 for multiple completions
+
     private Long completionDate;
+
+    @Size(max = 50, message = "El tipo de completación no debe exceder 50 caracteres")
     private String completionType;       // OPENHOLE, CASED_PERFORATED, GRAVEL_PACK, FRAC_PACK, SLOTTED_LINER
 
     // Interval details
+    @PositiveOrZero(message = "La profundidad superior MD debe ser >= 0")
     private BigDecimal topDepthMdM;
+
+    @PositiveOrZero(message = "La profundidad inferior MD debe ser >= 0")
     private BigDecimal bottomDepthMdM;
+
+    @PositiveOrZero(message = "La profundidad superior TVD debe ser >= 0")
     private BigDecimal topDepthTvdM;
+
+    @PositiveOrZero(message = "La profundidad inferior TVD debe ser >= 0")
     private BigDecimal bottomDepthTvdM;
+
+    @PositiveOrZero(message = "La longitud del intervalo debe ser >= 0")
     private BigDecimal intervalLengthM;
 
     // Perforation details (if cased-perforated)
+    @PositiveOrZero(message = "Los disparos por pie deben ser >= 0")
     private Integer perforationShotsPerFoot;
+
+    @DecimalMin(value = "0.0", message = "El faseo debe ser >= 0")
+    @DecimalMax(value = "360.0", message = "El faseo debe ser <= 360")
     private BigDecimal perforationPhasingDeg;
+
+    @Positive(message = "El diámetro de perforación debe ser > 0")
     private BigDecimal perforationDiameterIn;
+
+    @Positive(message = "La penetración debe ser > 0")
     private BigDecimal perforationPenetrationIn;
+
+    @PositiveOrZero(message = "El total de perforaciones debe ser >= 0")
     private Integer totalPerforations;
 
     // Screen/Liner details (if applicable)
@@ -78,15 +112,30 @@ public class RvCompletionDto {
     private BigDecimal gravelPackLength;
 
     // Tubing configuration
+    @Positive(message = "El ID del tubing debe ser > 0")
     private BigDecimal tubingIdIn;
+
+    @Positive(message = "El OD del tubing debe ser > 0")
     private BigDecimal tubingOdIn;
+
+    @PositiveOrZero(message = "La profundidad del tubing debe ser >= 0")
     private BigDecimal tubingDepthM;
+
+    @Size(max = 50, message = "El material del tubing no debe exceder 50 caracteres")
     private String tubingMaterial;
 
     // Production data
+    @PositiveOrZero(message = "El índice de productividad debe ser >= 0")
     private BigDecimal productivityIndexBpdPsi;
+
     private BigDecimal skinFactor;
+
+    @DecimalMin(value = "0.0", message = "La eficiencia de flujo debe ser >= 0")
+    @DecimalMax(value = "1.0", message = "La eficiencia de flujo debe ser <= 1")
     private BigDecimal flowEfficiency;
+
+    @DecimalMin(value = "0.0", message = "La contribución debe ser >= 0")
+    @DecimalMax(value = "100.0", message = "La contribución debe ser <= 100")
     private BigDecimal currentContributionPercent;
 
     // Stimulation history

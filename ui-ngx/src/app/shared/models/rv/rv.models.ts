@@ -218,6 +218,32 @@ export interface RvCompletion extends RvBaseEntity {
 }
 
 // ==============================================
+// WELL LOG (Registro de Pozo / Well Log Run)
+// ==============================================
+
+export interface RvWellLog extends RvBaseEntity {
+  wellAssetId?: string;
+  runName?: string;
+  runNumber?: number;
+  logDate?: number;
+  logType?: string;           // WIRELINE, LWD, MWD, PRODUCTION_LOG
+  serviceCompany?: string;
+  topDepthMdM?: number;
+  bottomDepthMdM?: number;
+  topDepthTvdM?: number;
+  bottomDepthTvdM?: number;
+  loggingSpeedMMin?: number;
+  samplingRateM?: number;
+  availableCurves?: string[];  // GR, SP, CALI, RHOB, NPHI, DT, RILD, RILM, RILS, etc.
+  lithology?: string;
+  fluidType?: string;
+  dataQuality?: string;        // EXCELLENT, GOOD, FAIR, POOR
+  dataFormat?: string;         // LAS, DLIS, ASCII
+  fileUrl?: string;
+  additionalInfo?: any;
+}
+
+// ==============================================
 // PVT STUDY (Estudio PVT)
 // ==============================================
 
@@ -349,6 +375,140 @@ export interface RvDeclineAnalysis extends RvBaseEntity {
   eurExponentialBbl?: number;
   eurHyperbolicBbl?: number;
   eurHarmonicBbl?: number;
+  additionalInfo?: any;
+}
+
+// ==============================================
+// MATERIAL BALANCE (Balance de Materiales)
+// ==============================================
+
+export interface RvMaterialBalance extends RvBaseEntity {
+  reservoirAssetId?: string;
+  studyCode?: string;
+  analysisDate?: number;
+  analysisMethod?: string;      // HAVLENA_ODEH, CAMPBELL, MBE_GRAPHICAL
+  driveMechanism?: string;      // WATER_DRIVE, GAS_CAP, SOLUTION_GAS, COMBINATION
+  calculatedOoipStb?: number;
+  calculatedOgipScf?: number;
+  initialPressurePsi?: number;
+  currentPressurePsi?: number;
+  bubblePointPressurePsi?: number;
+  initialTemperatureF?: number;
+  initialOilFvfRbStb?: number;
+  currentOilFvfRbStb?: number;
+  initialWaterSatFrac?: number;
+  connateWaterSatFrac?: number;
+  waterInfluxBbl?: number;
+  gasCapRatio?: number;
+  compressibilityFactor?: number;
+  cumulativeOilProductionStb?: number;
+  cumulativeGasProductionScf?: number;
+  cumulativeWaterProductionBbl?: number;
+  cumulativeWaterInjectionBbl?: number;
+  cumulativeGasInjectionScf?: number;
+  recoveryFactorPercent?: number;
+  r2Coefficient?: number;
+  studyQuality?: string;        // EXCELLENT, GOOD, FAIR, POOR
+  pressureVsProductionData?: any;
+  diagnosticPlotData?: any;
+  additionalInfo?: any;
+}
+
+// ==============================================
+// CORE (Nucleo de Roca)
+// ==============================================
+
+export interface RvCore extends RvBaseEntity {
+  wellAssetId?: string;
+  zoneAssetId?: string;
+  coreCode?: string;
+  coreNumber?: number;
+  coreDate?: number;
+  coreType?: string;            // CONVENTIONAL, SIDEWALL, ORIENTED
+  topDepthMdM?: number;
+  bottomDepthMdM?: number;
+  recoveredLengthM?: number;
+  recoveryPercent?: number;
+  lithologyDescription?: string;
+  porosityFrac?: number;
+  permeabilityMd?: number;
+  waterSaturationFrac?: number;
+  oilSaturationFrac?: number;
+  gasSaturationFrac?: number;
+  grainDensityGcc?: number;
+  bulkDensityGcc?: number;
+  formationResistivityOhmM?: number;
+  analysisLaboratory?: string;
+  analysisDate?: number;
+  hasSpecialAnalysis?: boolean;
+  specialAnalysisTypes?: string[];  // CAPILLARY_PRESSURE, RELATIVE_PERM, etc.
+  coreDescription?: string;
+  imageUrl?: string;
+  additionalInfo?: any;
+}
+
+// ==============================================
+// FAULT (Falla)
+// ==============================================
+
+export interface RvFault extends RvBaseEntity {
+  fieldAssetId?: string;
+  reservoirAssetId?: string;
+  faultCode?: string;
+  faultType?: string;           // NORMAL, REVERSE, STRIKE_SLIP, GROWTH
+  strikeDeg?: number;
+  dipDeg?: number;
+  dipDirection?: string;
+  lengthM?: number;
+  throwM?: number;
+  heaveM?: number;
+  topDepthM?: number;
+  bottomDepthM?: number;
+  isSealing?: boolean;
+  sealingCapacity?: string;     // HIGH, MEDIUM, LOW, NONE
+  juxtapositionType?: string;
+  shaleGougeRatio?: number;
+  faultRockType?: string;
+  transmissibility?: number;
+  age?: string;
+  lastActivityDate?: number;
+  seismicVisibility?: boolean;
+  interpretationConfidence?: string;  // HIGH, MEDIUM, LOW
+  coordinatesPath?: any;
+  additionalInfo?: any;
+}
+
+// ==============================================
+// SEISMIC SURVEY (Levantamiento Sismico)
+// ==============================================
+
+export interface RvSeismicSurvey extends RvBaseEntity {
+  fieldAssetId?: string;
+  basinAssetId?: string;
+  surveyCode?: string;
+  surveyType?: string;          // 2D, 3D, 4D, VSP
+  acquisitionDate?: number;
+  acquisitionCompany?: string;
+  processingCompany?: string;
+  processingDate?: number;
+  areaCoveredKm2?: number;
+  totalLineLengthKm?: number;
+  lineSpacingM?: number;
+  binSizeM?: number;
+  recordLengthMs?: number;
+  samplingIntervalMs?: number;
+  sourcetype?: string;          // VIBROSEIS, DYNAMITE, AIRGUN
+  receiverType?: string;
+  foldCoverage?: number;
+  dataQuality?: string;         // EXCELLENT, GOOD, FAIR, POOR
+  isInterpreted?: boolean;
+  interpretationDate?: number;
+  horizonsInterpreted?: string[];
+  faultsInterpreted?: number;
+  velocityModel?: string;
+  depthConversionMethod?: string;
+  dataFormat?: string;          // SEGY, SGY, SEGD
+  storageLocation?: string;
   additionalInfo?: any;
 }
 

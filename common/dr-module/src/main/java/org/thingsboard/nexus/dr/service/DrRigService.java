@@ -18,17 +18,16 @@ package org.thingsboard.nexus.dr.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.thingsboard.nexus.dr.dto.DrRigDto;
 import org.thingsboard.nexus.dr.exception.DrBusinessException;
 import org.thingsboard.nexus.dr.exception.DrEntityNotFoundException;
-import org.thingsboard.nexus.dr.model.DrRig;
-import org.thingsboard.nexus.dr.model.enums.RigStatus;
-import org.thingsboard.nexus.dr.model.enums.RigType;
-import org.thingsboard.nexus.dr.repository.DrRigRepository;
+import org.thingsboard.server.common.data.asset.Asset;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.kv.AttributeKvEntry;
 import org.thingsboard.server.common.data.template.CreateFromTemplateRequest;
 import org.thingsboard.server.common.data.template.TemplateInstanceResult;
 
@@ -39,103 +38,151 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service for managing Drilling Rigs
+ * Service for managing Drilling Rigs.
+ * Uses ThingsBoard Assets as the underlying storage mechanism.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DrRigService {
 
-    private final DrRigRepository rigRepository;
-    private final DrTemplateService templateService;
+    private final DrAssetService assetService;
     private final DrAttributeService attributeService;
+    private final DrTemplateService templateService;
 
     // --- Query Operations ---
 
-    @Transactional(readOnly = true)
-    public DrRigDto getById(UUID id) {
-        log.debug("Getting drilling rig by id: {}", id);
-        DrRig rig = rigRepository.findById(id)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", id.toString()));
-        return DrRigDto.fromEntity(rig);
-    }
-
-    @Transactional(readOnly = true)
-    public DrRigDto getByCode(String rigCode) {
-        log.debug("Getting drilling rig by code: {}", rigCode);
-        DrRig rig = rigRepository.findByRigCode(rigCode)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", rigCode));
-        return DrRigDto.fromEntity(rig);
-    }
-
-    @Transactional(readOnly = true)
-    public DrRigDto getByAssetId(UUID assetId) {
+    /**
+     * Get a rig by its asset ID
+     */
+    public DrRigDto getById(UUID assetId) {
         log.debug("Getting drilling rig by asset id: {}", assetId);
-        DrRig rig = rigRepository.findByAssetId(assetId)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", "asset:" + assetId));
-        return DrRigDto.fromEntity(rig);
+        Asset asset = assetService.getAssetById(assetId)
+                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", assetId.toString()));
+
+        if (!DrRigDto.ASSET_TYPE.equals(asset.getType())) {
+            throw new DrEntityNotFoundException("Drilling Rig", assetId.toString());
+        }
+
+        List<AttributeKvEntry> attributes = attributeService.getServerAttributes(assetId);
+        return DrRigDto.fromAssetAndAttributes(asset, attributes);
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Get a rig by its code (searches in attributes)
+     */
+    public DrRigDto getByCode(UUID tenantId, String rigCode) {
+        log.debug("Getting drilling rig by code: {}", rigCode);
+        // Search through all rigs to find by code
+        Page<Asset> assets = assetService.getAssetsByType(tenantId, DrRigDto.ASSET_TYPE, 0, 1000);
+
+        for (Asset asset : assets.getContent()) {
+            List<AttributeKvEntry> attributes = attributeService.getServerAttributes(asset.getId().getId());
+            for (AttributeKvEntry attr : attributes) {
+                if (DrRigDto.ATTR_RIG_CODE.equals(attr.getKey()) &&
+                    rigCode.equals(attr.getStrValue().orElse(null))) {
+                    return DrRigDto.fromAssetAndAttributes(asset, attributes);
+                }
+            }
+        }
+
+        throw new DrEntityNotFoundException("Drilling Rig", rigCode);
+    }
+
+    /**
+     * Get all rigs for a tenant with pagination
+     */
     public Page<DrRigDto> getByTenant(UUID tenantId, Pageable pageable) {
         log.debug("Getting drilling rigs for tenant: {}", tenantId);
-        Page<DrRig> rigs = rigRepository.findByTenantId(tenantId, pageable);
-        return rigs.map(DrRigDto::fromEntity);
+        Page<Asset> assets = assetService.getAssetsByType(tenantId, DrRigDto.ASSET_TYPE,
+                pageable.getPageNumber(), pageable.getPageSize());
+
+        List<DrRigDto> dtos = assets.getContent().stream()
+                .map(asset -> {
+                    List<AttributeKvEntry> attributes = attributeService.getServerAttributes(asset.getId().getId());
+                    return DrRigDto.fromAssetAndAttributes(asset, attributes);
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(dtos, pageable, assets.getTotalElements());
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Get all rigs for a tenant (no pagination)
+     */
     public List<DrRigDto> getAllByTenant(UUID tenantId) {
         log.debug("Getting all drilling rigs for tenant: {}", tenantId);
-        List<DrRig> rigs = rigRepository.findByTenantId(tenantId);
-        return rigs.stream().map(DrRigDto::fromEntity).collect(Collectors.toList());
+        Page<Asset> assets = assetService.getAssetsByType(tenantId, DrRigDto.ASSET_TYPE, 0, 10000);
+
+        return assets.getContent().stream()
+                .map(asset -> {
+                    List<AttributeKvEntry> attributes = attributeService.getServerAttributes(asset.getId().getId());
+                    return DrRigDto.fromAssetAndAttributes(asset, attributes);
+                })
+                .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public Page<DrRigDto> getByFilters(UUID tenantId, RigStatus status, RigType rigType,
-                                       String contractor, String location, Pageable pageable) {
-        log.debug("Getting drilling rigs with filters - tenant: {}, status: {}, type: {}",
-                tenantId, status, rigType);
-        Page<DrRig> rigs = rigRepository.findByFilters(tenantId, status, rigType, contractor, location, pageable);
-        return rigs.map(DrRigDto::fromEntity);
-    }
-
-    @Transactional(readOnly = true)
-    public List<DrRigDto> getByStatus(UUID tenantId, RigStatus status) {
+    /**
+     * Get rigs by status
+     */
+    public List<DrRigDto> getByStatus(UUID tenantId, String status) {
         log.debug("Getting drilling rigs by status - tenant: {}, status: {}", tenantId, status);
-        List<DrRig> rigs = rigRepository.findByTenantIdAndOperationalStatus(tenantId, status);
-        return rigs.stream().map(DrRigDto::fromEntity).collect(Collectors.toList());
+        return getAllByTenant(tenantId).stream()
+                .filter(rig -> status.equals(rig.getOperationalStatus()))
+                .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<DrRigDto> getByType(UUID tenantId, RigType rigType) {
+    /**
+     * Get rigs by type
+     */
+    public List<DrRigDto> getByType(UUID tenantId, String rigType) {
         log.debug("Getting drilling rigs by type - tenant: {}, type: {}", tenantId, rigType);
-        List<DrRig> rigs = rigRepository.findByTenantIdAndRigType(tenantId, rigType);
-        return rigs.stream().map(DrRigDto::fromEntity).collect(Collectors.toList());
+        return getAllByTenant(tenantId).stream()
+                .filter(rig -> rigType.equals(rig.getRigType()))
+                .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Get available rigs (status = STANDBY or RIG_DOWN)
+     */
     public List<DrRigDto> getAvailableRigs(UUID tenantId) {
         log.debug("Getting available drilling rigs for tenant: {}", tenantId);
-        List<DrRig> rigs = rigRepository.findAvailableRigs(tenantId);
-        return rigs.stream().map(DrRigDto::fromEntity).collect(Collectors.toList());
+        return getAllByTenant(tenantId).stream()
+                .filter(rig -> "STANDBY".equals(rig.getOperationalStatus()) ||
+                               "RIG_DOWN".equals(rig.getOperationalStatus()))
+                .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<DrRigDto> getRigsWithOverdueBopTest(UUID tenantId) {
-        log.debug("Getting rigs with overdue BOP test for tenant: {}", tenantId);
-        long fourteenDaysAgo = System.currentTimeMillis() - (14L * 24 * 60 * 60 * 1000);
-        List<DrRig> rigs = rigRepository.findRigsWithOverdueBopTest(tenantId, fourteenDaysAgo);
-        return rigs.stream().map(DrRigDto::fromEntity).collect(Collectors.toList());
+    /**
+     * Search rigs by name
+     */
+    public Page<DrRigDto> searchByName(UUID tenantId, String searchText, Pageable pageable) {
+        log.debug("Searching rigs by name: {}", searchText);
+        Page<Asset> assets = assetService.searchAssetsByName(tenantId, DrRigDto.ASSET_TYPE, searchText,
+                pageable.getPageNumber(), pageable.getPageSize());
+
+        List<DrRigDto> dtos = assets.getContent().stream()
+                .map(asset -> {
+                    List<AttributeKvEntry> attributes = attributeService.getServerAttributes(asset.getId().getId());
+                    return DrRigDto.fromAssetAndAttributes(asset, attributes);
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(dtos, pageable, assets.getTotalElements());
     }
 
     // --- Create Operations ---
 
-    @Transactional
+    /**
+     * Create a rig from a template
+     */
     public DrRigDto createFromTemplate(UUID tenantId, CreateFromTemplateRequest request) {
         return createFromTemplate(tenantId, request.getTemplateId(), request.getVariables(), tenantId);
     }
 
-    @Transactional
+    /**
+     * Create a rig from a template with variables
+     */
     public DrRigDto createFromTemplate(UUID tenantId, UUID templateId, Map<String, Object> variables, UUID createdBy) {
         log.info("Creating drilling rig from template {} for tenant {}", templateId, tenantId);
 
@@ -144,8 +191,12 @@ public class DrRigService {
             throw new DrBusinessException("Rig code is required");
         }
 
-        if (rigRepository.existsByRigCode(rigCode)) {
+        // Check if rig code already exists
+        try {
+            getByCode(tenantId, rigCode);
             throw new DrBusinessException("Rig code already exists: " + rigCode);
+        } catch (DrEntityNotFoundException e) {
+            // Good, code doesn't exist
         }
 
         // Instantiate template to create digital twin assets
@@ -156,360 +207,300 @@ public class DrRigService {
                 createdBy
         );
 
-        // Create the rig entity with references to created assets
-        DrRig rig = new DrRig();
-        rig.setId(UUID.randomUUID());
-        rig.setTenantId(tenantId);
-        rig.setAssetId(instanceResult.getRootAssetId());
-        rig.setRigCode(rigCode);
-        rig.setRigName((String) variables.get("rigName"));
-        rig.setCreatedBy(createdBy);
-        rig.setCreatedTime(System.currentTimeMillis());
+        UUID assetId = instanceResult.getRootAssetId();
+
+        // Build attributes from variables
+        DrRigDto dto = new DrRigDto();
+        dto.setAssetId(assetId);
+        dto.setTenantId(tenantId);
+        dto.setRigCode(rigCode);
+        dto.setRigName((String) variables.get("rigName"));
+        dto.setRigType((String) variables.get("rigType"));
+        dto.setContractor((String) variables.get("contractor"));
+        dto.setManufacturer((String) variables.get("manufacturer"));
+        dto.setModel((String) variables.get("model"));
+        dto.setCurrentLocation((String) variables.get("location"));
+        dto.setOperationalStatus("STANDBY");
+
+        // Numeric values
+        if (variables.get("yearBuilt") != null) {
+            dto.setYearBuilt(Integer.parseInt(variables.get("yearBuilt").toString()));
+        }
+        if (variables.get("maxHookloadLbs") != null) {
+            dto.setMaxHookloadLbs(Integer.parseInt(variables.get("maxHookloadLbs").toString()));
+        }
+        if (variables.get("maxRotaryTorqueFtLbs") != null) {
+            dto.setMaxRotaryTorqueFtLbs(Integer.parseInt(variables.get("maxRotaryTorqueFtLbs").toString()));
+        }
+        if (variables.get("maxDepthCapabilityFt") != null) {
+            dto.setMaxDepthCapabilityFt(new BigDecimal(variables.get("maxDepthCapabilityFt").toString()));
+        }
+
+        // Initialize statistics
+        dto.setTotalWellsDrilled(0);
+        dto.setTotalFootageDrilledFt(BigDecimal.ZERO);
+        dto.setTotalNptHours(BigDecimal.ZERO);
+        dto.setTotalOperationalHours(BigDecimal.ZERO);
 
         // Map child asset IDs from template instantiation
         Map<String, UUID> nodeMap = instanceResult.getNodeKeyToAssetIdMap();
-        rig.setDrawworksAssetId(nodeMap.get("drawworks"));
-        rig.setTopDriveAssetId(nodeMap.get("top_drive"));
-        rig.setMudPump1AssetId(nodeMap.get("mud_pump_1"));
-        rig.setMudPump2AssetId(nodeMap.get("mud_pump_2"));
-        rig.setMudPump3AssetId(nodeMap.get("mud_pump_3"));
-        rig.setMudSystemAssetId(nodeMap.get("mud_system"));
-        rig.setBopStackAssetId(nodeMap.get("bop_stack"));
-        rig.setGasDetectorAssetId(nodeMap.get("gas_detector"));
+        dto.setDrawworksAssetId(nodeMap.get("drawworks"));
+        dto.setTopDriveAssetId(nodeMap.get("top_drive"));
+        dto.setMudPump1AssetId(nodeMap.get("mud_pump_1"));
+        dto.setMudPump2AssetId(nodeMap.get("mud_pump_2"));
+        dto.setMudPump3AssetId(nodeMap.get("mud_pump_3"));
+        dto.setMudSystemAssetId(nodeMap.get("mud_system"));
+        dto.setBopStackAssetId(nodeMap.get("bop_stack"));
+        dto.setGasDetectorAssetId(nodeMap.get("gas_detector"));
 
-        // Set rig specifications from variables
-        String rigTypeStr = (String) variables.get("rigType");
-        if (rigTypeStr != null) {
-            rig.setRigType(RigType.valueOf(rigTypeStr));
-        }
+        // Save attributes
+        attributeService.saveServerAttributes(assetId, dto.toAttributeMap());
 
-        rig.setContractor((String) variables.get("contractor"));
-        rig.setManufacturer((String) variables.get("manufacturer"));
-        rig.setModel((String) variables.get("model"));
+        log.info("Drilling rig created from template: {} with asset ID: {}", rigCode, assetId);
 
-        Object yearBuilt = variables.get("yearBuilt");
-        if (yearBuilt != null) {
-            rig.setYearBuilt(yearBuilt instanceof Integer ? (Integer) yearBuilt : Integer.parseInt(yearBuilt.toString()));
-        }
-
-        Object maxHookload = variables.get("maxHookloadLbs");
-        if (maxHookload != null) {
-            rig.setMaxHookloadLbs(maxHookload instanceof Integer ? (Integer) maxHookload : Integer.parseInt(maxHookload.toString()));
-        }
-
-        Object maxTorque = variables.get("maxRotaryTorqueFtLbs");
-        if (maxTorque != null) {
-            rig.setMaxRotaryTorqueFtLbs(maxTorque instanceof Integer ? (Integer) maxTorque : Integer.parseInt(maxTorque.toString()));
-        }
-
-        Object maxDepth = variables.get("maxDepthCapabilityFt");
-        if (maxDepth != null) {
-            rig.setMaxDepthCapabilityFt(maxDepth instanceof BigDecimal ? (BigDecimal) maxDepth :
-                    BigDecimal.valueOf(Double.parseDouble(maxDepth.toString())));
-        }
-
-        rig.setCurrentLocation((String) variables.get("location"));
-        rig.setOperationalStatus(RigStatus.STANDBY);
-
-        DrRig savedRig = rigRepository.save(rig);
-        log.info("Drilling rig created from template: {} with asset ID: {}", savedRig.getId(), savedRig.getAssetId());
-
-        return DrRigDto.fromEntity(savedRig);
+        return getById(assetId);
     }
 
-    @Transactional
-    public DrRigDto create(DrRig rig) {
-        log.info("Creating new drilling rig: {}", rig.getRigCode());
+    /**
+     * Create a rig directly (without template)
+     */
+    public DrRigDto create(UUID tenantId, DrRigDto dto) {
+        log.info("Creating new drilling rig: {}", dto.getRigCode());
 
-        if (rigRepository.existsByRigCode(rig.getRigCode())) {
-            throw new DrBusinessException("Rig code already exists: " + rig.getRigCode());
+        if (dto.getRigCode() == null || dto.getRigCode().isEmpty()) {
+            throw new DrBusinessException("Rig code is required");
         }
 
-        if (rig.getCreatedTime() == null) {
-            rig.setCreatedTime(System.currentTimeMillis());
+        // Check if rig code already exists
+        try {
+            getByCode(tenantId, dto.getRigCode());
+            throw new DrBusinessException("Rig code already exists: " + dto.getRigCode());
+        } catch (DrEntityNotFoundException e) {
+            // Good, code doesn't exist
         }
 
-        DrRig savedRig = rigRepository.save(rig);
-        log.info("Drilling rig created: {}", savedRig.getId());
+        // Create the asset
+        String assetName = dto.getRigName() != null ? dto.getRigName() : dto.getRigCode();
+        Asset asset = assetService.createAsset(tenantId, DrRigDto.ASSET_TYPE, assetName, dto.getRigCode());
 
-        return DrRigDto.fromEntity(savedRig);
+        UUID assetId = asset.getId().getId();
+        dto.setAssetId(assetId);
+        dto.setTenantId(tenantId);
+
+        // Set defaults
+        if (dto.getOperationalStatus() == null) {
+            dto.setOperationalStatus("STANDBY");
+        }
+        if (dto.getTotalWellsDrilled() == null) {
+            dto.setTotalWellsDrilled(0);
+        }
+        if (dto.getTotalFootageDrilledFt() == null) {
+            dto.setTotalFootageDrilledFt(BigDecimal.ZERO);
+        }
+        if (dto.getTotalNptHours() == null) {
+            dto.setTotalNptHours(BigDecimal.ZERO);
+        }
+        if (dto.getTotalOperationalHours() == null) {
+            dto.setTotalOperationalHours(BigDecimal.ZERO);
+        }
+
+        // Save attributes
+        attributeService.saveServerAttributes(assetId, dto.toAttributeMap());
+
+        log.info("Drilling rig created: {}", assetId);
+
+        return getById(assetId);
     }
 
     // --- Update Operations ---
 
-    @Transactional
-    public DrRigDto update(UUID id, DrRig updatedRig) {
-        log.info("Updating drilling rig: {}", id);
+    /**
+     * Update a rig
+     */
+    public DrRigDto update(UUID assetId, DrRigDto updatedDto) {
+        log.info("Updating drilling rig: {}", assetId);
 
-        DrRig existingRig = rigRepository.findById(id)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", id.toString()));
-
-        // Check for duplicate rig code
-        if (!existingRig.getRigCode().equals(updatedRig.getRigCode()) &&
-            rigRepository.existsByRigCodeAndIdNot(updatedRig.getRigCode(), id)) {
-            throw new DrBusinessException("Rig code already exists: " + updatedRig.getRigCode());
-        }
-
-        // Update fields
-        existingRig.setRigCode(updatedRig.getRigCode());
-        existingRig.setRigName(updatedRig.getRigName());
-        existingRig.setRigType(updatedRig.getRigType());
-        existingRig.setContractor(updatedRig.getContractor());
-        existingRig.setManufacturer(updatedRig.getManufacturer());
-        existingRig.setModel(updatedRig.getModel());
-        existingRig.setYearBuilt(updatedRig.getYearBuilt());
-        existingRig.setMaxHookloadLbs(updatedRig.getMaxHookloadLbs());
-        existingRig.setMaxRotaryTorqueFtLbs(updatedRig.getMaxRotaryTorqueFtLbs());
-        existingRig.setMaxDepthCapabilityFt(updatedRig.getMaxDepthCapabilityFt());
-        existingRig.setCurrentLocation(updatedRig.getCurrentLocation());
-        existingRig.setLatitude(updatedRig.getLatitude());
-        existingRig.setLongitude(updatedRig.getLongitude());
-        existingRig.setNotes(updatedRig.getNotes());
-        existingRig.setMetadata(updatedRig.getMetadata());
-        existingRig.setUpdatedTime(System.currentTimeMillis());
-
-        DrRig savedRig = rigRepository.save(existingRig);
-        log.info("Drilling rig updated: {}", savedRig.getId());
-
-        return DrRigDto.fromEntity(savedRig);
-    }
-
-    @Transactional
-    public DrRigDto updateFromDto(UUID id, DrRigDto updatedRig) {
-        log.info("Updating drilling rig: {}", id);
-
-        DrRig existingRig = rigRepository.findById(id)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", id.toString()));
+        // Verify it exists
+        DrRigDto existingRig = getById(assetId);
 
         // Check for duplicate rig code
-        if (!existingRig.getRigCode().equals(updatedRig.getRigCode()) &&
-            rigRepository.existsByRigCodeAndIdNot(updatedRig.getRigCode(), id)) {
-            throw new DrBusinessException("Rig code already exists: " + updatedRig.getRigCode());
+        if (updatedDto.getRigCode() != null &&
+            !existingRig.getRigCode().equals(updatedDto.getRigCode())) {
+            try {
+                getByCode(existingRig.getTenantId(), updatedDto.getRigCode());
+                throw new DrBusinessException("Rig code already exists: " + updatedDto.getRigCode());
+            } catch (DrEntityNotFoundException e) {
+                // Good, code doesn't exist
+            }
         }
 
-        // Update fields
-        existingRig.setRigCode(updatedRig.getRigCode());
-        existingRig.setRigName(updatedRig.getRigName());
-        existingRig.setRigType(updatedRig.getRigType());
-        existingRig.setContractor(updatedRig.getContractor());
-        existingRig.setManufacturer(updatedRig.getManufacturer());
-        existingRig.setModel(updatedRig.getModel());
-        existingRig.setYearBuilt(updatedRig.getYearBuilt());
-        existingRig.setMaxHookloadLbs(updatedRig.getMaxHookloadLbs());
-        existingRig.setMaxRotaryTorqueFtLbs(updatedRig.getMaxRotaryTorqueFtLbs());
-        existingRig.setMaxDepthCapabilityFt(updatedRig.getMaxDepthCapabilityFt());
-        existingRig.setCurrentLocation(updatedRig.getCurrentLocation());
-        existingRig.setLatitude(updatedRig.getLatitude());
-        existingRig.setLongitude(updatedRig.getLongitude());
-        existingRig.setNotes(updatedRig.getNotes());
-        existingRig.setMetadata(updatedRig.getMetadata());
-        existingRig.setUpdatedTime(System.currentTimeMillis());
+        // Update asset name if rigName changed
+        if (updatedDto.getRigName() != null && !updatedDto.getRigName().equals(existingRig.getRigName())) {
+            Asset asset = assetService.getAssetById(assetId).orElseThrow();
+            asset.setName(updatedDto.getRigName());
+            assetService.updateAsset(asset);
+        }
 
-        DrRig savedRig = rigRepository.save(existingRig);
-        log.info("Drilling rig updated: {}", savedRig.getId());
+        // Save updated attributes
+        attributeService.saveServerAttributes(assetId, updatedDto.toAttributeMap());
 
-        return DrRigDto.fromEntity(savedRig);
+        log.info("Drilling rig updated: {}", assetId);
+
+        return getById(assetId);
     }
 
-    @Transactional
-    public DrRigDto updateStatus(UUID rigId, RigStatus newStatus) {
-        log.info("Updating rig {} status to {}", rigId, newStatus);
+    /**
+     * Update rig status
+     */
+    public DrRigDto updateStatus(UUID assetId, String newStatus) {
+        log.info("Updating rig {} status to {}", assetId, newStatus);
 
-        DrRig rig = rigRepository.findById(rigId)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", rigId.toString()));
+        // Verify it exists
+        getById(assetId);
 
-        rig.setOperationalStatus(newStatus);
-        rig.setUpdatedTime(System.currentTimeMillis());
+        // Update status attribute
+        attributeService.saveServerAttribute(assetId, DrRigDto.ATTR_OPERATIONAL_STATUS, newStatus);
 
-        DrRig savedRig = rigRepository.save(rig);
-        return DrRigDto.fromEntity(savedRig);
+        return getById(assetId);
     }
 
-    @Transactional
-    public DrRigDto updateLocation(UUID rigId, String location, BigDecimal latitude, BigDecimal longitude) {
-        log.info("Updating rig {} location to {}", rigId, location);
+    /**
+     * Update rig location
+     */
+    public DrRigDto updateLocation(UUID assetId, String location, BigDecimal latitude, BigDecimal longitude) {
+        log.info("Updating rig {} location to {}", assetId, location);
 
-        DrRig rig = rigRepository.findById(rigId)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", rigId.toString()));
+        // Verify it exists
+        getById(assetId);
 
-        rig.setCurrentLocation(location);
-        rig.setLatitude(latitude);
-        rig.setLongitude(longitude);
-        rig.setUpdatedTime(System.currentTimeMillis());
+        // Update location attributes
+        Map<String, Object> attrs = Map.of(
+            DrRigDto.ATTR_CURRENT_LOCATION, location,
+            DrRigDto.ATTR_LATITUDE, latitude,
+            DrRigDto.ATTR_LONGITUDE, longitude
+        );
+        attributeService.saveServerAttributes(assetId, attrs);
 
-        DrRig savedRig = rigRepository.save(rig);
-        return DrRigDto.fromEntity(savedRig);
-    }
-
-    @Transactional
-    public DrRigDto updateLocation(UUID rigId, String location, Double latitude, Double longitude) {
-        BigDecimal lat = latitude != null ? BigDecimal.valueOf(latitude) : null;
-        BigDecimal lon = longitude != null ? BigDecimal.valueOf(longitude) : null;
-        return updateLocation(rigId, location, lat, lon);
+        return getById(assetId);
     }
 
     // --- Well Assignment Operations ---
 
-    @Transactional
-    public DrRigDto assignToWell(UUID rigId, UUID wellId) {
-        log.info("Assigning rig {} to well {}", rigId, wellId);
+    /**
+     * Assign rig to a well
+     */
+    public DrRigDto assignToWell(UUID assetId, UUID wellId) {
+        log.info("Assigning rig {} to well {}", assetId, wellId);
 
-        DrRig rig = rigRepository.findById(rigId)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", rigId.toString()));
+        DrRigDto rig = getById(assetId);
 
         if (rig.getCurrentWellId() != null) {
             throw new DrBusinessException("Rig is already assigned to a well. Release it first.");
         }
 
-        // Check if another rig is assigned to this well
-        rigRepository.findByCurrentWellId(wellId).ifPresent(existingRig -> {
-            throw new DrBusinessException("Another rig is already assigned to this well: " + existingRig.getRigCode());
-        });
+        // TODO: Check if another rig is assigned to this well
 
-        rig.setCurrentWellId(wellId);
-        rig.setOperationalStatus(RigStatus.RIG_UP);
-        rig.setUpdatedTime(System.currentTimeMillis());
+        Map<String, Object> attrs = Map.of(
+            DrRigDto.ATTR_CURRENT_WELL_ID, wellId.toString(),
+            DrRigDto.ATTR_OPERATIONAL_STATUS, "RIG_UP"
+        );
+        attributeService.saveServerAttributes(assetId, attrs);
 
-        DrRig savedRig = rigRepository.save(rig);
         log.info("Rig assigned to well successfully");
-        return DrRigDto.fromEntity(savedRig);
+        return getById(assetId);
     }
 
-    @Transactional
-    public DrRigDto releaseFromWell(UUID rigId) {
-        log.info("Releasing rig {} from well", rigId);
+    /**
+     * Release rig from well
+     */
+    public DrRigDto releaseFromWell(UUID assetId) {
+        log.info("Releasing rig {} from well", assetId);
 
-        DrRig rig = rigRepository.findById(rigId)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", rigId.toString()));
+        DrRigDto rig = getById(assetId);
 
         if (rig.getCurrentWellId() == null) {
             throw new DrBusinessException("Rig is not assigned to any well");
         }
 
         // Update statistics
-        if (rig.getTotalWellsDrilled() != null) {
-            rig.setTotalWellsDrilled(rig.getTotalWellsDrilled() + 1);
-        } else {
-            rig.setTotalWellsDrilled(1);
-        }
+        int newWellCount = (rig.getTotalWellsDrilled() != null ? rig.getTotalWellsDrilled() : 0) + 1;
 
-        rig.setCurrentWellId(null);
-        rig.setCurrentRunId(null);
-        rig.setOperationalStatus(RigStatus.RIG_DOWN);
-        rig.setUpdatedTime(System.currentTimeMillis());
+        Map<String, Object> attrs = Map.of(
+            DrRigDto.ATTR_CURRENT_WELL_ID, "",
+            DrRigDto.ATTR_CURRENT_RUN_ID, "",
+            DrRigDto.ATTR_OPERATIONAL_STATUS, "RIG_DOWN",
+            DrRigDto.ATTR_TOTAL_WELLS_DRILLED, newWellCount
+        );
+        attributeService.saveServerAttributes(assetId, attrs);
 
-        DrRig savedRig = rigRepository.save(rig);
         log.info("Rig released from well successfully");
-        return DrRigDto.fromEntity(savedRig);
+        return getById(assetId);
     }
 
     // --- BOP Test Operations ---
 
-    @Transactional
-    public DrRigDto recordBopTest(UUID rigId, Long testDate) {
-        return recordBopTest(rigId, testDate, null);
-    }
+    /**
+     * Record a BOP test
+     */
+    public DrRigDto recordBopTest(UUID assetId, Long testDate, String notes) {
+        log.info("Recording BOP test for rig {}", assetId);
 
-    @Transactional
-    public DrRigDto recordBopTest(UUID rigId, Long testDate, String notes) {
-        log.info("Recording BOP test for rig {}", rigId);
+        // Verify it exists
+        DrRigDto rig = getById(assetId);
 
-        DrRig rig = rigRepository.findById(rigId)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", rigId.toString()));
-
-        rig.setBopTestDate(testDate);
-        rig.setUpdatedTime(System.currentTimeMillis());
+        Map<String, Object> attrs = new java.util.HashMap<>();
+        attrs.put(DrRigDto.ATTR_BOP_TEST_DATE, testDate);
 
         if (notes != null) {
             String existingNotes = rig.getNotes() != null ? rig.getNotes() : "";
-            rig.setNotes(existingNotes + "\n[" + System.currentTimeMillis() + "] BOP Test: " + notes);
+            String newNotes = existingNotes + "\n[" + System.currentTimeMillis() + "] BOP Test: " + notes;
+            attrs.put(DrRigDto.ATTR_NOTES, newNotes);
         }
 
-        DrRig savedRig = rigRepository.save(rig);
+        attributeService.saveServerAttributes(assetId, attrs);
+
         log.info("BOP test recorded successfully");
-        return DrRigDto.fromEntity(savedRig);
-    }
-
-    // --- Inspection Operations ---
-
-    @Transactional
-    public DrRigDto recordInspection(UUID rigId, Long inspectionDate, Long nextInspectionDue, String notes) {
-        log.info("Recording inspection for rig {}", rigId);
-
-        DrRig rig = rigRepository.findById(rigId)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", rigId.toString()));
-
-        rig.setLastRigInspectionDate(inspectionDate);
-        if (nextInspectionDue != null) {
-            rig.setNextRigInspectionDue(nextInspectionDue);
-        }
-        rig.setUpdatedTime(System.currentTimeMillis());
-
-        if (notes != null) {
-            String existingNotes = rig.getNotes() != null ? rig.getNotes() : "";
-            rig.setNotes(existingNotes + "\n[" + System.currentTimeMillis() + "] Inspection: " + notes);
-        }
-
-        DrRig savedRig = rigRepository.save(rig);
-        log.info("Inspection recorded successfully");
-        return DrRigDto.fromEntity(savedRig);
-    }
-
-    // --- Statistics Operations ---
-
-    @Transactional
-    public DrRigDto updateStatistics(UUID rigId, Integer totalWellsDrilled, Double totalFootageDrilledFt,
-                                     Double totalNptHours, Double totalOperationalHours) {
-        log.info("Updating statistics for rig {}", rigId);
-
-        DrRig rig = rigRepository.findById(rigId)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", rigId.toString()));
-
-        if (totalWellsDrilled != null) {
-            rig.setTotalWellsDrilled(totalWellsDrilled);
-        }
-        if (totalFootageDrilledFt != null) {
-            rig.setTotalFootageDrilledFt(BigDecimal.valueOf(totalFootageDrilledFt));
-        }
-        if (totalNptHours != null) {
-            rig.setTotalNptHours(BigDecimal.valueOf(totalNptHours));
-        }
-        if (totalOperationalHours != null) {
-            rig.setTotalOperationalHours(BigDecimal.valueOf(totalOperationalHours));
-        }
-        rig.setUpdatedTime(System.currentTimeMillis());
-
-        DrRig savedRig = rigRepository.save(rig);
-        log.info("Statistics updated successfully");
-        return DrRigDto.fromEntity(savedRig);
+        return getById(assetId);
     }
 
     // --- Delete Operations ---
 
-    @Transactional
-    public void delete(UUID id) {
-        log.info("Deleting drilling rig: {}", id);
+    /**
+     * Delete a rig
+     */
+    public void delete(UUID tenantId, UUID assetId) {
+        log.info("Deleting drilling rig: {}", assetId);
 
-        DrRig rig = rigRepository.findById(id)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", id.toString()));
+        DrRigDto rig = getById(assetId);
 
         if (rig.getCurrentWellId() != null) {
             throw new DrBusinessException("Cannot delete rig assigned to a well. Release it first.");
         }
 
-        rigRepository.delete(rig);
-        log.info("Drilling rig deleted: {}", id);
+        assetService.deleteAsset(tenantId, assetId);
+        log.info("Drilling rig deleted: {}", assetId);
     }
 
     // --- Statistics ---
 
-    @Transactional(readOnly = true)
-    public long countByStatus(UUID tenantId, RigStatus status) {
-        return rigRepository.countByTenantIdAndStatus(tenantId, status);
+    /**
+     * Count rigs by status
+     */
+    public long countByStatus(UUID tenantId, String status) {
+        return getByStatus(tenantId, status).size();
     }
 
-    @Transactional(readOnly = true)
-    public long countByType(UUID tenantId, RigType rigType) {
-        return rigRepository.countByTenantIdAndRigType(tenantId, rigType);
+    /**
+     * Count rigs by type
+     */
+    public long countByType(UUID tenantId, String rigType) {
+        return getByType(tenantId, rigType).size();
+    }
+
+    /**
+     * Count all rigs for a tenant
+     */
+    public long countByTenant(UUID tenantId) {
+        return assetService.countByType(tenantId, DrRigDto.ASSET_TYPE);
     }
 }

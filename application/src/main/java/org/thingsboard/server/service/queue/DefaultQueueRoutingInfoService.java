@@ -18,6 +18,7 @@ package org.thingsboard.server.service.queue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
+import org.thingsboard.server.common.data.queue.Queue;
 import org.thingsboard.server.dao.queue.QueueService;
 import org.thingsboard.server.queue.discovery.QueueRoutingInfo;
 import org.thingsboard.server.queue.discovery.QueueRoutingInfoService;

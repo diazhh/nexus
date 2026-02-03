@@ -23,6 +23,9 @@
       <mat-icon matPrefix>search</mat-icon>
       <input matInput placeholder="Buscar..." [(ngModel)]="searchText" (input)="applyFilter()">
     </mat-form-field>
+    <button mat-icon-button matTooltip="Exportar CSV" (click)="exportToCsv()" [disabled]="dataSource.data.length === 0">
+      <mat-icon>download</mat-icon>
+    </button>
     <button mat-raised-button color="primary" (click)="openCreateDialog()">
       <mat-icon>add</mat-icon> Nuevo Pozo
     </button>

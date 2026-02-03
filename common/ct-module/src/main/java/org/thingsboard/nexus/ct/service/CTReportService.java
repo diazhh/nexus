@@ -25,12 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.thingsboard.nexus.ct.dto.*;
 import org.thingsboard.nexus.ct.exception.CTBusinessException;
 import org.thingsboard.nexus.ct.model.CTJob;
-import org.thingsboard.nexus.ct.model.CTReel;
-import org.thingsboard.nexus.ct.model.CTUnit;
 import org.thingsboard.nexus.ct.model.JobStatus;
 import org.thingsboard.nexus.ct.repository.CTJobRepository;
-import org.thingsboard.nexus.ct.repository.CTReelRepository;
-import org.thingsboard.nexus.ct.repository.CTUnitRepository;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -44,8 +40,8 @@ import java.util.stream.Collectors;
 public class CTReportService {
 
     private final CTJobRepository jobRepository;
-    private final CTReelRepository reelRepository;
-    private final CTUnitRepository unitRepository;
+    private final CTReelService reelService;
+    private final CTUnitService unitService;
 
     @Transactional(readOnly = true)
     public CTReportResponse generateReport(CTReportRequest request) {
@@ -172,16 +168,13 @@ public class CTReportService {
     }
 
     private byte[] generateReelLifecycleReport(CTReportRequest request) {
-        List<CTReel> reels;
-        
+        List<CTReelDto> reels;
+
         if (request.getEntityId() != null) {
-            reels = Collections.singletonList(
-                reelRepository.findById(request.getEntityId())
-                    .orElseThrow(() -> new CTBusinessException("Reel not found"))
-            );
+            reels = Collections.singletonList(reelService.getById(request.getEntityId()));
         } else {
             Pageable pageable = PageRequest.of(0, 1000);
-            Page<CTReel> page = reelRepository.findByTenantId(request.getTenantId(), pageable);
+            Page<CTReelDto> page = reelService.getByTenant(request.getTenantId(), pageable);
             reels = page.getContent();
         }
 
@@ -192,11 +185,11 @@ public class CTReportService {
         }
     }
 
-    private byte[] generateReelLifecycleCSV(List<CTReel> reels) {
+    private byte[] generateReelLifecycleCSV(List<CTReelDto> reels) {
         StringBuilder csv = new StringBuilder();
         csv.append("Reel Code,Status,Material Grade,Length (ft),OD (in),Wall (in),Fatigue (%),Total Cycles,Remaining Life (%)\n");
-        
-        for (CTReel reel : reels) {
+
+        for (CTReelDto reel : reels) {
             csv.append(escape(reel.getReelCode())).append(",");
             csv.append(reel.getStatus().name()).append(",");
             csv.append(escape(reel.getMaterialGrade())).append(",");
@@ -205,44 +198,44 @@ public class CTReportService {
             csv.append(reel.getWallThicknessInch() != null ? reel.getWallThicknessInch().toString() : "N/A").append(",");
             csv.append(reel.getAccumulatedFatiguePercent() != null ? reel.getAccumulatedFatiguePercent().toString() : "0").append(",");
             csv.append(reel.getTotalCycles() != null ? reel.getTotalCycles().toString() : "0").append(",");
-            
+
             BigDecimal fatigue = reel.getAccumulatedFatiguePercent() != null ? reel.getAccumulatedFatiguePercent() : BigDecimal.ZERO;
             BigDecimal remainingLife = new BigDecimal("100").subtract(fatigue);
             csv.append(remainingLife.toString()).append("\n");
         }
-        
+
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private byte[] generateReelLifecycleText(List<CTReel> reels) {
+    private byte[] generateReelLifecycleText(List<CTReelDto> reels) {
         StringBuilder text = new StringBuilder();
         text.append("=".repeat(80)).append("\n");
         text.append("REEL LIFECYCLE REPORT\n");
         text.append("=".repeat(80)).append("\n");
         text.append("Generated: ").append(new Date()).append("\n");
         text.append("Total Reels: ").append(reels.size()).append("\n\n");
-        
-        for (CTReel reel : reels) {
+
+        for (CTReelDto reel : reels) {
             text.append("-".repeat(80)).append("\n");
             text.append("Reel Code: ").append(reel.getReelCode()).append("\n");
             text.append("Status: ").append(reel.getStatus()).append("\n");
             text.append("Material: ").append(reel.getMaterialGrade()).append("\n");
             text.append("Fatigue: ").append(reel.getAccumulatedFatiguePercent() != null ? reel.getAccumulatedFatiguePercent() : "0").append("%\n");
             text.append("Total Cycles: ").append(reel.getTotalCycles() != null ? reel.getTotalCycles() : 0).append("\n");
-            
+
             BigDecimal fatigue = reel.getAccumulatedFatiguePercent() != null ? reel.getAccumulatedFatiguePercent() : BigDecimal.ZERO;
             BigDecimal remainingLife = new BigDecimal("100").subtract(fatigue);
             text.append("Remaining Life: ").append(remainingLife).append("%\n\n");
         }
-        
+
         return text.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     private byte[] generateFleetUtilizationReport(CTReportRequest request) {
         Pageable pageable = PageRequest.of(0, 1000);
-        Page<CTUnit> unitsPage = unitRepository.findByTenantId(request.getTenantId(), pageable);
-        List<CTUnit> units = unitsPage.getContent();
-        
+        Page<CTUnitDto> unitsPage = unitService.getByTenant(request.getTenantId(), pageable);
+        List<CTUnitDto> units = unitsPage.getContent();
+
         Page<CTJob> jobsPage = jobRepository.findByTenantId(request.getTenantId(), pageable);
         List<CTJob> jobs = jobsPage.getContent();
 
@@ -253,19 +246,19 @@ public class CTReportService {
         }
     }
 
-    private byte[] generateFleetUtilizationCSV(List<CTUnit> units, List<CTJob> jobs) {
+    private byte[] generateFleetUtilizationCSV(List<CTUnitDto> units, List<CTJob> jobs) {
         StringBuilder csv = new StringBuilder();
         csv.append("Unit Code,Unit Name,Status,Total Hours,Jobs Completed,Location,Utilization (%)\n");
-        
-        for (CTUnit unit : units) {
+
+        for (CTUnitDto unit : units) {
             long completedJobs = jobs.stream()
-                .filter(j -> j.getUnitId() != null && j.getUnitId().equals(unit.getId()))
+                .filter(j -> j.getUnitId() != null && j.getUnitId().equals(unit.getAssetId()))
                 .filter(j -> j.getStatus() == JobStatus.COMPLETED)
                 .count();
-            
+
             BigDecimal hours = unit.getTotalOperationalHours() != null ? unit.getTotalOperationalHours() : BigDecimal.ZERO;
             double utilization = hours.doubleValue() / 720.0 * 100;
-            
+
             csv.append(escape(unit.getUnitCode())).append(",");
             csv.append(escape(unit.getUnitName())).append(",");
             csv.append(unit.getOperationalStatus().name()).append(",");
@@ -274,24 +267,24 @@ public class CTReportService {
             csv.append(escape(unit.getCurrentLocation() != null ? unit.getCurrentLocation() : "N/A")).append(",");
             csv.append(String.format("%.2f", utilization)).append("\n");
         }
-        
+
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private byte[] generateFleetUtilizationText(List<CTUnit> units, List<CTJob> jobs) {
+    private byte[] generateFleetUtilizationText(List<CTUnitDto> units, List<CTJob> jobs) {
         StringBuilder text = new StringBuilder();
         text.append("=".repeat(80)).append("\n");
         text.append("FLEET UTILIZATION REPORT\n");
         text.append("=".repeat(80)).append("\n");
         text.append("Generated: ").append(new Date()).append("\n");
         text.append("Total Units: ").append(units.size()).append("\n\n");
-        
-        for (CTUnit unit : units) {
+
+        for (CTUnitDto unit : units) {
             long completedJobs = jobs.stream()
-                .filter(j -> j.getUnitId() != null && j.getUnitId().equals(unit.getId()))
+                .filter(j -> j.getUnitId() != null && j.getUnitId().equals(unit.getAssetId()))
                 .filter(j -> j.getStatus() == JobStatus.COMPLETED)
                 .count();
-            
+
             text.append("-".repeat(80)).append("\n");
             text.append("Unit Code: ").append(unit.getUnitCode()).append("\n");
             text.append("Status: ").append(unit.getOperationalStatus()).append("\n");
@@ -299,17 +292,17 @@ public class CTReportService {
             text.append("Jobs Completed: ").append(completedJobs).append("\n");
             text.append("Location: ").append(unit.getCurrentLocation() != null ? unit.getCurrentLocation() : "N/A").append("\n\n");
         }
-        
+
         return text.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     private byte[] generateFatigueAnalysisReport(CTReportRequest request) {
         Pageable pageable = PageRequest.of(0, 1000);
-        Page<CTReel> page = reelRepository.findByTenantId(request.getTenantId(), pageable);
-        List<CTReel> allReels = page.getContent();
-        
-        List<CTReel> criticalReels = allReels.stream()
-            .filter(r -> r.getAccumulatedFatiguePercent() != null && 
+        Page<CTReelDto> page = reelService.getByTenant(request.getTenantId(), pageable);
+        List<CTReelDto> allReels = page.getContent();
+
+        List<CTReelDto> criticalReels = allReels.stream()
+            .filter(r -> r.getAccumulatedFatiguePercent() != null &&
                         r.getAccumulatedFatiguePercent().compareTo(new BigDecimal("80")) >= 0)
             .sorted((r1, r2) -> {
                 BigDecimal f1 = r1.getAccumulatedFatiguePercent() != null ? r1.getAccumulatedFatiguePercent() : BigDecimal.ZERO;
@@ -325,17 +318,17 @@ public class CTReportService {
         }
     }
 
-    private byte[] generateFatigueAnalysisCSV(List<CTReel> reels) {
+    private byte[] generateFatigueAnalysisCSV(List<CTReelDto> reels) {
         StringBuilder csv = new StringBuilder();
         csv.append("Reel Code,Fatigue Level (%),Status,Total Cycles,Remaining Life (%),Recommendation\n");
-        
-        for (CTReel reel : reels) {
+
+        for (CTReelDto reel : reels) {
             BigDecimal fatigue = reel.getAccumulatedFatiguePercent() != null ? reel.getAccumulatedFatiguePercent() : BigDecimal.ZERO;
             BigDecimal remainingLife = new BigDecimal("100").subtract(fatigue);
-            String recommendation = fatigue.compareTo(new BigDecimal("95")) >= 0 ? "RETIRE IMMEDIATELY" 
-                : fatigue.compareTo(new BigDecimal("80")) >= 0 ? "SCHEDULE RETIREMENT" 
+            String recommendation = fatigue.compareTo(new BigDecimal("95")) >= 0 ? "RETIRE IMMEDIATELY"
+                : fatigue.compareTo(new BigDecimal("80")) >= 0 ? "SCHEDULE RETIREMENT"
                 : "MONITOR";
-            
+
             csv.append(escape(reel.getReelCode())).append(",");
             csv.append(fatigue.toString()).append(",");
             csv.append(reel.getStatus().name()).append(",");
@@ -343,38 +336,38 @@ public class CTReportService {
             csv.append(remainingLife.toString()).append(",");
             csv.append(recommendation).append("\n");
         }
-        
+
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private byte[] generateFatigueAnalysisText(List<CTReel> reels) {
+    private byte[] generateFatigueAnalysisText(List<CTReelDto> reels) {
         StringBuilder text = new StringBuilder();
         text.append("=".repeat(80)).append("\n");
         text.append("FATIGUE ANALYSIS REPORT\n");
         text.append("=".repeat(80)).append("\n");
         text.append("Generated: ").append(new Date()).append("\n");
         text.append("Critical Reels (>80% fatigue): ").append(reels.size()).append("\n\n");
-        
-        for (CTReel reel : reels) {
+
+        for (CTReelDto reel : reels) {
             BigDecimal fatigue = reel.getAccumulatedFatiguePercent() != null ? reel.getAccumulatedFatiguePercent() : BigDecimal.ZERO;
-            String recommendation = fatigue.compareTo(new BigDecimal("95")) >= 0 ? "RETIRE IMMEDIATELY" 
-                : fatigue.compareTo(new BigDecimal("80")) >= 0 ? "SCHEDULE RETIREMENT" 
+            String recommendation = fatigue.compareTo(new BigDecimal("95")) >= 0 ? "RETIRE IMMEDIATELY"
+                : fatigue.compareTo(new BigDecimal("80")) >= 0 ? "SCHEDULE RETIREMENT"
                 : "MONITOR";
-            
+
             text.append("-".repeat(80)).append("\n");
             text.append("Reel Code: ").append(reel.getReelCode()).append("\n");
             text.append("Fatigue: ").append(fatigue).append("%\n");
             text.append("Status: ").append(reel.getStatus()).append("\n");
             text.append("Recommendation: ").append(recommendation).append("\n\n");
         }
-        
+
         return text.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     private byte[] generateMaintenanceScheduleReport(CTReportRequest request) {
         Pageable pageable = PageRequest.of(0, 1000);
-        Page<CTUnit> page = unitRepository.findByTenantId(request.getTenantId(), pageable);
-        List<CTUnit> units = page.getContent();
+        Page<CTUnitDto> page = unitService.getByTenant(request.getTenantId(), pageable);
+        List<CTUnitDto> units = page.getContent();
 
         if (request.getFormat() == CTReportRequest.ReportFormat.CSV) {
             return generateMaintenanceScheduleCSV(units);
@@ -383,16 +376,16 @@ public class CTReportService {
         }
     }
 
-    private byte[] generateMaintenanceScheduleCSV(List<CTUnit> units) {
+    private byte[] generateMaintenanceScheduleCSV(List<CTUnitDto> units) {
         StringBuilder csv = new StringBuilder();
         csv.append("Unit Code,Status,Total Hours,Hours Since Maintenance,Next Maintenance (hrs),Priority\n");
-        
-        for (CTUnit unit : units) {
+
+        for (CTUnitDto unit : units) {
             BigDecimal totalHours = unit.getTotalOperationalHours() != null ? unit.getTotalOperationalHours() : BigDecimal.ZERO;
             double hoursSinceMaintenance = totalHours.doubleValue() % 500;
             double nextMaintenance = 500 - hoursSinceMaintenance;
             String priority = nextMaintenance < 50 ? "HIGH" : nextMaintenance < 100 ? "MEDIUM" : "LOW";
-            
+
             csv.append(escape(unit.getUnitCode())).append(",");
             csv.append(unit.getOperationalStatus().name()).append(",");
             csv.append(String.format("%.2f", totalHours.doubleValue())).append(",");
@@ -400,30 +393,30 @@ public class CTReportService {
             csv.append(String.format("%.2f", nextMaintenance)).append(",");
             csv.append(priority).append("\n");
         }
-        
+
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private byte[] generateMaintenanceScheduleText(List<CTUnit> units) {
+    private byte[] generateMaintenanceScheduleText(List<CTUnitDto> units) {
         StringBuilder text = new StringBuilder();
         text.append("=".repeat(80)).append("\n");
         text.append("MAINTENANCE SCHEDULE REPORT\n");
         text.append("=".repeat(80)).append("\n");
         text.append("Generated: ").append(new Date()).append("\n");
         text.append("Total Units: ").append(units.size()).append("\n\n");
-        
-        for (CTUnit unit : units) {
+
+        for (CTUnitDto unit : units) {
             BigDecimal totalHours = unit.getTotalOperationalHours() != null ? unit.getTotalOperationalHours() : BigDecimal.ZERO;
             double hoursSinceMaintenance = totalHours.doubleValue() % 500;
             double nextMaintenance = 500 - hoursSinceMaintenance;
-            
+
             text.append("-".repeat(80)).append("\n");
             text.append("Unit Code: ").append(unit.getUnitCode()).append("\n");
             text.append("Status: ").append(unit.getOperationalStatus()).append("\n");
             text.append("Total Hours: ").append(String.format("%.2f", totalHours.doubleValue())).append("\n");
             text.append("Next Maintenance: ").append(String.format("%.2f", nextMaintenance)).append(" hrs\n\n");
         }
-        
+
         return text.toString().getBytes(StandardCharsets.UTF_8);
     }
 

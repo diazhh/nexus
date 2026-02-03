@@ -20,15 +20,20 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.thingsboard.nexus.dr.model.DrRig;
-import org.thingsboard.nexus.dr.model.enums.RigStatus;
-import org.thingsboard.nexus.dr.model.enums.RigType;
+import org.thingsboard.server.common.data.asset.Asset;
+import org.thingsboard.server.common.data.kv.AttributeKvEntry;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * DTO for Drilling Rig
+ * DTO for Drilling Rig.
+ * Maps to a ThingsBoard Asset of type "dr_rig" with SERVER_SCOPE attributes.
+ *
+ * The rig is the main drilling unit (digital twin) with child assets for components.
  */
 @Data
 @NoArgsConstructor
@@ -36,13 +41,56 @@ import java.util.UUID;
 @Builder
 public class DrRigDto {
 
-    private UUID id;
+    // Asset Type constant
+    public static final String ASSET_TYPE = "dr_rig";
+
+    // Attribute key constants
+    public static final String ATTR_RIG_CODE = "rig_code";
+    public static final String ATTR_RIG_NAME = "rig_name";
+    public static final String ATTR_RIG_TYPE = "rig_type";
+    public static final String ATTR_OPERATIONAL_STATUS = "operational_status";
+    public static final String ATTR_CONTRACTOR = "contractor";
+    public static final String ATTR_MANUFACTURER = "manufacturer";
+    public static final String ATTR_MODEL = "model";
+    public static final String ATTR_YEAR_BUILT = "year_built";
+    public static final String ATTR_MAX_HOOKLOAD_LBS = "max_hookload_lbs";
+    public static final String ATTR_MAX_ROTARY_TORQUE_FT_LBS = "max_rotary_torque_ft_lbs";
+    public static final String ATTR_MAX_DEPTH_CAPABILITY_FT = "max_depth_capability_ft";
+    public static final String ATTR_CURRENT_WELL_ID = "current_well_id";
+    public static final String ATTR_CURRENT_RUN_ID = "current_run_id";
+    public static final String ATTR_CURRENT_LOCATION = "current_location";
+    public static final String ATTR_LATITUDE = "latitude";
+    public static final String ATTR_LONGITUDE = "longitude";
+    public static final String ATTR_TOTAL_WELLS_DRILLED = "total_wells_drilled";
+    public static final String ATTR_TOTAL_FOOTAGE_DRILLED_FT = "total_footage_drilled_ft";
+    public static final String ATTR_TOTAL_NPT_HOURS = "total_npt_hours";
+    public static final String ATTR_TOTAL_OPERATIONAL_HOURS = "total_operational_hours";
+    public static final String ATTR_LAST_RIG_INSPECTION_DATE = "last_rig_inspection_date";
+    public static final String ATTR_NEXT_RIG_INSPECTION_DUE = "next_rig_inspection_due";
+    public static final String ATTR_BOP_TEST_DATE = "bop_test_date";
+    public static final String ATTR_CERTIFICATION_EXPIRY_DATE = "certification_expiry_date";
+    public static final String ATTR_NOTES = "notes";
+    // Child asset references
+    public static final String ATTR_DRAWWORKS_ASSET_ID = "drawworks_asset_id";
+    public static final String ATTR_TOP_DRIVE_ASSET_ID = "top_drive_asset_id";
+    public static final String ATTR_MUD_PUMP_1_ASSET_ID = "mud_pump_1_asset_id";
+    public static final String ATTR_MUD_PUMP_2_ASSET_ID = "mud_pump_2_asset_id";
+    public static final String ATTR_MUD_PUMP_3_ASSET_ID = "mud_pump_3_asset_id";
+    public static final String ATTR_MUD_SYSTEM_ASSET_ID = "mud_system_asset_id";
+    public static final String ATTR_BOP_STACK_ASSET_ID = "bop_stack_asset_id";
+    public static final String ATTR_GAS_DETECTOR_ASSET_ID = "gas_detector_asset_id";
+
+    // Asset identity (the asset IS the rig)
+    private UUID assetId;
     private UUID tenantId;
+    private String name;   // Asset name
+    private String label;  // Asset label
+
+    // Rig identification
     private String rigCode;
     private String rigName;
-    private UUID assetId;
 
-    // Child asset references
+    // Child asset references (created by template)
     private UUID drawworksAssetId;
     private UUID topDriveAssetId;
     private UUID mudPump1AssetId;
@@ -53,8 +101,8 @@ public class DrRigDto {
     private UUID gasDetectorAssetId;
 
     // Rig type and status
-    private RigType rigType;
-    private RigStatus operationalStatus;
+    private String rigType;           // LAND, JACKUP, SEMI_SUBMERSIBLE, DRILLSHIP, etc.
+    private String operationalStatus; // DRILLING, STANDBY, MAINTENANCE, etc.
 
     // Rig specifications
     private String contractor;
@@ -97,139 +145,186 @@ public class DrRigDto {
     private Long updatedTime;
 
     /**
-     * Create DTO from entity
+     * Convert DTO to map of attributes for saving to ThingsBoard
      */
-    public static DrRigDto fromEntity(DrRig entity) {
-        if (entity == null) {
+    public Map<String, Object> toAttributeMap() {
+        Map<String, Object> attributes = new HashMap<>();
+
+        putIfNotNull(attributes, ATTR_RIG_CODE, rigCode);
+        putIfNotNull(attributes, ATTR_RIG_NAME, rigName);
+        putIfNotNull(attributes, ATTR_RIG_TYPE, rigType);
+        putIfNotNull(attributes, ATTR_OPERATIONAL_STATUS, operationalStatus);
+        putIfNotNull(attributes, ATTR_CONTRACTOR, contractor);
+        putIfNotNull(attributes, ATTR_MANUFACTURER, manufacturer);
+        putIfNotNull(attributes, ATTR_MODEL, model);
+        putIfNotNull(attributes, ATTR_YEAR_BUILT, yearBuilt);
+        putIfNotNull(attributes, ATTR_MAX_HOOKLOAD_LBS, maxHookloadLbs);
+        putIfNotNull(attributes, ATTR_MAX_ROTARY_TORQUE_FT_LBS, maxRotaryTorqueFtLbs);
+        putIfNotNull(attributes, ATTR_MAX_DEPTH_CAPABILITY_FT, maxDepthCapabilityFt);
+        putIfNotNull(attributes, ATTR_CURRENT_WELL_ID, currentWellId != null ? currentWellId.toString() : null);
+        putIfNotNull(attributes, ATTR_CURRENT_RUN_ID, currentRunId != null ? currentRunId.toString() : null);
+        putIfNotNull(attributes, ATTR_CURRENT_LOCATION, currentLocation);
+        putIfNotNull(attributes, ATTR_LATITUDE, latitude);
+        putIfNotNull(attributes, ATTR_LONGITUDE, longitude);
+        putIfNotNull(attributes, ATTR_TOTAL_WELLS_DRILLED, totalWellsDrilled);
+        putIfNotNull(attributes, ATTR_TOTAL_FOOTAGE_DRILLED_FT, totalFootageDrilledFt);
+        putIfNotNull(attributes, ATTR_TOTAL_NPT_HOURS, totalNptHours);
+        putIfNotNull(attributes, ATTR_TOTAL_OPERATIONAL_HOURS, totalOperationalHours);
+        putIfNotNull(attributes, ATTR_LAST_RIG_INSPECTION_DATE, lastRigInspectionDate);
+        putIfNotNull(attributes, ATTR_NEXT_RIG_INSPECTION_DUE, nextRigInspectionDue);
+        putIfNotNull(attributes, ATTR_BOP_TEST_DATE, bopTestDate);
+        putIfNotNull(attributes, ATTR_CERTIFICATION_EXPIRY_DATE, certificationExpiryDate);
+        putIfNotNull(attributes, ATTR_NOTES, notes);
+
+        // Child asset references
+        putIfNotNull(attributes, ATTR_DRAWWORKS_ASSET_ID, drawworksAssetId != null ? drawworksAssetId.toString() : null);
+        putIfNotNull(attributes, ATTR_TOP_DRIVE_ASSET_ID, topDriveAssetId != null ? topDriveAssetId.toString() : null);
+        putIfNotNull(attributes, ATTR_MUD_PUMP_1_ASSET_ID, mudPump1AssetId != null ? mudPump1AssetId.toString() : null);
+        putIfNotNull(attributes, ATTR_MUD_PUMP_2_ASSET_ID, mudPump2AssetId != null ? mudPump2AssetId.toString() : null);
+        putIfNotNull(attributes, ATTR_MUD_PUMP_3_ASSET_ID, mudPump3AssetId != null ? mudPump3AssetId.toString() : null);
+        putIfNotNull(attributes, ATTR_MUD_SYSTEM_ASSET_ID, mudSystemAssetId != null ? mudSystemAssetId.toString() : null);
+        putIfNotNull(attributes, ATTR_BOP_STACK_ASSET_ID, bopStackAssetId != null ? bopStackAssetId.toString() : null);
+        putIfNotNull(attributes, ATTR_GAS_DETECTOR_ASSET_ID, gasDetectorAssetId != null ? gasDetectorAssetId.toString() : null);
+
+        return attributes;
+    }
+
+    /**
+     * Create DTO from Asset and its attributes
+     */
+    public static DrRigDto fromAssetAndAttributes(Asset asset, List<AttributeKvEntry> attributes) {
+        if (asset == null) {
             return null;
         }
 
         DrRigDto dto = new DrRigDto();
-        dto.id = entity.getId();
-        dto.tenantId = entity.getTenantId();
-        dto.rigCode = entity.getRigCode();
-        dto.rigName = entity.getRigName();
-        dto.assetId = entity.getAssetId();
+        dto.assetId = asset.getId().getId();
+        dto.tenantId = asset.getTenantId().getId();
+        dto.name = asset.getName();
+        dto.label = asset.getLabel();
+        dto.createdTime = asset.getCreatedTime();
 
-        // Child assets
-        dto.drawworksAssetId = entity.getDrawworksAssetId();
-        dto.topDriveAssetId = entity.getTopDriveAssetId();
-        dto.mudPump1AssetId = entity.getMudPump1AssetId();
-        dto.mudPump2AssetId = entity.getMudPump2AssetId();
-        dto.mudPump3AssetId = entity.getMudPump3AssetId();
-        dto.mudSystemAssetId = entity.getMudSystemAssetId();
-        dto.bopStackAssetId = entity.getBopStackAssetId();
-        dto.gasDetectorAssetId = entity.getGasDetectorAssetId();
-
-        // Type and status
-        dto.rigType = entity.getRigType();
-        dto.operationalStatus = entity.getOperationalStatus();
-
-        // Specifications
-        dto.contractor = entity.getContractor();
-        dto.manufacturer = entity.getManufacturer();
-        dto.model = entity.getModel();
-        dto.yearBuilt = entity.getYearBuilt();
-        dto.maxHookloadLbs = entity.getMaxHookloadLbs();
-        dto.maxRotaryTorqueFtLbs = entity.getMaxRotaryTorqueFtLbs();
-        dto.maxDepthCapabilityFt = entity.getMaxDepthCapabilityFt();
-
-        // Current operation
-        dto.currentWellId = entity.getCurrentWellId();
-        dto.currentRunId = entity.getCurrentRunId();
-
-        // Location
-        dto.currentLocation = entity.getCurrentLocation();
-        dto.latitude = entity.getLatitude();
-        dto.longitude = entity.getLongitude();
-
-        // Statistics
-        dto.totalWellsDrilled = entity.getTotalWellsDrilled();
-        dto.totalFootageDrilledFt = entity.getTotalFootageDrilledFt();
-        dto.totalNptHours = entity.getTotalNptHours();
-        dto.totalOperationalHours = entity.getTotalOperationalHours();
-
-        // Maintenance
-        dto.lastRigInspectionDate = entity.getLastRigInspectionDate();
-        dto.nextRigInspectionDue = entity.getNextRigInspectionDue();
-        dto.bopTestDate = entity.getBopTestDate();
-        dto.certificationExpiryDate = entity.getCertificationExpiryDate();
-
-        // Calculate BOP test overdue (14 days)
-        if (entity.getBopTestDate() != null) {
-            long fourteenDaysMs = 14L * 24 * 60 * 60 * 1000;
-            dto.bopTestOverdue = (System.currentTimeMillis() - entity.getBopTestDate()) > fourteenDaysMs;
+        // Parse attributes
+        for (AttributeKvEntry attr : attributes) {
+            String key = attr.getKey();
+            switch (key) {
+                case ATTR_RIG_CODE:
+                    dto.rigCode = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_RIG_NAME:
+                    dto.rigName = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_RIG_TYPE:
+                    dto.rigType = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_OPERATIONAL_STATUS:
+                    dto.operationalStatus = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_CONTRACTOR:
+                    dto.contractor = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_MANUFACTURER:
+                    dto.manufacturer = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_MODEL:
+                    dto.model = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_YEAR_BUILT:
+                    dto.yearBuilt = attr.getLongValue().map(Long::intValue).orElse(null);
+                    break;
+                case ATTR_MAX_HOOKLOAD_LBS:
+                    dto.maxHookloadLbs = attr.getLongValue().map(Long::intValue).orElse(null);
+                    break;
+                case ATTR_MAX_ROTARY_TORQUE_FT_LBS:
+                    dto.maxRotaryTorqueFtLbs = attr.getLongValue().map(Long::intValue).orElse(null);
+                    break;
+                case ATTR_MAX_DEPTH_CAPABILITY_FT:
+                    dto.maxDepthCapabilityFt = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_CURRENT_WELL_ID:
+                    dto.currentWellId = attr.getStrValue().map(UUID::fromString).orElse(null);
+                    break;
+                case ATTR_CURRENT_RUN_ID:
+                    dto.currentRunId = attr.getStrValue().map(UUID::fromString).orElse(null);
+                    break;
+                case ATTR_CURRENT_LOCATION:
+                    dto.currentLocation = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_LATITUDE:
+                    dto.latitude = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_LONGITUDE:
+                    dto.longitude = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_TOTAL_WELLS_DRILLED:
+                    dto.totalWellsDrilled = attr.getLongValue().map(Long::intValue).orElse(null);
+                    break;
+                case ATTR_TOTAL_FOOTAGE_DRILLED_FT:
+                    dto.totalFootageDrilledFt = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_TOTAL_NPT_HOURS:
+                    dto.totalNptHours = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_TOTAL_OPERATIONAL_HOURS:
+                    dto.totalOperationalHours = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_LAST_RIG_INSPECTION_DATE:
+                    dto.lastRigInspectionDate = attr.getLongValue().orElse(null);
+                    break;
+                case ATTR_NEXT_RIG_INSPECTION_DUE:
+                    dto.nextRigInspectionDue = attr.getLongValue().orElse(null);
+                    break;
+                case ATTR_BOP_TEST_DATE:
+                    dto.bopTestDate = attr.getLongValue().orElse(null);
+                    break;
+                case ATTR_CERTIFICATION_EXPIRY_DATE:
+                    dto.certificationExpiryDate = attr.getLongValue().orElse(null);
+                    break;
+                case ATTR_NOTES:
+                    dto.notes = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_DRAWWORKS_ASSET_ID:
+                    dto.drawworksAssetId = attr.getStrValue().map(UUID::fromString).orElse(null);
+                    break;
+                case ATTR_TOP_DRIVE_ASSET_ID:
+                    dto.topDriveAssetId = attr.getStrValue().map(UUID::fromString).orElse(null);
+                    break;
+                case ATTR_MUD_PUMP_1_ASSET_ID:
+                    dto.mudPump1AssetId = attr.getStrValue().map(UUID::fromString).orElse(null);
+                    break;
+                case ATTR_MUD_PUMP_2_ASSET_ID:
+                    dto.mudPump2AssetId = attr.getStrValue().map(UUID::fromString).orElse(null);
+                    break;
+                case ATTR_MUD_PUMP_3_ASSET_ID:
+                    dto.mudPump3AssetId = attr.getStrValue().map(UUID::fromString).orElse(null);
+                    break;
+                case ATTR_MUD_SYSTEM_ASSET_ID:
+                    dto.mudSystemAssetId = attr.getStrValue().map(UUID::fromString).orElse(null);
+                    break;
+                case ATTR_BOP_STACK_ASSET_ID:
+                    dto.bopStackAssetId = attr.getStrValue().map(UUID::fromString).orElse(null);
+                    break;
+                case ATTR_GAS_DETECTOR_ASSET_ID:
+                    dto.gasDetectorAssetId = attr.getStrValue().map(UUID::fromString).orElse(null);
+                    break;
+                default:
+                    // Ignore unknown attributes
+                    break;
+            }
         }
 
-        // Metadata
-        dto.notes = entity.getNotes();
-        dto.metadata = entity.getMetadata();
-
-        dto.createdTime = entity.getCreatedTime();
-        dto.updatedTime = entity.getUpdatedTime();
+        // Calculate BOP test overdue (14 days)
+        if (dto.bopTestDate != null) {
+            long fourteenDaysMs = 14L * 24 * 60 * 60 * 1000;
+            dto.bopTestOverdue = (System.currentTimeMillis() - dto.bopTestDate) > fourteenDaysMs;
+        }
 
         return dto;
     }
 
-    /**
-     * Convert DTO to entity for persistence
-     */
-    public DrRig toEntity() {
-        DrRig entity = new DrRig();
-        entity.setId(this.id);
-        entity.setTenantId(this.tenantId);
-        entity.setRigCode(this.rigCode);
-        entity.setRigName(this.rigName);
-        entity.setAssetId(this.assetId);
-
-        // Child assets
-        entity.setDrawworksAssetId(this.drawworksAssetId);
-        entity.setTopDriveAssetId(this.topDriveAssetId);
-        entity.setMudPump1AssetId(this.mudPump1AssetId);
-        entity.setMudPump2AssetId(this.mudPump2AssetId);
-        entity.setMudPump3AssetId(this.mudPump3AssetId);
-        entity.setMudSystemAssetId(this.mudSystemAssetId);
-        entity.setBopStackAssetId(this.bopStackAssetId);
-        entity.setGasDetectorAssetId(this.gasDetectorAssetId);
-
-        // Type and status
-        entity.setRigType(this.rigType);
-        entity.setOperationalStatus(this.operationalStatus);
-
-        // Specifications
-        entity.setContractor(this.contractor);
-        entity.setManufacturer(this.manufacturer);
-        entity.setModel(this.model);
-        entity.setYearBuilt(this.yearBuilt);
-        entity.setMaxHookloadLbs(this.maxHookloadLbs);
-        entity.setMaxRotaryTorqueFtLbs(this.maxRotaryTorqueFtLbs);
-        entity.setMaxDepthCapabilityFt(this.maxDepthCapabilityFt);
-
-        // Current operation
-        entity.setCurrentWellId(this.currentWellId);
-        entity.setCurrentRunId(this.currentRunId);
-
-        // Location
-        entity.setCurrentLocation(this.currentLocation);
-        entity.setLatitude(this.latitude);
-        entity.setLongitude(this.longitude);
-
-        // Statistics
-        entity.setTotalWellsDrilled(this.totalWellsDrilled);
-        entity.setTotalFootageDrilledFt(this.totalFootageDrilledFt);
-        entity.setTotalNptHours(this.totalNptHours);
-        entity.setTotalOperationalHours(this.totalOperationalHours);
-
-        // Maintenance
-        entity.setLastRigInspectionDate(this.lastRigInspectionDate);
-        entity.setNextRigInspectionDue(this.nextRigInspectionDue);
-        entity.setBopTestDate(this.bopTestDate);
-        entity.setCertificationExpiryDate(this.certificationExpiryDate);
-
-        // Metadata
-        entity.setNotes(this.notes);
-        entity.setMetadata(this.metadata);
-
-        return entity;
+    private void putIfNotNull(Map<String, Object> map, String key, Object value) {
+        if (value != null) {
+            map.put(key, value);
+        }
     }
 }

@@ -28,7 +28,8 @@ import {
   RvCompletion,
   RvPvtStudy,
   RvIprModel,
-  RvDeclineAnalysis
+  RvDeclineAnalysis,
+  RvWellLog
 } from '@shared/models/rv/rv.models';
 
 const BASE_URL = '/api/nexus/rv';
@@ -577,6 +578,22 @@ export class RvService {
     });
   }
 
+  createSeismicSurvey(tenantId: string, survey: any): Observable<any> {
+    return this.http.post<any>(`${BASE_URL}/seismic-surveys`, survey, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  updateSeismicSurvey(id: string, survey: any): Observable<any> {
+    return this.http.put<any>(`${BASE_URL}/seismic-surveys/${id}`, survey);
+  }
+
+  deleteSeismicSurvey(tenantId: string, id: string): Observable<void> {
+    return this.http.delete<void>(`${BASE_URL}/seismic-surveys/${id}`, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
   // ==============================================
   // FAULT ENDPOINTS
   // ==============================================
@@ -597,22 +614,18 @@ export class RvService {
     });
   }
 
-  // ==============================================
-  // WELL LOG ENDPOINTS
-  // ==============================================
-
-  getWellLogs(tenantId: string, pageLink: PageLink): Observable<PageData<any>> {
-    return this.http.get<PageData<any>>(`${BASE_URL}/well-logs`, {
-      headers: this.getHeaders(tenantId),
-      params: {
-        page: pageLink.page.toString(),
-        size: pageLink.pageSize.toString()
-      }
+  createFault(tenantId: string, fault: any): Observable<any> {
+    return this.http.post<any>(`${BASE_URL}/faults`, fault, {
+      headers: this.getHeaders(tenantId)
     });
   }
 
-  getWellLogsByWell(tenantId: string, wellId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${BASE_URL}/well-logs/by-well/${wellId}`, {
+  updateFault(id: string, fault: any): Observable<any> {
+    return this.http.put<any>(`${BASE_URL}/faults/${id}`, fault);
+  }
+
+  deleteFault(tenantId: string, id: string): Observable<void> {
+    return this.http.delete<void>(`${BASE_URL}/faults/${id}`, {
       headers: this.getHeaders(tenantId)
     });
   }
@@ -633,6 +646,62 @@ export class RvService {
 
   getCoresByWell(tenantId: string, wellId: string): Observable<any[]> {
     return this.http.get<any[]>(`${BASE_URL}/cores/by-well/${wellId}`, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  createCore(tenantId: string, core: any): Observable<any> {
+    return this.http.post<any>(`${BASE_URL}/cores`, core, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  updateCore(id: string, core: any): Observable<any> {
+    return this.http.put<any>(`${BASE_URL}/cores/${id}`, core);
+  }
+
+  deleteCore(tenantId: string, id: string): Observable<void> {
+    return this.http.delete<void>(`${BASE_URL}/cores/${id}`, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  // ==============================================
+  // WELL LOG ENDPOINTS
+  // ==============================================
+
+  getWellLogs(tenantId: string, pageLink: PageLink): Observable<PageData<RvWellLog>> {
+    return this.http.get<PageData<RvWellLog>>(`${BASE_URL}/well-logs`, {
+      headers: this.getHeaders(tenantId),
+      params: {
+        page: pageLink.page.toString(),
+        size: pageLink.pageSize.toString()
+      }
+    });
+  }
+
+  getWellLogsByWell(tenantId: string, wellId: string): Observable<RvWellLog[]> {
+    return this.http.get<RvWellLog[]>(`${BASE_URL}/well-logs/by-well/${wellId}`, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  getWellLog(id: string): Observable<RvWellLog> {
+    return this.http.get<RvWellLog>(`${BASE_URL}/well-logs/${id}`);
+  }
+
+  createWellLog(tenantId: string, wellLog: RvWellLog): Observable<RvWellLog> {
+    return this.http.post<RvWellLog>(`${BASE_URL}/well-logs`, wellLog, {
+      headers: this.getHeaders(tenantId)
+    });
+  }
+
+  updateWellLog(id: string, wellLog: RvWellLog): Observable<RvWellLog> {
+    return this.http.put<RvWellLog>(`${BASE_URL}/well-logs/${id}`, wellLog);
+  }
+
+  deleteWellLog(tenantId: string, id: string): Observable<void> {
+    return this.http.delete<void>(`${BASE_URL}/well-logs/${id}`, {
       headers: this.getHeaders(tenantId)
     });
   }

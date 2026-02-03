@@ -19,6 +19,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
 import { AppState } from '@core/core.state';
 import { getCurrentAuthUser } from '@core/auth/auth.selectors';
@@ -27,6 +28,7 @@ import { RvService } from '@core/http/rv/rv.service';
 import { RvExportService } from '@core/http/rv/rv-export.service';
 import { RvCompletion, RvWell } from '@shared/models/rv/rv.models';
 import { RvCompletionDialogComponent } from './rv-completion-dialog.component';
+import { DialogService } from '@core/services/dialog.service';
 
 @Component({
   selector: 'tb-rv-completion-list',
@@ -54,7 +56,9 @@ export class RvCompletionListComponent implements OnInit, AfterViewInit {
     private store: Store<AppState>,
     private rvService: RvService,
     private rvExportService: RvExportService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private dialogService: DialogService,
+    private snackBar: MatSnackBar
   ) {
     this.dataSource = new MatTableDataSource<RvCompletion>([]);
   }
@@ -81,7 +85,8 @@ export class RvCompletionListComponent implements OnInit, AfterViewInit {
 
   loadData(): void {
     this.isLoading = true;
-    const pageLink = new PageLink(this.pageSize, this.pageIndex);
+    const textSearch = this.searchText?.trim() || null;
+    const pageLink = new PageLink(this.pageSize, this.pageIndex, textSearch);
 
     this.rvService.getCompletions(this.tenantId, pageLink).subscribe({
       next: (pageData) => {
@@ -143,7 +148,9 @@ export class RvCompletionListComponent implements OnInit, AfterViewInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(RvCompletionDialogComponent, {
-      width: '850px',
+      width: '90vw',
+      maxWidth: '850px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
@@ -151,7 +158,9 @@ export class RvCompletionListComponent implements OnInit, AfterViewInit {
 
   openEditDialog(completion: RvCompletion): void {
     const dialogRef = this.dialog.open(RvCompletionDialogComponent, {
-      width: '850px',
+      width: '90vw',
+      maxWidth: '850px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId, completion }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
@@ -160,14 +169,24 @@ export class RvCompletionListComponent implements OnInit, AfterViewInit {
   updateStatus(completion: RvCompletion, newStatus: string): void {
     this.rvService.updateCompletionStatus(completion.assetId, newStatus).subscribe({
       next: () => this.loadData(),
-      error: (err) => alert('Error actualizando estado: ' + err.message)
+      error: (err) => this.snackBar.open('Error actualizando estado: ' + err.message, 'Cerrar', { duration: 4000 })
     });
   }
 
   deleteCompletion(completion: RvCompletion): void {
-    if (confirm(`¿Eliminar completación "${completion.name}"?`)) {
-      this.rvService.deleteCompletion(this.tenantId, completion.assetId).subscribe(() => this.loadData());
-    }
+    this.dialogService.confirm(
+      'Confirmar eliminación',
+      `¿Está seguro de eliminar la completación "${completion.name}"?`,
+      'Cancelar',
+      'Eliminar'
+    ).subscribe(result => {
+      if (result) {
+        this.rvService.deleteCompletion(this.tenantId, completion.assetId).subscribe(() => {
+          this.snackBar.open('Completación eliminada correctamente', 'Cerrar', { duration: 3000 });
+          this.loadData();
+        });
+      }
+    });
   }
 
   exportToCsv(): void {

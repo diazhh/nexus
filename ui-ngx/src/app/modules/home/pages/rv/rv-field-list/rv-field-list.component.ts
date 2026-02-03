@@ -14,11 +14,13 @@
 /// limitations under the License.
 ///
 
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { AppState } from '@core/core.state';
 import { getCurrentAuthUser } from '@core/auth/auth.selectors';
@@ -26,13 +28,14 @@ import { PageLink } from '@shared/models/page/page-link';
 import { RvService } from '@core/http/rv/rv.service';
 import { RvField, formatOilRate } from '@shared/models/rv/rv.models';
 import { RvFieldDialogComponent } from './rv-field-dialog.component';
+import { DialogService } from '@core/services/dialog.service';
 
 @Component({
   selector: 'tb-rv-field-list',
   templateUrl: './rv-field-list.component.html',
   styleUrls: ['./rv-field-list.component.scss']
 })
-export class RvFieldListComponent implements OnInit {
+export class RvFieldListComponent implements OnInit, AfterViewInit {
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
@@ -52,7 +55,10 @@ export class RvFieldListComponent implements OnInit {
   constructor(
     private store: Store<AppState>,
     private rvService: RvService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private dialogService: DialogService,
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {
     this.dataSource = new MatTableDataSource<RvField>([]);
   }
@@ -63,9 +69,15 @@ export class RvFieldListComponent implements OnInit {
     this.loadData();
   }
 
+  ngAfterViewInit(): void {
+    this.dataSource.sort = this.sort;
+    this.dataSource.paginator = this.paginator;
+  }
+
   loadData(): void {
     this.isLoading = true;
-    const pageLink = new PageLink(this.pageSize, this.pageIndex);
+    const textSearch = this.searchText?.trim() || null;
+    const pageLink = new PageLink(this.pageSize, this.pageIndex, textSearch);
 
     this.rvService.getFields(this.tenantId, pageLink).subscribe({
       next: (pageData) => {
@@ -87,12 +99,15 @@ export class RvFieldListComponent implements OnInit {
   }
 
   applyFilter(): void {
-    this.dataSource.filter = this.searchText.trim().toLowerCase();
+    this.pageIndex = 0; // Reset to first page when filtering
+    this.loadData();
   }
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(RvFieldDialogComponent, {
-      width: '700px',
+      width: '90vw',
+      maxWidth: '700px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId }
     });
 
@@ -105,7 +120,9 @@ export class RvFieldListComponent implements OnInit {
 
   openEditDialog(field: RvField): void {
     const dialogRef = this.dialog.open(RvFieldDialogComponent, {
-      width: '700px',
+      width: '90vw',
+      maxWidth: '700px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId, field }
     });
 
@@ -116,17 +133,29 @@ export class RvFieldListComponent implements OnInit {
     });
   }
 
+  viewDetails(field: RvField): void {
+    this.router.navigate(['/rv/fields', field.assetId]);
+  }
+
   deleteField(field: RvField): void {
-    if (confirm(`Esta seguro de eliminar el campo "${field.name}"?`)) {
-      this.rvService.deleteField(this.tenantId, field.assetId).subscribe({
-        next: () => {
-          this.loadData();
-        },
-        error: (error) => {
-          console.error('Error deleting field:', error);
-        }
-      });
-    }
+    this.dialogService.confirm(
+      'Confirmar eliminación',
+      `¿Está seguro de eliminar el campo "${field.name}"?`,
+      'Cancelar',
+      'Eliminar'
+    ).subscribe(result => {
+      if (result) {
+        this.rvService.deleteField(this.tenantId, field.assetId).subscribe({
+          next: () => {
+            this.snackBar.open('Campo eliminado correctamente', 'Cerrar', { duration: 3000 });
+            this.loadData();
+          },
+          error: (error) => {
+            console.error('Error deleting field:', error);
+          }
+        });
+      }
+    });
   }
 
   getStatusColor(status: string): string {

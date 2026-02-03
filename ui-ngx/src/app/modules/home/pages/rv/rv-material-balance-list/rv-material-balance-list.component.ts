@@ -19,6 +19,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
 import { AppState } from '@core/core.state';
 import { getCurrentAuthUser } from '@core/auth/auth.selectors';
@@ -27,6 +28,7 @@ import { RvService } from '@core/http/rv/rv.service';
 import { RvExportService } from '@core/http/rv/rv-export.service';
 import { RvReservoir } from '@shared/models/rv/rv.models';
 import { RvMaterialBalanceDialogComponent } from './rv-material-balance-dialog.component';
+import { DialogService } from '@core/services/dialog.service';
 
 export interface RvMaterialBalance {
   assetId?: string;
@@ -70,7 +72,9 @@ export class RvMaterialBalanceListComponent implements OnInit, AfterViewInit {
     private store: Store<AppState>,
     private rvService: RvService,
     private rvExportService: RvExportService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private dialogService: DialogService,
+    private snackBar: MatSnackBar
   ) {
     this.dataSource = new MatTableDataSource<RvMaterialBalance>([]);
   }
@@ -97,7 +101,8 @@ export class RvMaterialBalanceListComponent implements OnInit, AfterViewInit {
 
   loadData(): void {
     this.isLoading = true;
-    const pageLink = new PageLink(this.pageSize, this.pageIndex);
+    const textSearch = this.searchText?.trim() || null;
+    const pageLink = new PageLink(this.pageSize, this.pageIndex, textSearch);
 
     this.rvService.getMaterialBalanceStudies(this.tenantId, pageLink).subscribe({
       next: (pageData) => {
@@ -145,7 +150,9 @@ export class RvMaterialBalanceListComponent implements OnInit, AfterViewInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(RvMaterialBalanceDialogComponent, {
-      width: '900px',
+      width: '90vw',
+      maxWidth: '900px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
@@ -153,7 +160,9 @@ export class RvMaterialBalanceListComponent implements OnInit, AfterViewInit {
 
   openEditDialog(mbe: RvMaterialBalance): void {
     const dialogRef = this.dialog.open(RvMaterialBalanceDialogComponent, {
-      width: '900px',
+      width: '90vw',
+      maxWidth: '900px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId, materialBalance: mbe }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
@@ -162,17 +171,27 @@ export class RvMaterialBalanceListComponent implements OnInit, AfterViewInit {
   runAnalysis(mbe: RvMaterialBalance): void {
     this.rvService.performHavlenaOdehAnalysis(mbe.assetId, mbe).subscribe({
       next: (result) => {
-        alert(`Analisis completado. OOIP calculado: ${result.calculatedOoipMmbbl?.toFixed(2) || 'N/A'} MMbbl`);
+        this.snackBar.open(`Analisis completado. OOIP calculado: ${result.calculatedOoipMmbbl?.toFixed(2) || 'N/A'} MMbbl`, 'Cerrar', { duration: 5000 });
         this.loadData();
       },
-      error: (err) => alert('Error ejecutando analisis: ' + err.message)
+      error: (err) => this.snackBar.open('Error ejecutando analisis: ' + err.message, 'Cerrar', { duration: 4000 })
     });
   }
 
   deleteMaterialBalance(mbe: RvMaterialBalance): void {
-    if (confirm(`¿Eliminar estudio de Material Balance "${mbe.name}"?`)) {
-      this.rvService.deleteMaterialBalanceStudy(this.tenantId, mbe.assetId).subscribe(() => this.loadData());
-    }
+    this.dialogService.confirm(
+      'Confirmar eliminación',
+      `¿Está seguro de eliminar el estudio de Material Balance "${mbe.name}"?`,
+      'Cancelar',
+      'Eliminar'
+    ).subscribe(result => {
+      if (result) {
+        this.rvService.deleteMaterialBalanceStudy(this.tenantId, mbe.assetId).subscribe(() => {
+          this.snackBar.open('Estudio de Material Balance eliminado correctamente', 'Cerrar', { duration: 3000 });
+          this.loadData();
+        });
+      }
+    });
   }
 
   exportToCsv(): void {

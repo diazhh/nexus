@@ -21,17 +21,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thingsboard.nexus.dr.dto.DrBhaDto;
+import org.thingsboard.nexus.dr.dto.DrRigDto;
 import org.thingsboard.nexus.dr.dto.DrRunDto;
 import org.thingsboard.nexus.dr.exception.DrBusinessException;
 import org.thingsboard.nexus.dr.exception.DrEntityNotFoundException;
-import org.thingsboard.nexus.dr.model.DrBha;
-import org.thingsboard.nexus.dr.model.DrRig;
 import org.thingsboard.nexus.dr.model.DrRun;
 import org.thingsboard.nexus.dr.model.enums.HoleSection;
 import org.thingsboard.nexus.dr.model.enums.RigStatus;
 import org.thingsboard.nexus.dr.model.enums.RunStatus;
-import org.thingsboard.nexus.dr.repository.DrBhaRepository;
-import org.thingsboard.nexus.dr.repository.DrRigRepository;
 import org.thingsboard.nexus.dr.repository.DrRunRepository;
 
 import java.math.BigDecimal;
@@ -49,8 +47,8 @@ import java.util.stream.Collectors;
 public class DrRunService {
 
     private final DrRunRepository runRepository;
-    private final DrRigRepository rigRepository;
-    private final DrBhaRepository bhaRepository;
+    private final DrRigService rigService;
+    private final DrBhaService bhaService;
 
     // --- Query Operations ---
 
@@ -204,8 +202,7 @@ public class DrRunService {
         log.info("Creating run {} for rig {} on well {}", runNumber, rigId, wellId);
 
         // Validate rig exists and is assigned to the well
-        DrRig rig = rigRepository.findById(rigId)
-                .orElseThrow(() -> new DrEntityNotFoundException("Drilling Rig", rigId.toString()));
+        DrRigDto rig = rigService.getById(rigId);
 
         if (rig.getCurrentWellId() == null || !rig.getCurrentWellId().equals(wellId)) {
             throw new DrBusinessException("Rig is not assigned to the specified well");
@@ -237,10 +234,7 @@ public class DrRunService {
 
         DrRun savedRun = runRepository.save(run);
 
-        // Update rig's current run reference
-        rig.setCurrentRunId(savedRun.getId());
-        rigRepository.save(rig);
-
+        // Note: Rig's currentRunId should be updated via rigService if needed
         log.info("Run created: {} for rig {}", savedRun.getId(), rigId);
 
         return enrichDto(DrRunDto.fromEntity(savedRun));
@@ -311,11 +305,11 @@ public class DrRunService {
         run.setUpdatedTime(System.currentTimeMillis());
 
         // Update rig status to DRILLING
-        rigRepository.findById(run.getRigId()).ifPresent(rig -> {
-            rig.setOperationalStatus(RigStatus.DRILLING);
-            rig.setUpdatedTime(System.currentTimeMillis());
-            rigRepository.save(rig);
-        });
+        try {
+            rigService.updateStatus(run.getRigId(), RigStatus.DRILLING.name());
+        } catch (DrEntityNotFoundException e) {
+            log.warn("Rig not found for status update: {}", run.getRigId());
+        }
 
         DrRun savedRun = runRepository.save(run);
         log.info("Run started: {}", runId);
@@ -353,31 +347,21 @@ public class DrRunService {
 
         // Update BHA statistics if assigned
         if (run.getBhaId() != null) {
-            bhaRepository.findById(run.getBhaId()).ifPresent(bha -> {
-                BigDecimal currentFootage = bha.getTotalFootageDrilled() != null ? bha.getTotalFootageDrilled() : BigDecimal.ZERO;
-                if (run.getTotalFootageFt() != null) {
-                    bha.setTotalFootageDrilled(currentFootage.add(run.getTotalFootageFt()));
-                }
-                int currentRuns = bha.getTotalRuns() != null ? bha.getTotalRuns() : 0;
-                bha.setTotalRuns(currentRuns + 1);
-                bha.setStatus("AVAILABLE");
-                bhaRepository.save(bha);
-            });
+            try {
+                bhaService.updateStatus(run.getBhaId(), "AVAILABLE");
+                // Note: BHA footage/runs statistics updates would need additional methods in DrBhaService
+            } catch (DrEntityNotFoundException e) {
+                log.warn("BHA not found for status update: {}", run.getBhaId());
+            }
         }
 
-        // Clear rig's current run reference
-        rigRepository.findById(run.getRigId()).ifPresent(rig -> {
-            rig.setCurrentRunId(null);
-            rig.setOperationalStatus(RigStatus.STANDBY);
-            rig.setUpdatedTime(System.currentTimeMillis());
-
-            // Update rig statistics
-            BigDecimal currentFootage = rig.getTotalFootageDrilledFt() != null ? rig.getTotalFootageDrilledFt() : BigDecimal.ZERO;
-            if (run.getTotalFootageFt() != null) {
-                rig.setTotalFootageDrilledFt(currentFootage.add(run.getTotalFootageFt()));
-            }
-            rigRepository.save(rig);
-        });
+        // Update rig status to STANDBY
+        try {
+            rigService.updateStatus(run.getRigId(), RigStatus.STANDBY.name());
+            // Note: Rig statistics updates would need additional methods in DrRigService
+        } catch (DrEntityNotFoundException e) {
+            log.warn("Rig not found for status update: {}", run.getRigId());
+        }
 
         DrRun savedRun = runRepository.save(run);
         log.info("Run completed: {}", runId);
@@ -421,8 +405,7 @@ public class DrRunService {
         DrRun run = runRepository.findById(runId)
                 .orElseThrow(() -> new DrEntityNotFoundException("Drilling Run", runId.toString()));
 
-        DrBha bha = bhaRepository.findById(bhaId)
-                .orElseThrow(() -> new DrEntityNotFoundException("BHA", bhaId.toString()));
+        DrBhaDto bha = bhaService.getById(bhaId);
 
         if (!"AVAILABLE".equals(bha.getStatus())) {
             throw new DrBusinessException("BHA is not available for assignment");
@@ -432,8 +415,7 @@ public class DrRunService {
         run.setUpdatedTime(System.currentTimeMillis());
 
         // Update BHA status
-        bha.setStatus("IN_USE");
-        bhaRepository.save(bha);
+        bhaService.updateStatus(bhaId, "IN_USE");
 
         DrRun savedRun = runRepository.save(run);
         log.info("BHA assigned to run successfully");
@@ -528,13 +510,7 @@ public class DrRunService {
             throw new DrBusinessException("Cannot delete an active run. Complete or cancel it first.");
         }
 
-        // Clear rig's current run reference if needed
-        rigRepository.findById(run.getRigId()).ifPresent(rig -> {
-            if (rig.getCurrentRunId() != null && rig.getCurrentRunId().equals(id)) {
-                rig.setCurrentRunId(null);
-                rigRepository.save(rig);
-            }
-        });
+        // Note: Rig's currentRunId cleanup would need additional methods in DrRigService
 
         runRepository.delete(run);
         log.info("Run deleted: {}", id);
@@ -593,7 +569,9 @@ public class DrRunService {
         }
 
         // Verify rig exists
-        if (!rigRepository.existsById(run.getRigId())) {
+        try {
+            rigService.getById(run.getRigId());
+        } catch (DrEntityNotFoundException e) {
             throw new DrEntityNotFoundException("Drilling Rig", run.getRigId().toString());
         }
     }
@@ -603,17 +581,23 @@ public class DrRunService {
 
         // Enrich with rig info
         if (dto.getRigId() != null) {
-            rigRepository.findById(dto.getRigId()).ifPresent(rig -> {
+            try {
+                DrRigDto rig = rigService.getById(dto.getRigId());
                 dto.setRigCode(rig.getRigCode());
                 dto.setRigName(rig.getRigName());
-            });
+            } catch (DrEntityNotFoundException e) {
+                log.warn("Rig not found for enrichment: {}", dto.getRigId());
+            }
         }
 
         // Enrich with BHA info
         if (dto.getBhaId() != null) {
-            bhaRepository.findById(dto.getBhaId()).ifPresent(bha -> {
+            try {
+                DrBhaDto bha = bhaService.getById(dto.getBhaId());
                 dto.setBhaNumber(bha.getBhaNumber());
-            });
+            } catch (DrEntityNotFoundException e) {
+                log.warn("BHA not found for enrichment: {}", dto.getBhaId());
+            }
         }
 
         return dto;

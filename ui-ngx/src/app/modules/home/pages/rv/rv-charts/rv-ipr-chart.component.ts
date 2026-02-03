@@ -14,51 +14,87 @@
 /// limitations under the License.
 ///
 
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { RvService } from '@core/http/rv/rv.service';
+import * as echarts from 'echarts/core';
+import { LineChart } from 'echarts/charts';
+import {
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent
+} from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+
+echarts.use([
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent,
+  LineChart,
+  CanvasRenderer
+]);
 
 @Component({
   selector: 'tb-rv-ipr-chart',
   template: `
-    <div class="chart-container" *ngIf="curveData.length > 0">
-      <div class="chart-placeholder">
-        <mat-icon>show_chart</mat-icon>
-        <p>Curva IPR - {{ curveData.length }} puntos</p>
-        <table class="mini-table">
-          <tr><th>Pwf (psi)</th><th>Rate (bopd)</th></tr>
-          <tr *ngFor="let point of curveData.slice(0, 5)">
-            <td>{{ point.pwfPsi | number:'1.0-0' }}</td>
-            <td>{{ point.rateBopd | number:'1.0-0' }}</td>
-          </tr>
-          <tr *ngIf="curveData.length > 5"><td colspan="2">...</td></tr>
-        </table>
-      </div>
-    </div>
+    <div #chartContainer class="chart-container" *ngIf="curveData.length > 0"></div>
     <div *ngIf="isLoading" class="chart-loading">
       <mat-spinner diameter="24"></mat-spinner>
     </div>
+    <div *ngIf="!isLoading && curveData.length === 0" class="chart-empty">
+      <mat-icon>show_chart</mat-icon>
+      <p>No hay datos para mostrar</p>
+    </div>
   `,
   styles: [`
-    .chart-container { padding: 16px; background: #f5f5f5; border-radius: 8px; margin-top: 16px; }
-    .chart-placeholder { text-align: center; }
-    .chart-placeholder mat-icon { font-size: 48px; width: 48px; height: 48px; color: #1976d2; }
-    .mini-table { margin: 16px auto; border-collapse: collapse; font-size: 12px; }
-    .mini-table th, .mini-table td { padding: 4px 12px; border: 1px solid #ddd; }
-    .mini-table th { background: #e0e0e0; }
-    .chart-loading { text-align: center; padding: 24px; }
+    :host {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .chart-container {
+      width: 100%;
+      height: 400px;
+      min-height: 300px;
+    }
+    .chart-loading {
+      text-align: center;
+      padding: 48px;
+    }
+    .chart-empty {
+      text-align: center;
+      padding: 48px;
+      color: #999;
+    }
+    .chart-empty mat-icon {
+      font-size: 64px;
+      width: 64px;
+      height: 64px;
+      color: #ccc;
+      margin-bottom: 16px;
+    }
   `]
 })
-export class RvIprChartComponent implements OnInit, OnChanges {
+export class RvIprChartComponent implements OnInit, OnChanges, AfterViewInit {
 
   @Input() iprModelId: string;
+  @ViewChild('chartContainer', { static: false }) chartContainer: ElementRef;
 
   curveData: { pwfPsi: number; rateBopd: number }[] = [];
   isLoading = false;
+  private chart: echarts.ECharts;
 
   constructor(private rvService: RvService) {}
 
   ngOnInit(): void {
     this.loadCurve();
+  }
+
+  ngAfterViewInit(): void {
+    if (this.chartContainer && this.curveData.length > 0) {
+      this.initChart();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -75,8 +111,107 @@ export class RvIprChartComponent implements OnInit, OnChanges {
       next: (data) => {
         this.curveData = data;
         this.isLoading = false;
+        if (this.chartContainer) {
+          setTimeout(() => this.initChart(), 0);
+        }
       },
       error: () => this.isLoading = false
     });
+  }
+
+  private initChart(): void {
+    if (!this.chartContainer || this.curveData.length === 0) return;
+
+    // Dispose existing chart
+    if (this.chart) {
+      this.chart.dispose();
+    }
+
+    // Initialize chart
+    this.chart = echarts.init(this.chartContainer.nativeElement);
+
+    const option: echarts.EChartsCoreOption = {
+      title: {
+        text: 'Curva IPR (Inflow Performance Relationship)',
+        left: 'center',
+        textStyle: {
+          fontSize: 16,
+          fontWeight: 500
+        }
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: (params: any) => {
+          const data = params[0];
+          return `Pwf: ${data.value[0].toFixed(0)} psi<br/>Rate: ${data.value[1].toFixed(0)} bopd`;
+        }
+      },
+      grid: {
+        left: '10%',
+        right: '10%',
+        bottom: '15%',
+        top: '15%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Presión de Fondo Fluyente (psi)',
+        nameLocation: 'middle',
+        nameGap: 30,
+        nameTextStyle: {
+          fontSize: 12,
+          fontWeight: 'bold'
+        }
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Tasa de Producción (bopd)',
+        nameLocation: 'middle',
+        nameGap: 50,
+        nameTextStyle: {
+          fontSize: 12,
+          fontWeight: 'bold'
+        }
+      },
+      series: [{
+        name: 'IPR Curve',
+        type: 'line',
+        data: this.curveData.map(d => [d.pwfPsi, d.rateBopd]),
+        smooth: true,
+        lineStyle: {
+          width: 3,
+          color: '#1976d2'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [{
+              offset: 0, color: 'rgba(25, 118, 210, 0.3)'
+            }, {
+              offset: 1, color: 'rgba(25, 118, 210, 0.05)'
+            }]
+          }
+        }
+      }]
+    };
+
+    this.chart.setOption(option);
+
+    // Resize on window resize
+    window.addEventListener('resize', () => {
+      if (this.chart) {
+        this.chart.resize();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.chart) {
+      this.chart.dispose();
+    }
   }
 }

@@ -208,11 +208,12 @@ public class RvMaterialBalanceService {
             plotType = RvMaterialBalanceDto.PLOT_F_EO_VS_EW_EF;
             // For now, use simplified approach without aquifer model
             for (MaterialBalanceDataPoint dp : dataPoints) {
-                BigDecimal x = dp.getEfw().divide(dp.getEo(), MC);
-                BigDecimal y = dp.getF().divide(dp.getEo(), MC);
-                dp.setXAxis(x);
-                dp.setYAxis(y);
-                if (dp.getEo().compareTo(BigDecimal.ZERO) > 0) {
+                // Check for Eo > 0 BEFORE division to avoid ArithmeticException
+                if (dp.getEo() != null && dp.getEo().compareTo(BigDecimal.ZERO) > 0) {
+                    BigDecimal x = dp.getEfw().divide(dp.getEo(), MC);
+                    BigDecimal y = dp.getF().divide(dp.getEo(), MC);
+                    dp.setXAxis(x);
+                    dp.setYAxis(y);
                     xValues.add(x);
                     yValues.add(y);
                 }

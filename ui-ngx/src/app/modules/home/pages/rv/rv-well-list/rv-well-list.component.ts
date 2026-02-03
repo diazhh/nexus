@@ -14,27 +14,32 @@
 /// limitations under the License.
 ///
 
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { AppState } from '@core/core.state';
 import { getCurrentAuthUser } from '@core/auth/auth.selectors';
 import { PageLink } from '@shared/models/page/page-link';
 import { RvService } from '@core/http/rv/rv.service';
+import { RvExportService } from '@core/http/rv/rv-export.service';
 import { RvWell, formatOilRate, getWellStatusIcon } from '@shared/models/rv/rv.models';
 import { RvWellDialogComponent } from './rv-well-dialog.component';
+import { DialogService } from '@core/services/dialog.service';
 
 @Component({
   selector: 'tb-rv-well-list',
   templateUrl: './rv-well-list.component.html',
   styleUrls: ['./rv-well-list.component.scss']
 })
-export class RvWellListComponent implements OnInit {
+export class RvWellListComponent implements OnInit, AfterViewInit {
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
+  @ViewChild(MatSort) sort: MatSort;
 
   displayedColumns: string[] = ['name', 'wellType', 'wellStatus', 'wellCategory', 'currentRateBopd', 'currentWaterCutPercent', 'actions'];
   dataSource: MatTableDataSource<RvWell>;
@@ -52,7 +57,10 @@ export class RvWellListComponent implements OnInit {
   constructor(
     private store: Store<AppState>,
     private rvService: RvService,
+    private rvExportService: RvExportService,
     private dialog: MatDialog,
+    private dialogService: DialogService,
+    private snackBar: MatSnackBar,
     private router: Router
   ) {
     this.dataSource = new MatTableDataSource<RvWell>([]);
@@ -64,9 +72,15 @@ export class RvWellListComponent implements OnInit {
     this.loadData();
   }
 
+  ngAfterViewInit(): void {
+    this.dataSource.sort = this.sort;
+    this.dataSource.paginator = this.paginator;
+  }
+
   loadData(): void {
     this.isLoading = true;
-    const pageLink = new PageLink(this.pageSize, this.pageIndex);
+    const textSearch = this.searchText?.trim() || null;
+    const pageLink = new PageLink(this.pageSize, this.pageIndex, textSearch);
 
     this.rvService.getWells(this.tenantId, pageLink).subscribe({
       next: (pageData) => {
@@ -90,7 +104,9 @@ export class RvWellListComponent implements OnInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(RvWellDialogComponent, {
-      width: '800px',
+      width: '90vw',
+      maxWidth: '800px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
@@ -98,7 +114,9 @@ export class RvWellListComponent implements OnInit {
 
   openEditDialog(well: RvWell): void {
     const dialogRef = this.dialog.open(RvWellDialogComponent, {
-      width: '800px',
+      width: '90vw',
+      maxWidth: '800px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId, well }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
@@ -109,9 +127,19 @@ export class RvWellListComponent implements OnInit {
   }
 
   deleteWell(well: RvWell): void {
-    if (confirm(`Eliminar pozo "${well.name}"?`)) {
-      this.rvService.deleteWell(this.tenantId, well.assetId).subscribe(() => this.loadData());
-    }
+    this.dialogService.confirm(
+      'Confirmar eliminación',
+      `¿Está seguro de eliminar el pozo "${well.name}"?`,
+      'Cancelar',
+      'Eliminar'
+    ).subscribe(result => {
+      if (result) {
+        this.rvService.deleteWell(this.tenantId, well.assetId).subscribe(() => {
+          this.snackBar.open('Pozo eliminado correctamente', 'Cerrar', { duration: 3000 });
+          this.loadData();
+        });
+      }
+    });
   }
 
   getStatusColor(status: string): string {
@@ -122,5 +150,9 @@ export class RvWellListComponent implements OnInit {
       case 'SHUT_IN': return 'warn';
       default: return '';
     }
+  }
+
+  exportToCsv(): void {
+    this.rvExportService.exportWellsToCsv(this.dataSource.data, 'pozos');
   }
 }

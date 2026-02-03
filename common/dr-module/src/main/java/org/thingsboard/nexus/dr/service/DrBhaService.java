@@ -18,128 +18,189 @@ package org.thingsboard.nexus.dr.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.thingsboard.nexus.dr.dto.DrBhaDto;
 import org.thingsboard.nexus.dr.exception.DrBusinessException;
 import org.thingsboard.nexus.dr.exception.DrEntityNotFoundException;
-import org.thingsboard.nexus.dr.model.DrBha;
-import org.thingsboard.nexus.dr.model.enums.BhaType;
-import org.thingsboard.nexus.dr.repository.DrBhaRepository;
+import org.thingsboard.server.common.data.asset.Asset;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.kv.AttributeKvEntry;
 import org.thingsboard.server.common.data.template.CreateFromTemplateRequest;
 import org.thingsboard.server.common.data.template.TemplateInstanceResult;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service for managing Bottom Hole Assemblies (BHAs)
+ * Service for managing Bottom Hole Assemblies (BHAs).
+ * Uses ThingsBoard Assets as the underlying storage mechanism.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DrBhaService {
 
-    private final DrBhaRepository bhaRepository;
+    private final DrAssetService assetService;
+    private final DrAttributeService attributeService;
     private final DrTemplateService templateService;
 
     // --- Query Operations ---
 
-    @Transactional(readOnly = true)
-    public DrBhaDto getById(UUID id) {
-        log.debug("Getting BHA by id: {}", id);
-        DrBha bha = bhaRepository.findById(id)
-                .orElseThrow(() -> new DrEntityNotFoundException("BHA", id.toString()));
-        return DrBhaDto.fromEntity(bha);
+    /**
+     * Get a BHA by its asset ID
+     */
+    public DrBhaDto getById(UUID assetId) {
+        log.debug("Getting BHA by asset id: {}", assetId);
+        Asset asset = assetService.getAssetById(assetId)
+                .orElseThrow(() -> new DrEntityNotFoundException("BHA", assetId.toString()));
+
+        if (!DrBhaDto.ASSET_TYPE.equals(asset.getType())) {
+            throw new DrEntityNotFoundException("BHA", assetId.toString());
+        }
+
+        List<AttributeKvEntry> attributes = attributeService.getServerAttributes(assetId);
+        return DrBhaDto.fromAssetAndAttributes(asset, attributes);
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Get a BHA by its number (searches in attributes)
+     */
     public DrBhaDto getByNumber(UUID tenantId, String bhaNumber) {
         log.debug("Getting BHA by number: {}", bhaNumber);
-        DrBha bha = bhaRepository.findByTenantIdAndBhaNumber(tenantId, bhaNumber)
-                .orElseThrow(() -> new DrEntityNotFoundException("BHA", bhaNumber));
-        return DrBhaDto.fromEntity(bha);
+        Page<Asset> assets = assetService.getAssetsByType(tenantId, DrBhaDto.ASSET_TYPE, 0, 1000);
+
+        for (Asset asset : assets.getContent()) {
+            List<AttributeKvEntry> attributes = attributeService.getServerAttributes(asset.getId().getId());
+            for (AttributeKvEntry attr : attributes) {
+                if (DrBhaDto.ATTR_BHA_NUMBER.equals(attr.getKey()) &&
+                    bhaNumber.equals(attr.getStrValue().orElse(null))) {
+                    return DrBhaDto.fromAssetAndAttributes(asset, attributes);
+                }
+            }
+        }
+
+        throw new DrEntityNotFoundException("BHA", bhaNumber);
     }
 
-    @Transactional(readOnly = true)
-    public DrBhaDto getByAssetId(UUID assetId) {
-        log.debug("Getting BHA by asset id: {}", assetId);
-        DrBha bha = bhaRepository.findByAssetId(assetId)
-                .orElseThrow(() -> new DrEntityNotFoundException("BHA", "asset:" + assetId));
-        return DrBhaDto.fromEntity(bha);
-    }
-
-    @Transactional(readOnly = true)
+    /**
+     * Get all BHAs for a tenant with pagination
+     */
     public Page<DrBhaDto> getByTenant(UUID tenantId, Pageable pageable) {
         log.debug("Getting BHAs for tenant: {}", tenantId);
-        Page<DrBha> bhas = bhaRepository.findByTenantId(tenantId, pageable);
-        return bhas.map(DrBhaDto::fromEntity);
+        Page<Asset> assets = assetService.getAssetsByType(tenantId, DrBhaDto.ASSET_TYPE,
+                pageable.getPageNumber(), pageable.getPageSize());
+
+        List<DrBhaDto> dtos = assets.getContent().stream()
+                .map(asset -> {
+                    List<AttributeKvEntry> attributes = attributeService.getServerAttributes(asset.getId().getId());
+                    return DrBhaDto.fromAssetAndAttributes(asset, attributes);
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(dtos, pageable, assets.getTotalElements());
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Get all BHAs for a tenant (no pagination)
+     */
     public List<DrBhaDto> getAllByTenant(UUID tenantId) {
         log.debug("Getting all BHAs for tenant: {}", tenantId);
-        List<DrBha> bhas = bhaRepository.findByTenantId(tenantId);
-        return bhas.stream().map(DrBhaDto::fromEntity).collect(Collectors.toList());
+        Page<Asset> assets = assetService.getAssetsByType(tenantId, DrBhaDto.ASSET_TYPE, 0, 10000);
+
+        return assets.getContent().stream()
+                .map(asset -> {
+                    List<AttributeKvEntry> attributes = attributeService.getServerAttributes(asset.getId().getId());
+                    return DrBhaDto.fromAssetAndAttributes(asset, attributes);
+                })
+                .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public Page<DrBhaDto> getByFilters(UUID tenantId, String status, BhaType bhaType,
-                                       Boolean isDirectional, BigDecimal bitSizeIn, Pageable pageable) {
-        log.debug("Getting BHAs with filters - tenant: {}, status: {}, type: {}",
-                tenantId, status, bhaType);
-        Page<DrBha> bhas = bhaRepository.findByFilters(tenantId, status, bhaType, isDirectional, bitSizeIn, pageable);
-        return bhas.map(DrBhaDto::fromEntity);
-    }
-
-    @Transactional(readOnly = true)
+    /**
+     * Get available BHAs (status = AVAILABLE)
+     */
     public List<DrBhaDto> getAvailableBhas(UUID tenantId) {
         log.debug("Getting available BHAs for tenant: {}", tenantId);
-        List<DrBha> bhas = bhaRepository.findAvailableBhas(tenantId);
-        return bhas.stream().map(DrBhaDto::fromEntity).collect(Collectors.toList());
+        return getAllByTenant(tenantId).stream()
+                .filter(bha -> "AVAILABLE".equals(bha.getStatus()))
+                .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Get available directional BHAs
+     */
     public List<DrBhaDto> getAvailableDirectionalBhas(UUID tenantId) {
         log.debug("Getting available directional BHAs for tenant: {}", tenantId);
-        List<DrBha> bhas = bhaRepository.findAvailableDirectionalBhas(tenantId);
-        return bhas.stream().map(DrBhaDto::fromEntity).collect(Collectors.toList());
+        return getAllByTenant(tenantId).stream()
+                .filter(bha -> "AVAILABLE".equals(bha.getStatus()) && Boolean.TRUE.equals(bha.getIsDirectional()))
+                .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Get BHAs by status
+     */
     public List<DrBhaDto> getByStatus(UUID tenantId, String status) {
         log.debug("Getting BHAs by status - tenant: {}, status: {}", tenantId, status);
-        List<DrBha> bhas = bhaRepository.findByTenantIdAndStatus(tenantId, status);
-        return bhas.stream().map(DrBhaDto::fromEntity).collect(Collectors.toList());
+        return getAllByTenant(tenantId).stream()
+                .filter(bha -> status.equals(bha.getStatus()))
+                .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<DrBhaDto> getByType(UUID tenantId, BhaType bhaType) {
+    /**
+     * Get BHAs by type
+     */
+    public List<DrBhaDto> getByType(UUID tenantId, String bhaType) {
         log.debug("Getting BHAs by type - tenant: {}, type: {}", tenantId, bhaType);
-        List<DrBha> bhas = bhaRepository.findByTenantIdAndBhaType(tenantId, bhaType);
-        return bhas.stream().map(DrBhaDto::fromEntity).collect(Collectors.toList());
+        return getAllByTenant(tenantId).stream()
+                .filter(bha -> bhaType.equals(bha.getBhaType()))
+                .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Get BHAs by bit size
+     */
     public List<DrBhaDto> getByBitSize(UUID tenantId, BigDecimal bitSizeIn) {
         log.debug("Getting BHAs by bit size - tenant: {}, size: {}", tenantId, bitSizeIn);
-        List<DrBha> bhas = bhaRepository.findByTenantIdAndBitSize(tenantId, bitSizeIn);
-        return bhas.stream().map(DrBhaDto::fromEntity).collect(Collectors.toList());
+        return getAllByTenant(tenantId).stream()
+                .filter(bha -> bitSizeIn.equals(bha.getBitSizeIn()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Search BHAs by name
+     */
+    public Page<DrBhaDto> searchByName(UUID tenantId, String searchText, Pageable pageable) {
+        log.debug("Searching BHAs by name: {}", searchText);
+        Page<Asset> assets = assetService.searchAssetsByName(tenantId, DrBhaDto.ASSET_TYPE, searchText,
+                pageable.getPageNumber(), pageable.getPageSize());
+
+        List<DrBhaDto> dtos = assets.getContent().stream()
+                .map(asset -> {
+                    List<AttributeKvEntry> attributes = attributeService.getServerAttributes(asset.getId().getId());
+                    return DrBhaDto.fromAssetAndAttributes(asset, attributes);
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(dtos, pageable, assets.getTotalElements());
     }
 
     // --- Create Operations ---
 
-    @Transactional
+    /**
+     * Create a BHA from a template
+     */
     public DrBhaDto createFromTemplate(UUID tenantId, CreateFromTemplateRequest request) {
         return createFromTemplate(tenantId, request.getTemplateId(), request.getVariables(), tenantId);
     }
 
-    @Transactional
+    /**
+     * Create a BHA from a template with variables
+     */
     public DrBhaDto createFromTemplate(UUID tenantId, UUID templateId, Map<String, Object> variables, UUID createdBy) {
         log.info("Creating BHA from template {} for tenant {}", templateId, tenantId);
 
@@ -148,8 +209,12 @@ public class DrBhaService {
             throw new DrBusinessException("BHA number is required");
         }
 
-        if (bhaRepository.existsByTenantIdAndBhaNumber(tenantId, bhaNumber)) {
+        // Check if BHA number already exists
+        try {
+            getByNumber(tenantId, bhaNumber);
             throw new DrBusinessException("BHA number already exists: " + bhaNumber);
+        } catch (DrEntityNotFoundException e) {
+            // Good, number doesn't exist
         }
 
         // Instantiate template to create digital twin asset
@@ -160,252 +225,263 @@ public class DrBhaService {
                 createdBy
         );
 
-        // Create the BHA entity with reference to created asset
-        DrBha bha = new DrBha();
-        bha.setId(UUID.randomUUID());
-        bha.setTenantId(tenantId);
-        bha.setAssetId(instanceResult.getRootAssetId());
-        bha.setBhaNumber(bhaNumber);
-        bha.setCreatedBy(createdBy);
-        bha.setCreatedTime(System.currentTimeMillis());
+        UUID assetId = instanceResult.getRootAssetId();
 
-        // Set BHA specifications from variables
-        String bhaTypeStr = (String) variables.get("bhaType");
-        if (bhaTypeStr != null) {
-            bha.setBhaType(BhaType.valueOf(bhaTypeStr));
-        }
+        // Build DTO from variables
+        DrBhaDto dto = new DrBhaDto();
+        dto.setAssetId(assetId);
+        dto.setTenantId(tenantId);
+        dto.setBhaNumber(bhaNumber);
+        dto.setBhaType((String) variables.get("bhaType"));
+        dto.setStatus("AVAILABLE");
 
-        Object isDirectional = variables.get("isDirectional");
-        if (isDirectional != null) {
-            bha.setIsDirectional(isDirectional instanceof Boolean ? (Boolean) isDirectional :
-                    Boolean.parseBoolean(isDirectional.toString()));
+        if (variables.get("isDirectional") != null) {
+            dto.setIsDirectional(Boolean.parseBoolean(variables.get("isDirectional").toString()));
         }
 
         // Bit information
-        bha.setBitSerial((String) variables.get("bitSerial"));
-        bha.setBitType((String) variables.get("bitType"));
-        bha.setBitIadcCode((String) variables.get("bitIadcCode"));
-        bha.setBitManufacturer((String) variables.get("bitManufacturer"));
-        bha.setBitModel((String) variables.get("bitModel"));
-        bha.setBitNozzles((String) variables.get("bitNozzles"));
+        dto.setBitSerial((String) variables.get("bitSerial"));
+        dto.setBitType((String) variables.get("bitType"));
+        dto.setBitIadcCode((String) variables.get("bitIadcCode"));
+        dto.setBitManufacturer((String) variables.get("bitManufacturer"));
+        dto.setBitModel((String) variables.get("bitModel"));
+        dto.setBitNozzles((String) variables.get("bitNozzles"));
 
-        Object bitSizeIn = variables.get("bitSizeIn");
-        if (bitSizeIn != null) {
-            bha.setBitSizeIn(bitSizeIn instanceof BigDecimal ? (BigDecimal) bitSizeIn :
-                    BigDecimal.valueOf(Double.parseDouble(bitSizeIn.toString())));
+        if (variables.get("bitSizeIn") != null) {
+            dto.setBitSizeIn(new BigDecimal(variables.get("bitSizeIn").toString()));
         }
-
-        Object bitTfaSqIn = variables.get("bitTfaSqIn");
-        if (bitTfaSqIn != null) {
-            bha.setBitTfaSqIn(bitTfaSqIn instanceof BigDecimal ? (BigDecimal) bitTfaSqIn :
-                    BigDecimal.valueOf(Double.parseDouble(bitTfaSqIn.toString())));
+        if (variables.get("bitTfaSqIn") != null) {
+            dto.setBitTfaSqIn(new BigDecimal(variables.get("bitTfaSqIn").toString()));
         }
 
         // Motor information
-        bha.setMotorManufacturer((String) variables.get("motorManufacturer"));
-        bha.setMotorModel((String) variables.get("motorModel"));
-        bha.setMotorLobeConfiguration((String) variables.get("motorLobeConfiguration"));
+        dto.setMotorManufacturer((String) variables.get("motorManufacturer"));
+        dto.setMotorModel((String) variables.get("motorModel"));
+        dto.setMotorLobeConfiguration((String) variables.get("motorLobeConfiguration"));
 
-        Object motorOdIn = variables.get("motorOdIn");
-        if (motorOdIn != null) {
-            bha.setMotorOdIn(motorOdIn instanceof BigDecimal ? (BigDecimal) motorOdIn :
-                    BigDecimal.valueOf(Double.parseDouble(motorOdIn.toString())));
+        if (variables.get("motorOdIn") != null) {
+            dto.setMotorOdIn(new BigDecimal(variables.get("motorOdIn").toString()));
+        }
+        if (variables.get("motorBendAngleDeg") != null) {
+            dto.setMotorBendAngleDeg(new BigDecimal(variables.get("motorBendAngleDeg").toString()));
         }
 
-        Object motorBendAngleDeg = variables.get("motorBendAngleDeg");
-        if (motorBendAngleDeg != null) {
-            bha.setMotorBendAngleDeg(motorBendAngleDeg instanceof BigDecimal ? (BigDecimal) motorBendAngleDeg :
-                    BigDecimal.valueOf(Double.parseDouble(motorBendAngleDeg.toString())));
-        }
+        // Initialize statistics
+        dto.setTotalFootageDrilled(BigDecimal.ZERO);
+        dto.setTotalHoursOnBottom(BigDecimal.ZERO);
+        dto.setTotalRuns(0);
 
-        bha.setStatus("AVAILABLE");
+        // Save attributes
+        attributeService.saveServerAttributes(assetId, dto.toAttributeMap());
 
-        DrBha savedBha = bhaRepository.save(bha);
-        log.info("BHA created from template: {} with asset ID: {}", savedBha.getId(), savedBha.getAssetId());
+        log.info("BHA created from template: {} with asset ID: {}", bhaNumber, assetId);
 
-        return DrBhaDto.fromEntity(savedBha);
+        return getById(assetId);
     }
 
-    @Transactional
-    public DrBhaDto create(DrBha bha) {
-        log.info("Creating new BHA: {}", bha.getBhaNumber());
+    /**
+     * Create a BHA directly (without template)
+     */
+    public DrBhaDto create(UUID tenantId, DrBhaDto dto) {
+        log.info("Creating new BHA: {}", dto.getBhaNumber());
 
-        if (bhaRepository.existsByTenantIdAndBhaNumber(bha.getTenantId(), bha.getBhaNumber())) {
-            throw new DrBusinessException("BHA number already exists: " + bha.getBhaNumber());
+        if (dto.getBhaNumber() == null || dto.getBhaNumber().isEmpty()) {
+            throw new DrBusinessException("BHA number is required");
         }
 
-        if (bha.getCreatedTime() == null) {
-            bha.setCreatedTime(System.currentTimeMillis());
+        // Check if BHA number already exists
+        try {
+            getByNumber(tenantId, dto.getBhaNumber());
+            throw new DrBusinessException("BHA number already exists: " + dto.getBhaNumber());
+        } catch (DrEntityNotFoundException e) {
+            // Good, number doesn't exist
         }
 
-        DrBha savedBha = bhaRepository.save(bha);
-        log.info("BHA created: {}", savedBha.getId());
+        // Create the asset
+        String assetName = dto.getBhaNumber();
+        Asset asset = assetService.createAsset(tenantId, DrBhaDto.ASSET_TYPE, assetName, dto.getBhaNumber());
 
-        return DrBhaDto.fromEntity(savedBha);
+        UUID assetId = asset.getId().getId();
+        dto.setAssetId(assetId);
+        dto.setTenantId(tenantId);
+
+        // Set defaults
+        if (dto.getStatus() == null) {
+            dto.setStatus("AVAILABLE");
+        }
+        if (dto.getTotalFootageDrilled() == null) {
+            dto.setTotalFootageDrilled(BigDecimal.ZERO);
+        }
+        if (dto.getTotalHoursOnBottom() == null) {
+            dto.setTotalHoursOnBottom(BigDecimal.ZERO);
+        }
+        if (dto.getTotalRuns() == null) {
+            dto.setTotalRuns(0);
+        }
+
+        // Save attributes
+        attributeService.saveServerAttributes(assetId, dto.toAttributeMap());
+
+        log.info("BHA created: {}", assetId);
+
+        return getById(assetId);
     }
 
     // --- Update Operations ---
 
-    @Transactional
-    public DrBhaDto update(UUID id, DrBha updatedBha) {
-        log.info("Updating BHA: {}", id);
+    /**
+     * Update a BHA
+     */
+    public DrBhaDto update(UUID assetId, DrBhaDto updatedDto) {
+        log.info("Updating BHA: {}", assetId);
 
-        DrBha existingBha = bhaRepository.findById(id)
-                .orElseThrow(() -> new DrEntityNotFoundException("BHA", id.toString()));
+        // Verify it exists
+        DrBhaDto existingBha = getById(assetId);
 
         // Check for duplicate BHA number
-        if (!existingBha.getBhaNumber().equals(updatedBha.getBhaNumber()) &&
-            bhaRepository.existsByTenantIdAndBhaNumberAndIdNot(existingBha.getTenantId(), updatedBha.getBhaNumber(), id)) {
-            throw new DrBusinessException("BHA number already exists: " + updatedBha.getBhaNumber());
+        if (updatedDto.getBhaNumber() != null &&
+            !existingBha.getBhaNumber().equals(updatedDto.getBhaNumber())) {
+            try {
+                getByNumber(existingBha.getTenantId(), updatedDto.getBhaNumber());
+                throw new DrBusinessException("BHA number already exists: " + updatedDto.getBhaNumber());
+            } catch (DrEntityNotFoundException e) {
+                // Good, number doesn't exist
+            }
         }
 
-        // Update fields
-        existingBha.setBhaNumber(updatedBha.getBhaNumber());
-        existingBha.setBhaType(updatedBha.getBhaType());
-        existingBha.setIsDirectional(updatedBha.getIsDirectional());
+        // Update asset name if changed
+        if (updatedDto.getBhaNumber() != null && !updatedDto.getBhaNumber().equals(existingBha.getBhaNumber())) {
+            Asset asset = assetService.getAssetById(assetId).orElseThrow();
+            asset.setName(updatedDto.getBhaNumber());
+            assetService.updateAsset(asset);
+        }
 
-        // Bit information
-        existingBha.setBitSerial(updatedBha.getBitSerial());
-        existingBha.setBitType(updatedBha.getBitType());
-        existingBha.setBitSizeIn(updatedBha.getBitSizeIn());
-        existingBha.setBitIadcCode(updatedBha.getBitIadcCode());
-        existingBha.setBitManufacturer(updatedBha.getBitManufacturer());
-        existingBha.setBitModel(updatedBha.getBitModel());
-        existingBha.setBitTfaSqIn(updatedBha.getBitTfaSqIn());
-        existingBha.setBitNozzles(updatedBha.getBitNozzles());
+        // Save updated attributes
+        attributeService.saveServerAttributes(assetId, updatedDto.toAttributeMap());
 
-        // Dimensions
-        existingBha.setTotalLengthFt(updatedBha.getTotalLengthFt());
-        existingBha.setTotalWeightLbs(updatedBha.getTotalWeightLbs());
+        log.info("BHA updated: {}", assetId);
 
-        // Motor information
-        existingBha.setMotorManufacturer(updatedBha.getMotorManufacturer());
-        existingBha.setMotorModel(updatedBha.getMotorModel());
-        existingBha.setMotorOdIn(updatedBha.getMotorOdIn());
-        existingBha.setMotorBendAngleDeg(updatedBha.getMotorBendAngleDeg());
-        existingBha.setMotorLobeConfiguration(updatedBha.getMotorLobeConfiguration());
-
-        // RSS information
-        existingBha.setRssManufacturer(updatedBha.getRssManufacturer());
-        existingBha.setRssModel(updatedBha.getRssModel());
-        existingBha.setRssType(updatedBha.getRssType());
-
-        // Components
-        existingBha.setComponentsJson(updatedBha.getComponentsJson());
-
-        // Metadata
-        existingBha.setNotes(updatedBha.getNotes());
-        existingBha.setMetadata(updatedBha.getMetadata());
-        existingBha.setUpdatedTime(System.currentTimeMillis());
-
-        DrBha savedBha = bhaRepository.save(existingBha);
-        log.info("BHA updated: {}", savedBha.getId());
-
-        return DrBhaDto.fromEntity(savedBha);
+        return getById(assetId);
     }
 
-    @Transactional
-    public DrBhaDto updateStatus(UUID bhaId, String newStatus) {
-        log.info("Updating BHA {} status to {}", bhaId, newStatus);
+    /**
+     * Update BHA status
+     */
+    public DrBhaDto updateStatus(UUID assetId, String newStatus) {
+        log.info("Updating BHA {} status to {}", assetId, newStatus);
 
-        DrBha bha = bhaRepository.findById(bhaId)
-                .orElseThrow(() -> new DrEntityNotFoundException("BHA", bhaId.toString()));
+        // Verify it exists
+        getById(assetId);
 
-        bha.setStatus(newStatus);
-        bha.setUpdatedTime(System.currentTimeMillis());
+        // Update status attribute
+        attributeService.saveServerAttribute(assetId, DrBhaDto.ATTR_STATUS, newStatus);
 
-        DrBha savedBha = bhaRepository.save(bha);
-        return DrBhaDto.fromEntity(savedBha);
+        return getById(assetId);
     }
 
-    @Transactional
-    public DrBhaDto recordDullGrade(UUID bhaId, String dullInner, String dullOuter, String dullChar,
+    /**
+     * Record dull grade for a BHA
+     */
+    public DrBhaDto recordDullGrade(UUID assetId, String dullInner, String dullOuter, String dullChar,
                                     String dullLocation, String bearingCondition, String gaugeCondition,
                                     String reasonPulled) {
-        log.info("Recording dull grade for BHA: {}", bhaId);
+        log.info("Recording dull grade for BHA: {}", assetId);
 
-        DrBha bha = bhaRepository.findById(bhaId)
-                .orElseThrow(() -> new DrEntityNotFoundException("BHA", bhaId.toString()));
+        // Verify it exists
+        getById(assetId);
 
-        bha.setBitDullInner(dullInner);
-        bha.setBitDullOuter(dullOuter);
-        bha.setBitDullChar(dullChar);
-        bha.setBitDullLocation(dullLocation);
-        bha.setBitBearingCondition(bearingCondition);
-        bha.setBitGaugeCondition(gaugeCondition);
-        bha.setBitReasonPulled(reasonPulled);
-        bha.setUpdatedTime(System.currentTimeMillis());
+        Map<String, Object> attrs = new HashMap<>();
+        if (dullInner != null) attrs.put(DrBhaDto.ATTR_BIT_DULL_INNER, dullInner);
+        if (dullOuter != null) attrs.put(DrBhaDto.ATTR_BIT_DULL_OUTER, dullOuter);
+        if (dullChar != null) attrs.put(DrBhaDto.ATTR_BIT_DULL_CHAR, dullChar);
+        if (dullLocation != null) attrs.put(DrBhaDto.ATTR_BIT_DULL_LOCATION, dullLocation);
+        if (bearingCondition != null) attrs.put(DrBhaDto.ATTR_BIT_BEARING_CONDITION, bearingCondition);
+        if (gaugeCondition != null) attrs.put(DrBhaDto.ATTR_BIT_GAUGE_CONDITION, gaugeCondition);
+        if (reasonPulled != null) attrs.put(DrBhaDto.ATTR_BIT_REASON_PULLED, reasonPulled);
 
-        DrBha savedBha = bhaRepository.save(bha);
-        log.info("Dull grade recorded for BHA: {}", bhaId);
+        attributeService.saveServerAttributes(assetId, attrs);
 
-        return DrBhaDto.fromEntity(savedBha);
+        log.info("Dull grade recorded for BHA: {}", assetId);
+        return getById(assetId);
     }
 
-    @Transactional
-    public DrBhaDto updateStatistics(UUID bhaId, BigDecimal footageDrilled, BigDecimal hoursOnBottom) {
-        log.info("Updating statistics for BHA: {}", bhaId);
+    /**
+     * Update BHA statistics (add footage and hours)
+     */
+    public DrBhaDto updateStatistics(UUID assetId, BigDecimal footageDrilled, BigDecimal hoursOnBottom) {
+        log.info("Updating statistics for BHA: {}", assetId);
 
-        DrBha bha = bhaRepository.findById(bhaId)
-                .orElseThrow(() -> new DrEntityNotFoundException("BHA", bhaId.toString()));
+        DrBhaDto bha = getById(assetId);
+
+        Map<String, Object> attrs = new HashMap<>();
 
         if (footageDrilled != null) {
             BigDecimal currentFootage = bha.getTotalFootageDrilled() != null ? bha.getTotalFootageDrilled() : BigDecimal.ZERO;
-            bha.setTotalFootageDrilled(currentFootage.add(footageDrilled));
+            attrs.put(DrBhaDto.ATTR_TOTAL_FOOTAGE_DRILLED, currentFootage.add(footageDrilled));
         }
 
         if (hoursOnBottom != null) {
             BigDecimal currentHours = bha.getTotalHoursOnBottom() != null ? bha.getTotalHoursOnBottom() : BigDecimal.ZERO;
-            bha.setTotalHoursOnBottom(currentHours.add(hoursOnBottom));
+            attrs.put(DrBhaDto.ATTR_TOTAL_HOURS_ON_BOTTOM, currentHours.add(hoursOnBottom));
         }
 
-        bha.setUpdatedTime(System.currentTimeMillis());
+        attributeService.saveServerAttributes(assetId, attrs);
 
-        DrBha savedBha = bhaRepository.save(bha);
-        return DrBhaDto.fromEntity(savedBha);
+        return getById(assetId);
     }
 
-    @Transactional
-    public DrBhaDto incrementRunCount(UUID bhaId) {
-        log.info("Incrementing run count for BHA: {}", bhaId);
+    /**
+     * Increment run count for a BHA
+     */
+    public DrBhaDto incrementRunCount(UUID assetId) {
+        log.info("Incrementing run count for BHA: {}", assetId);
 
-        DrBha bha = bhaRepository.findById(bhaId)
-                .orElseThrow(() -> new DrEntityNotFoundException("BHA", bhaId.toString()));
+        DrBhaDto bha = getById(assetId);
 
         int currentRuns = bha.getTotalRuns() != null ? bha.getTotalRuns() : 0;
-        bha.setTotalRuns(currentRuns + 1);
-        bha.setUpdatedTime(System.currentTimeMillis());
+        attributeService.saveServerAttribute(assetId, DrBhaDto.ATTR_TOTAL_RUNS, currentRuns + 1);
 
-        DrBha savedBha = bhaRepository.save(bha);
-        return DrBhaDto.fromEntity(savedBha);
+        return getById(assetId);
     }
 
     // --- Delete Operations ---
 
-    @Transactional
-    public void delete(UUID id) {
-        log.info("Deleting BHA: {}", id);
+    /**
+     * Delete a BHA
+     */
+    public void delete(UUID tenantId, UUID assetId) {
+        log.info("Deleting BHA: {}", assetId);
 
-        DrBha bha = bhaRepository.findById(id)
-                .orElseThrow(() -> new DrEntityNotFoundException("BHA", id.toString()));
+        DrBhaDto bha = getById(assetId);
 
         if ("IN_USE".equals(bha.getStatus())) {
             throw new DrBusinessException("Cannot delete BHA that is currently in use");
         }
 
-        bhaRepository.delete(bha);
-        log.info("BHA deleted: {}", id);
+        assetService.deleteAsset(tenantId, assetId);
+        log.info("BHA deleted: {}", assetId);
     }
 
     // --- Statistics ---
 
-    @Transactional(readOnly = true)
+    /**
+     * Count BHAs by status
+     */
     public long countByStatus(UUID tenantId, String status) {
-        return bhaRepository.countByTenantIdAndStatus(tenantId, status);
+        return getByStatus(tenantId, status).size();
     }
 
-    @Transactional(readOnly = true)
-    public long countByType(UUID tenantId, BhaType bhaType) {
-        return bhaRepository.countByTenantIdAndBhaType(tenantId, bhaType);
+    /**
+     * Count BHAs by type
+     */
+    public long countByType(UUID tenantId, String bhaType) {
+        return getByType(tenantId, bhaType).size();
+    }
+
+    /**
+     * Count all BHAs for a tenant
+     */
+    public long countByTenant(UUID tenantId) {
+        return assetService.countByType(tenantId, DrBhaDto.ASSET_TYPE);
     }
 }

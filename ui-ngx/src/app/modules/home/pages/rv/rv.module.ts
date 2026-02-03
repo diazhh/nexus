@@ -57,15 +57,41 @@ import { RvFieldListComponent } from './rv-field-list/rv-field-list.component';
 import { RvFieldDialogComponent } from './rv-field-list/rv-field-dialog.component';
 import { RvReservoirListComponent } from './rv-reservoir-list/rv-reservoir-list.component';
 import { RvReservoirDialogComponent } from './rv-reservoir-list/rv-reservoir-dialog.component';
+import { RvZoneListComponent } from './rv-zone-list/rv-zone-list.component';
+import { RvZoneDialogComponent } from './rv-zone-list/rv-zone-dialog.component';
+import { RvPvtStudyListComponent } from './rv-pvt-study-list/rv-pvt-study-list.component';
+import { RvPvtStudyDialogComponent } from './rv-pvt-study-list/rv-pvt-study-dialog.component';
 import { RvWellListComponent } from './rv-well-list/rv-well-list.component';
 import { RvWellDialogComponent } from './rv-well-list/rv-well-dialog.component';
 import { RvWellDetailsComponent } from './rv-well-details/rv-well-details.component';
+import { RvReservoirDetailsComponent } from './rv-reservoir-details/rv-reservoir-details.component';
+import { RvFieldDetailsComponent } from './rv-field-details/rv-field-details.component';
+import { RvBasinDetailsComponent } from './rv-basin-details/rv-basin-details.component';
+import { RvCompletionListComponent } from './rv-completion-list/rv-completion-list.component';
+import { RvCompletionDialogComponent } from './rv-completion-list/rv-completion-dialog.component';
+import { RvMaterialBalanceListComponent } from './rv-material-balance-list/rv-material-balance-list.component';
+import { RvMaterialBalanceDialogComponent } from './rv-material-balance-list/rv-material-balance-dialog.component';
+import { RvIprModelListComponent } from './rv-ipr-model-list/rv-ipr-model-list.component';
+import { RvIprModelDialogComponent } from './rv-ipr-model-list/rv-ipr-model-dialog.component';
+import { RvDeclineAnalysisListComponent } from './rv-decline-analysis-list/rv-decline-analysis-list.component';
+import { RvDeclineAnalysisDialogComponent } from './rv-decline-analysis-list/rv-decline-analysis-dialog.component';
 import { RvIprChartComponent } from './rv-charts/rv-ipr-chart.component';
 import { RvDeclineChartComponent } from './rv-charts/rv-decline-chart.component';
 import { RvMaterialBalanceChartComponent } from './rv-charts/rv-material-balance-chart.component';
 import { RvPvtChartComponent } from './rv-charts/rv-pvt-chart.component';
 import { RvWellMapComponent } from './rv-charts/rv-well-map.component';
 import { RvCalculatorComponent } from './rv-calculator/rv-calculator.component';
+import { RvCoreListComponent } from './rv-core-list/rv-core-list.component';
+import { RvCoreDialogComponent } from './rv-core-list/rv-core-dialog.component';
+import { RvFaultListComponent } from './rv-fault-list/rv-fault-list.component';
+import { RvFaultDialogComponent } from './rv-fault-list/rv-fault-dialog.component';
+import { RvSeismicSurveyListComponent } from './rv-seismic-survey-list/rv-seismic-survey-list.component';
+import { RvSeismicSurveyDialogComponent } from './rv-seismic-survey-list/rv-seismic-survey-dialog.component';
+import { RvWellLogListComponent } from './rv-well-log-list/rv-well-log-list.component';
+import { RvWellLogDialogComponent } from './rv-well-log-list/rv-well-log-dialog.component';
+import { RvWellLogViewerComponent } from './rv-well-log-viewer/rv-well-log-viewer.component';
+import { RvWellLogViewerDialogComponent } from './rv-well-log-viewer/rv-well-log-viewer-dialog.component';
+import { RvLasImportDialogComponent } from './rv-las-import/rv-las-import-dialog.component';
 
 @NgModule({
   declarations: [
@@ -76,15 +102,41 @@ import { RvCalculatorComponent } from './rv-calculator/rv-calculator.component';
     RvFieldDialogComponent,
     RvReservoirListComponent,
     RvReservoirDialogComponent,
+    RvZoneListComponent,
+    RvZoneDialogComponent,
+    RvPvtStudyListComponent,
+    RvPvtStudyDialogComponent,
     RvWellListComponent,
     RvWellDialogComponent,
     RvWellDetailsComponent,
+    RvReservoirDetailsComponent,
+    RvFieldDetailsComponent,
+    RvBasinDetailsComponent,
+    RvCompletionListComponent,
+    RvCompletionDialogComponent,
+    RvMaterialBalanceListComponent,
+    RvMaterialBalanceDialogComponent,
+    RvIprModelListComponent,
+    RvIprModelDialogComponent,
+    RvDeclineAnalysisListComponent,
+    RvDeclineAnalysisDialogComponent,
     RvIprChartComponent,
     RvDeclineChartComponent,
     RvMaterialBalanceChartComponent,
     RvPvtChartComponent,
     RvWellMapComponent,
-    RvCalculatorComponent
+    RvCalculatorComponent,
+    RvCoreListComponent,
+    RvCoreDialogComponent,
+    RvFaultListComponent,
+    RvFaultDialogComponent,
+    RvSeismicSurveyListComponent,
+    RvSeismicSurveyDialogComponent,
+    RvWellLogListComponent,
+    RvWellLogDialogComponent,
+    RvWellLogViewerComponent,
+    RvWellLogViewerDialogComponent,
+    RvLasImportDialogComponent
   ],
   imports: [
     CommonModule,
@@ -124,6 +176,8 @@ import { RvCalculatorComponent } from './rv-calculator/rv-calculator.component';
     RvBasinListComponent,
     RvFieldListComponent,
     RvReservoirListComponent,
+    RvZoneListComponent,
+    RvPvtStudyListComponent,
     RvWellListComponent
   ]
 })

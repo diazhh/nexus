@@ -14,52 +14,87 @@
 /// limitations under the License.
 ///
 
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { RvService } from '@core/http/rv/rv.service';
+import * as echarts from 'echarts/core';
+import { LineChart } from 'echarts/charts';
+import {
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent
+} from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+
+echarts.use([
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent,
+  LineChart,
+  CanvasRenderer
+]);
 
 @Component({
   selector: 'tb-rv-decline-chart',
   template: `
-    <div class="chart-container" *ngIf="forecastData.length > 0">
-      <div class="chart-placeholder">
-        <mat-icon>trending_down</mat-icon>
-        <p>Pronostico de Declinacion - {{ forecastData.length }} puntos</p>
-        <table class="mini-table">
-          <tr><th>Mes</th><th>Rate (bopd)</th><th>Np (bbl)</th></tr>
-          <tr *ngFor="let point of forecastData.slice(0, 5)">
-            <td>{{ point.month }}</td>
-            <td>{{ point.rateBopd | number:'1.0-0' }}</td>
-            <td>{{ point.cumulativeBbl | number:'1.0-0' }}</td>
-          </tr>
-          <tr *ngIf="forecastData.length > 5"><td colspan="3">...</td></tr>
-        </table>
-      </div>
-    </div>
+    <div #chartContainer class="chart-container" *ngIf="forecastData.length > 0"></div>
     <div *ngIf="isLoading" class="chart-loading">
       <mat-spinner diameter="24"></mat-spinner>
     </div>
+    <div *ngIf="!isLoading && forecastData.length === 0" class="chart-empty">
+      <mat-icon>trending_down</mat-icon>
+      <p>No hay datos para mostrar</p>
+    </div>
   `,
   styles: [`
-    .chart-container { padding: 16px; background: #f5f5f5; border-radius: 8px; margin-top: 16px; }
-    .chart-placeholder { text-align: center; }
-    .chart-placeholder mat-icon { font-size: 48px; width: 48px; height: 48px; color: #f57c00; }
-    .mini-table { margin: 16px auto; border-collapse: collapse; font-size: 12px; }
-    .mini-table th, .mini-table td { padding: 4px 12px; border: 1px solid #ddd; }
-    .mini-table th { background: #e0e0e0; }
-    .chart-loading { text-align: center; padding: 24px; }
+    :host {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .chart-container {
+      width: 100%;
+      height: 400px;
+      min-height: 300px;
+    }
+    .chart-loading {
+      text-align: center;
+      padding: 48px;
+    }
+    .chart-empty {
+      text-align: center;
+      padding: 48px;
+      color: #999;
+    }
+    .chart-empty mat-icon {
+      font-size: 64px;
+      width: 64px;
+      height: 64px;
+      color: #ccc;
+      margin-bottom: 16px;
+    }
   `]
 })
-export class RvDeclineChartComponent implements OnInit, OnChanges {
+export class RvDeclineChartComponent implements OnInit, OnChanges, AfterViewInit {
 
   @Input() declineAnalysisId: string;
+  @ViewChild('chartContainer', { static: false }) chartContainer: ElementRef;
 
   forecastData: any[] = [];
   isLoading = false;
+  private chart: echarts.ECharts;
 
   constructor(private rvService: RvService) {}
 
   ngOnInit(): void {
     this.loadForecast();
+  }
+
+  ngAfterViewInit(): void {
+    if (this.chartContainer && this.forecastData.length > 0) {
+      this.initChart();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -76,8 +111,162 @@ export class RvDeclineChartComponent implements OnInit, OnChanges {
       next: (data) => {
         this.forecastData = data;
         this.isLoading = false;
+        if (this.chartContainer) {
+          setTimeout(() => this.initChart(), 0);
+        }
       },
       error: () => this.isLoading = false
     });
+  }
+
+  private initChart(): void {
+    if (!this.chartContainer || this.forecastData.length === 0) return;
+
+    // Dispose existing chart
+    if (this.chart) {
+      this.chart.dispose();
+    }
+
+    // Initialize chart
+    this.chart = echarts.init(this.chartContainer.nativeElement);
+
+    const months = this.forecastData.map(d => d.month);
+    const rates = this.forecastData.map(d => d.rateBopd);
+    const cumulative = this.forecastData.map(d => d.cumulativeBbl);
+
+    const option: echarts.EChartsCoreOption = {
+      title: {
+        text: 'Pronóstico de Declinación',
+        left: 'center',
+        textStyle: {
+          fontSize: 16,
+          fontWeight: 500
+        }
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross'
+        }
+      },
+      legend: {
+        data: ['Tasa de Producción', 'Producción Acumulada'],
+        top: 30
+      },
+      grid: {
+        left: '10%',
+        right: '10%',
+        bottom: '15%',
+        top: '20%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: months,
+        name: 'Mes',
+        nameLocation: 'middle',
+        nameGap: 30,
+        nameTextStyle: {
+          fontSize: 12,
+          fontWeight: 'bold'
+        }
+      },
+      yAxis: [
+        {
+          type: 'value',
+          name: 'Tasa (bopd)',
+          nameLocation: 'middle',
+          nameGap: 50,
+          nameTextStyle: {
+            fontSize: 12,
+            fontWeight: 'bold',
+            color: '#f57c00'
+          },
+          axisLabel: {
+            color: '#f57c00'
+          }
+        },
+        {
+          type: 'value',
+          name: 'Acumulado (bbl)',
+          nameLocation: 'middle',
+          nameGap: 50,
+          nameTextStyle: {
+            fontSize: 12,
+            fontWeight: 'bold',
+            color: '#1976d2'
+          },
+          axisLabel: {
+            color: '#1976d2',
+            formatter: (value: number) => {
+              if (value >= 1000) {
+                return (value / 1000).toFixed(0) + 'K';
+              }
+              return value.toString();
+            }
+          }
+        }
+      ],
+      series: [
+        {
+          name: 'Tasa de Producción',
+          type: 'line',
+          data: rates,
+          yAxisIndex: 0,
+          smooth: true,
+          lineStyle: {
+            width: 3,
+            color: '#f57c00'
+          },
+          itemStyle: {
+            color: '#f57c00'
+          },
+          areaStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [{
+                offset: 0, color: 'rgba(245, 124, 0, 0.3)'
+              }, {
+                offset: 1, color: 'rgba(245, 124, 0, 0.05)'
+              }]
+            }
+          }
+        },
+        {
+          name: 'Producción Acumulada',
+          type: 'line',
+          data: cumulative,
+          yAxisIndex: 1,
+          smooth: true,
+          lineStyle: {
+            width: 2,
+            color: '#1976d2',
+            type: 'dashed'
+          },
+          itemStyle: {
+            color: '#1976d2'
+          }
+        }
+      ]
+    };
+
+    this.chart.setOption(option);
+
+    // Resize on window resize
+    window.addEventListener('resize', () => {
+      if (this.chart) {
+        this.chart.resize();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.chart) {
+      this.chart.dispose();
+    }
   }
 }

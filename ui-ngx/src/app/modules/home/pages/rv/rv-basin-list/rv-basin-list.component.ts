@@ -14,11 +14,13 @@
 /// limitations under the License.
 ///
 
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { AppState } from '@core/core.state';
 import { getCurrentAuthUser } from '@core/auth/auth.selectors';
@@ -26,13 +28,14 @@ import { PageLink } from '@shared/models/page/page-link';
 import { RvService } from '@core/http/rv/rv.service';
 import { RvBasin } from '@shared/models/rv/rv.models';
 import { RvBasinDialogComponent } from './rv-basin-dialog.component';
+import { DialogService } from '@core/services/dialog.service';
 
 @Component({
   selector: 'tb-rv-basin-list',
   templateUrl: './rv-basin-list.component.html',
   styleUrls: ['./rv-basin-list.component.scss']
 })
-export class RvBasinListComponent implements OnInit {
+export class RvBasinListComponent implements OnInit, AfterViewInit {
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
@@ -50,7 +53,10 @@ export class RvBasinListComponent implements OnInit {
   constructor(
     private store: Store<AppState>,
     private rvService: RvService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private dialogService: DialogService,
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {
     this.dataSource = new MatTableDataSource<RvBasin>([]);
   }
@@ -61,9 +67,15 @@ export class RvBasinListComponent implements OnInit {
     this.loadData();
   }
 
+  ngAfterViewInit(): void {
+    this.dataSource.sort = this.sort;
+    this.dataSource.paginator = this.paginator;
+  }
+
   loadData(): void {
     this.isLoading = true;
-    const pageLink = new PageLink(this.pageSize, this.pageIndex);
+    const textSearch = this.searchText?.trim() || null;
+    const pageLink = new PageLink(this.pageSize, this.pageIndex, textSearch);
 
     this.rvService.getBasins(this.tenantId, pageLink).subscribe({
       next: (pageData) => {
@@ -85,12 +97,15 @@ export class RvBasinListComponent implements OnInit {
   }
 
   applyFilter(): void {
-    this.dataSource.filter = this.searchText.trim().toLowerCase();
+    this.pageIndex = 0; // Reset to first page when filtering
+    this.loadData();
   }
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(RvBasinDialogComponent, {
-      width: '600px',
+      width: '90vw',
+      maxWidth: '600px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId }
     });
 
@@ -103,7 +118,9 @@ export class RvBasinListComponent implements OnInit {
 
   openEditDialog(basin: RvBasin): void {
     const dialogRef = this.dialog.open(RvBasinDialogComponent, {
-      width: '600px',
+      width: '90vw',
+      maxWidth: '600px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId, basin }
     });
 
@@ -114,16 +131,28 @@ export class RvBasinListComponent implements OnInit {
     });
   }
 
+  viewDetails(basin: RvBasin): void {
+    this.router.navigate(['/rv/basins', basin.assetId]);
+  }
+
   deleteBasin(basin: RvBasin): void {
-    if (confirm(`Esta seguro de eliminar la cuenca "${basin.name}"?`)) {
-      this.rvService.deleteBasin(this.tenantId, basin.assetId).subscribe({
-        next: () => {
-          this.loadData();
-        },
-        error: (error) => {
-          console.error('Error deleting basin:', error);
-        }
-      });
-    }
+    this.dialogService.confirm(
+      'Confirmar eliminación',
+      `¿Está seguro de eliminar la cuenca "${basin.name}"?`,
+      'Cancelar',
+      'Eliminar'
+    ).subscribe(result => {
+      if (result) {
+        this.rvService.deleteBasin(this.tenantId, basin.assetId).subscribe({
+          next: () => {
+            this.snackBar.open('Cuenca eliminada correctamente', 'Cerrar', { duration: 3000 });
+            this.loadData();
+          },
+          error: (error) => {
+            console.error('Error deleting basin:', error);
+          }
+        });
+      }
+    });
   }
 }

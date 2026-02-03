@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -39,8 +40,14 @@ public class RvPvtStudyDto {
 
     // Asset identity
     private UUID assetId;
+
+    @NotNull(message = "El ID del tenant es requerido")
     private UUID tenantId;
+
+    @NotBlank(message = "El nombre es requerido")
+    @Size(min = 2, max = 255, message = "El nombre debe tener entre 2 y 255 caracteres")
     private String name;
+
     private String label;
 
     // Related entities
@@ -48,39 +55,81 @@ public class RvPvtStudyDto {
     private UUID wellAssetId;           // Source well for sample
 
     // Study identification
+    @Size(max = 50, message = "El código del estudio no debe exceder 50 caracteres")
     private String studyCode;
+
     private Long sampleDate;
+
+    @Size(max = 100, message = "El nombre del laboratorio no debe exceder 100 caracteres")
     private String laboratoryName;
+
+    @Size(max = 50, message = "El tipo de muestra no debe exceder 50 caracteres")
     private String sampleType;          // BOTTOMHOLE, RECOMBINED, SEPARATOR
 
     // Sample conditions
+    @PositiveOrZero(message = "La profundidad de muestreo debe ser >= 0")
     private BigDecimal sampleDepthM;
+
+    @PositiveOrZero(message = "La presión de muestreo debe ser >= 0")
     private BigDecimal samplePressurePsi;
+
+    @Positive(message = "La temperatura de muestreo debe ser > 0")
     private BigDecimal sampleTemperatureF;
 
     // Stock tank oil properties
+    @PositiveOrZero(message = "La gravedad API debe ser >= 0")
+    @DecimalMax(value = "100.0", message = "La gravedad API debe ser <= 100")
     private BigDecimal apiGravity;
+
+    @Positive(message = "La gravedad específica del petróleo debe ser > 0")
     private BigDecimal specificGravityOil;    // γo
+
+    @PositiveOrZero(message = "La viscosidad debe ser >= 0")
     private BigDecimal stockTankOilViscosityCp;
 
     // Reservoir fluid properties at bubble point
+    @PositiveOrZero(message = "La presión de burbuja debe ser >= 0")
     private BigDecimal bubblePointPressurePsi;      // Pb
+
+    @PositiveOrZero(message = "El GOR en solución debe ser >= 0")
     private BigDecimal solutionGorAtPbScfStb;       // Rs at Pb
+
+    @Positive(message = "El factor volumétrico del petróleo debe ser > 0")
     private BigDecimal oilFvfAtPbRbStb;             // Bo at Pb
+
+    @PositiveOrZero(message = "La viscosidad del petróleo debe ser >= 0")
     private BigDecimal oilViscosityAtPbCp;          // μo at Pb
+
+    @Positive(message = "La densidad del petróleo debe ser > 0")
     private BigDecimal oilDensityAtPbLbFt3;         // ρo at Pb
+
+    @PositiveOrZero(message = "La compresibilidad del petróleo debe ser >= 0")
     private BigDecimal oilCompressibilityAtPb1Psi;  // co at Pb
 
     // Gas properties
+    @Positive(message = "La gravedad específica del gas debe ser > 0")
     private BigDecimal gasSpecificGravity;          // γg
+
+    @Positive(message = "El factor Z del gas debe ser > 0")
     private BigDecimal gasZFactorAtPb;              // Z at Pb
+
+    @Positive(message = "El factor volumétrico del gas debe ser > 0")
     private BigDecimal gasFvfAtPbRcfScf;            // Bg at Pb
+
+    @PositiveOrZero(message = "La viscosidad del gas debe ser >= 0")
     private BigDecimal gasViscosityAtPbCp;          // μg at Pb
 
     // Water properties
+    @PositiveOrZero(message = "La salinidad del agua debe ser >= 0")
     private BigDecimal waterSalinity;               // ppm NaCl equivalent
+
+    @Positive(message = "El factor volumétrico del agua debe ser > 0")
     private BigDecimal waterFvfAtReservoirRbStb;    // Bw
+
+    @PositiveOrZero(message = "La viscosidad del agua debe ser >= 0")
     private BigDecimal waterViscosityAtReservoirCp; // μw
+
+    @PositiveOrZero(message = "La compresibilidad del agua debe ser >= 0")
     private BigDecimal waterCompressibility1Psi;    // cw
 
     // Composition (mole fractions)

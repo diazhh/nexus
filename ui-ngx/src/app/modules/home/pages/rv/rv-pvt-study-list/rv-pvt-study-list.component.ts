@@ -19,6 +19,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
 import { AppState } from '@core/core.state';
 import { getCurrentAuthUser } from '@core/auth/auth.selectors';
@@ -27,6 +28,7 @@ import { RvService } from '@core/http/rv/rv.service';
 import { RvExportService } from '@core/http/rv/rv-export.service';
 import { RvPvtStudy, RvReservoir } from '@shared/models/rv/rv.models';
 import { RvPvtStudyDialogComponent } from './rv-pvt-study-dialog.component';
+import { DialogService } from '@core/services/dialog.service';
 
 @Component({
   selector: 'tb-rv-pvt-study-list',
@@ -54,7 +56,9 @@ export class RvPvtStudyListComponent implements OnInit, AfterViewInit {
     private store: Store<AppState>,
     private rvService: RvService,
     private rvExportService: RvExportService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private dialogService: DialogService,
+    private snackBar: MatSnackBar
   ) {
     this.dataSource = new MatTableDataSource<RvPvtStudy>([]);
   }
@@ -81,7 +85,8 @@ export class RvPvtStudyListComponent implements OnInit, AfterViewInit {
 
   loadData(): void {
     this.isLoading = true;
-    const pageLink = new PageLink(this.pageSize, this.pageIndex);
+    const textSearch = this.searchText?.trim() || null;
+    const pageLink = new PageLink(this.pageSize, this.pageIndex, textSearch);
 
     this.rvService.getPvtStudies(this.tenantId, pageLink).subscribe({
       next: (pageData) => {
@@ -119,7 +124,9 @@ export class RvPvtStudyListComponent implements OnInit, AfterViewInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(RvPvtStudyDialogComponent, {
-      width: '900px',
+      width: '90vw',
+      maxWidth: '900px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
@@ -127,16 +134,28 @@ export class RvPvtStudyListComponent implements OnInit, AfterViewInit {
 
   openEditDialog(pvtStudy: RvPvtStudy): void {
     const dialogRef = this.dialog.open(RvPvtStudyDialogComponent, {
-      width: '900px',
+      width: '90vw',
+      maxWidth: '900px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId, pvtStudy }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
   }
 
   deletePvtStudy(pvtStudy: RvPvtStudy): void {
-    if (confirm(`¿Eliminar estudio PVT "${pvtStudy.name}"?`)) {
-      this.rvService.deletePvtStudy(this.tenantId, pvtStudy.assetId).subscribe(() => this.loadData());
-    }
+    this.dialogService.confirm(
+      'Confirmar eliminación',
+      `¿Está seguro de eliminar el estudio PVT "${pvtStudy.name}"?`,
+      'Cancelar',
+      'Eliminar'
+    ).subscribe(result => {
+      if (result) {
+        this.rvService.deletePvtStudy(this.tenantId, pvtStudy.assetId).subscribe(() => {
+          this.snackBar.open('Estudio PVT eliminado correctamente', 'Cerrar', { duration: 3000 });
+          this.loadData();
+        });
+      }
+    });
   }
 
   calculateCorrelations(pvtStudy: RvPvtStudy): void {
@@ -149,10 +168,10 @@ export class RvPvtStudyListComponent implements OnInit, AfterViewInit {
 
     this.rvService.calculatePvtCorrelations(pvtStudy.assetId, params).subscribe({
       next: (result) => {
-        alert('Correlaciones PVT calculadas exitosamente');
+        this.snackBar.open('Correlaciones PVT calculadas exitosamente', 'Cerrar', { duration: 5000 });
         this.loadData();
       },
-      error: (err) => alert('Error calculando correlaciones: ' + err.message)
+      error: (err) => this.snackBar.open('Error calculando correlaciones: ' + err.message, 'Cerrar', { duration: 4000 })
     });
   }
 

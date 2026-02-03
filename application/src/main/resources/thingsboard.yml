@@ -683,6 +683,9 @@ cache:
     rolePermissions:
       timeToLiveInMinutes: "${CACHE_SPECS_ROLE_PERMISSIONS_TTL:1440}" # Role permissions cache TTL
       maxSize: "${CACHE_SPECS_ROLE_PERMISSIONS_MAX_SIZE:10000}" # 0 means the cache is disabled
+    rvCatalogs:
+      timeToLiveInMinutes: "${CACHE_SPECS_RV_CATALOGS_TTL:1440}" # RV (Reservoir) catalogs cache TTL
+      maxSize: "${CACHE_SPECS_RV_CATALOGS_MAX_SIZE:10000}" # 0 means the cache is disabled
 
   # Deliberately placed outside the 'specs' group above
   notificationRules:

@@ -19,14 +19,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thingsboard.nexus.ct.dto.CTReelDto;
+import org.thingsboard.nexus.ct.dto.CTUnitDto;
 import org.thingsboard.nexus.ct.exception.CTBusinessException;
 import org.thingsboard.nexus.ct.exception.CTEntityNotFoundException;
 import org.thingsboard.nexus.ct.model.CTJob;
-import org.thingsboard.nexus.ct.model.CTReel;
-import org.thingsboard.nexus.ct.model.CTUnit;
 import org.thingsboard.nexus.ct.repository.CTJobRepository;
-import org.thingsboard.nexus.ct.repository.CTReelRepository;
-import org.thingsboard.nexus.ct.repository.CTUnitRepository;
 import org.thingsboard.nexus.ct.rule.CTJobSimulationNode;
 import org.thingsboard.nexus.ct.rule.CTJobSimulationNode.JobParameters;
 import org.thingsboard.nexus.ct.rule.CTJobSimulationNode.SimulationResult;
@@ -39,8 +37,8 @@ import java.util.UUID;
 public class CTSimulationService {
 
     private final CTJobRepository jobRepository;
-    private final CTUnitRepository unitRepository;
-    private final CTReelRepository reelRepository;
+    private final CTUnitService unitService;
+    private final CTReelService reelService;
     private final CTJobSimulationNode simulationNode = new CTJobSimulationNode();
 
     @Transactional(readOnly = true)
@@ -50,17 +48,14 @@ public class CTSimulationService {
         CTJob job = jobRepository.findById(jobId)
             .orElseThrow(() -> new CTEntityNotFoundException("Job", jobId.toString()));
 
-        CTUnit unit = unitRepository.findById(job.getUnitId())
-            .orElseThrow(() -> new CTEntityNotFoundException("Unit", job.getUnitId().toString()));
-
-        CTReel reel = reelRepository.findById(job.getReelId())
-            .orElseThrow(() -> new CTEntityNotFoundException("Reel", job.getReelId().toString()));
+        CTUnitDto unit = unitService.getById(job.getUnitId());
+        CTReelDto reel = reelService.getById(job.getReelId());
 
         JobParameters params = buildJobParameters(job, unit, reel);
         SimulationResult result = simulationNode.simulate(params);
 
         log.info("Simulation completed for job {}: feasible={}, duration={} hrs",
-                 jobId, 
+                 jobId,
                  result.getFeasibility() != null && result.getFeasibility().isFeasible(),
                  result.getTimes() != null ? result.getTimes().getTotalDurationHours() : 0);
 
@@ -88,35 +83,37 @@ public class CTSimulationService {
         return result;
     }
 
-    private JobParameters buildJobParameters(CTJob job, CTUnit unit, CTReel reel) {
+    private JobParameters buildJobParameters(CTJob job, CTUnitDto unit, CTReelDto reel) {
         JobParameters params = new JobParameters();
 
         params.setJobId(job.getId());
         params.setWellName(job.getWellName());
-        params.setTargetDepthFt(job.getTargetDepthToFt() != null ? 
+        params.setTargetDepthFt(job.getTargetDepthToFt() != null ?
                                 job.getTargetDepthToFt().doubleValue() : 10000.0);
         params.setWellboreDiameterInch(7.0); // Default, debería venir del job
         params.setMaxInclinationDeg(30.0); // Default, debería venir del well profile
 
-        params.setTubingOdInch(reel.getTubingOdInch() != null ? 
+        params.setTubingOdInch(reel.getTubingOdInch() != null ?
                                reel.getTubingOdInch().doubleValue() : 2.375);
-        params.setTubingIdInch(reel.getTubingIdInch() != null ? 
+        params.setTubingIdInch(reel.getTubingIdInch() != null ?
                                reel.getTubingIdInch().doubleValue() : 1.995);
-        params.setTubingLengthFt(reel.getTotalLengthFt() != null ? 
+        params.setTubingLengthFt(reel.getTotalLengthFt() != null ?
                                  reel.getTotalLengthFt().doubleValue() : 20000.0);
 
         params.setFluidDensityPpg(8.33);
-        params.setPumpRateBpm(job.getPlannedPumpRateBpm() != null ? 
+        params.setPumpRateBpm(job.getPlannedPumpRateBpm() != null ?
                               job.getPlannedPumpRateBpm().doubleValue() : null);
-        params.setMaxPressurePsi(job.getMaxPlannedPressurePsi() != null ? 
+        params.setMaxPressurePsi(job.getMaxPlannedPressurePsi() != null ?
                                  job.getMaxPlannedPressurePsi() : 15000);
-        params.setMaxRunningSpeedFtMin(job.getMaxPlannedSpeedFtMin() != null ? 
+        params.setMaxRunningSpeedFtMin(job.getMaxPlannedSpeedFtMin() != null ?
                                        job.getMaxPlannedSpeedFtMin() : 60.0);
 
-        params.setUnitMaxPressurePsi(35000.0); // Default, debería venir del unit
-        params.setUnitMaxTensionLbf(80000.0); // Default, debería venir del unit
+        params.setUnitMaxPressurePsi(unit.getMaxPressurePsi() != null ?
+                                     unit.getMaxPressurePsi().doubleValue() : 35000.0);
+        params.setUnitMaxTensionLbf(unit.getMaxTensionLbf() != null ?
+                                    unit.getMaxTensionLbf().doubleValue() : 80000.0);
 
-        params.setEstimatedTreatmentHours(job.getEstimatedDurationHours() != null ? 
+        params.setEstimatedTreatmentHours(job.getEstimatedDurationHours() != null ?
                                           job.getEstimatedDurationHours().doubleValue() : 2.0);
 
         return params;

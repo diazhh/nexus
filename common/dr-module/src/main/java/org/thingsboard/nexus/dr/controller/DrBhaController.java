@@ -25,9 +25,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thingsboard.nexus.dr.dto.DrBhaDto;
-import org.thingsboard.nexus.dr.model.DrBha;
-import org.thingsboard.nexus.dr.model.enums.BhaType;
 import org.thingsboard.nexus.dr.service.DrBhaService;
+import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.template.CreateFromTemplateRequest;
 
 import jakarta.validation.Valid;
@@ -36,7 +35,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST Controller for Bottom Hole Assembly (BHA) operations
+ * REST Controller for Bottom Hole Assembly (BHA) operations.
+ * All BHAs are stored as ThingsBoard Assets of type "dr_bha".
  */
 @RestController
 @RequestMapping("/api/nexus/dr/bhas")
@@ -46,10 +46,10 @@ public class DrBhaController {
 
     private final DrBhaService bhaService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<DrBhaDto> getBhaById(@PathVariable UUID id) {
-        log.debug("REST request to get BHA: {}", id);
-        DrBhaDto bha = bhaService.getById(id);
+    @GetMapping("/{assetId}")
+    public ResponseEntity<DrBhaDto> getBhaById(@PathVariable UUID assetId) {
+        log.debug("REST request to get BHA: {}", assetId);
+        DrBhaDto bha = bhaService.getById(assetId);
         return ResponseEntity.ok(bha);
     }
 
@@ -62,19 +62,12 @@ public class DrBhaController {
         return ResponseEntity.ok(bha);
     }
 
-    @GetMapping("/asset/{assetId}")
-    public ResponseEntity<DrBhaDto> getBhaByAssetId(@PathVariable UUID assetId) {
-        log.debug("REST request to get BHA by asset ID: {}", assetId);
-        DrBhaDto bha = bhaService.getByAssetId(assetId);
-        return ResponseEntity.ok(bha);
-    }
-
     @GetMapping("/tenant/{tenantId}")
-    public ResponseEntity<Page<DrBhaDto>> getBhasByTenant(
+    public ResponseEntity<PageData<DrBhaDto>> getBhasByTenant(
             @PathVariable UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "bhaNumber") String sortBy,
+            @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "ASC") String sortDir) {
 
         log.debug("REST request to get BHAs for tenant: {}", tenantId);
@@ -84,29 +77,25 @@ public class DrBhaController {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<DrBhaDto> bhas = bhaService.getByTenant(tenantId, pageable);
-        return ResponseEntity.ok(bhas);
+        return ResponseEntity.ok(toPageData(bhas));
     }
 
-    @GetMapping("/tenant/{tenantId}/filter")
-    public ResponseEntity<Page<DrBhaDto>> getBhasByFilters(
+    @GetMapping("/tenant/{tenantId}/search")
+    public ResponseEntity<PageData<DrBhaDto>> searchBhas(
             @PathVariable UUID tenantId,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) BhaType bhaType,
-            @RequestParam(required = false) Boolean isDirectional,
-            @RequestParam(required = false) BigDecimal bitSizeIn,
+            @RequestParam String query,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "bhaNumber") String sortBy,
-            @RequestParam(defaultValue = "ASC") String sortDir) {
+            @RequestParam(defaultValue = "20") int size) {
 
-        log.debug("REST request to get BHAs with filters");
+        log.debug("REST request to search BHAs: {}", query);
 
-        Sort sort = sortDir.equalsIgnoreCase("DESC") ?
-            Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<DrBhaDto> bhas = bhaService.searchByName(tenantId, query, pageable);
+        return ResponseEntity.ok(toPageData(bhas));
+    }
 
-        Page<DrBhaDto> bhas = bhaService.getByFilters(tenantId, status, bhaType, isDirectional, bitSizeIn, pageable);
-        return ResponseEntity.ok(bhas);
+    private <T> PageData<T> toPageData(Page<T> page) {
+        return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
     }
 
     @GetMapping("/tenant/{tenantId}/status/{status}")
@@ -122,7 +111,7 @@ public class DrBhaController {
     @GetMapping("/tenant/{tenantId}/type/{bhaType}")
     public ResponseEntity<List<DrBhaDto>> getBhasByType(
             @PathVariable UUID tenantId,
-            @PathVariable BhaType bhaType) {
+            @PathVariable String bhaType) {
 
         log.debug("REST request to get BHAs by type: {}", bhaType);
         List<DrBhaDto> bhas = bhaService.getByType(tenantId, bhaType);
@@ -153,45 +142,47 @@ public class DrBhaController {
         return ResponseEntity.ok(bhas);
     }
 
-    @PostMapping("/from-template")
+    @PostMapping("/tenant/{tenantId}/from-template")
     public ResponseEntity<DrBhaDto> createBhaFromTemplate(
-            @RequestParam UUID tenantId,
+            @PathVariable UUID tenantId,
             @Valid @RequestBody CreateFromTemplateRequest request) {
         log.info("REST request to create BHA from template: {}", request.getTemplateId());
         DrBhaDto createdBha = bhaService.createFromTemplate(tenantId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdBha);
     }
 
-    @PostMapping
-    public ResponseEntity<DrBhaDto> createBha(@Valid @RequestBody DrBha bha) {
+    @PostMapping("/tenant/{tenantId}")
+    public ResponseEntity<DrBhaDto> createBha(
+            @PathVariable UUID tenantId,
+            @Valid @RequestBody DrBhaDto bha) {
         log.info("REST request to create BHA: {}", bha.getBhaNumber());
-        DrBhaDto createdBha = bhaService.create(bha);
+        DrBhaDto createdBha = bhaService.create(tenantId, bha);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdBha);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{assetId}")
     public ResponseEntity<DrBhaDto> updateBha(
-            @PathVariable UUID id,
-            @Valid @RequestBody DrBha bha) {
+            @PathVariable UUID assetId,
+            @Valid @RequestBody DrBhaDto bha) {
 
-        log.info("REST request to update BHA: {}", id);
-        DrBhaDto updatedBha = bhaService.update(id, bha);
+        log.info("REST request to update BHA: {}", assetId);
+        DrBhaDto updatedBha = bhaService.update(assetId, bha);
         return ResponseEntity.ok(updatedBha);
     }
 
-    @PutMapping("/{id}/status")
+    @PutMapping("/{assetId}/status")
     public ResponseEntity<DrBhaDto> updateBhaStatus(
-            @PathVariable UUID id,
+            @PathVariable UUID assetId,
             @RequestParam String status) {
 
-        log.info("REST request to update BHA status: {} to {}", id, status);
-        DrBhaDto updatedBha = bhaService.updateStatus(id, status);
+        log.info("REST request to update BHA status: {} to {}", assetId, status);
+        DrBhaDto updatedBha = bhaService.updateStatus(assetId, status);
         return ResponseEntity.ok(updatedBha);
     }
 
-    @PostMapping("/{id}/dull-grade")
+    @PostMapping("/{assetId}/dull-grade")
     public ResponseEntity<DrBhaDto> recordDullGrade(
-            @PathVariable UUID id,
+            @PathVariable UUID assetId,
             @RequestParam(required = false) String dullInner,
             @RequestParam(required = false) String dullOuter,
             @RequestParam(required = false) String dullChar,
@@ -200,41 +191,50 @@ public class DrBhaController {
             @RequestParam(required = false) String gaugeCondition,
             @RequestParam(required = false) String reasonPulled) {
 
-        log.info("REST request to record dull grade for BHA {}", id);
-        DrBhaDto updatedBha = bhaService.recordDullGrade(id, dullInner, dullOuter, dullChar,
+        log.info("REST request to record dull grade for BHA {}", assetId);
+        DrBhaDto updatedBha = bhaService.recordDullGrade(assetId, dullInner, dullOuter, dullChar,
                 dullLocation, bearingCondition, gaugeCondition, reasonPulled);
         return ResponseEntity.ok(updatedBha);
     }
 
-    @PutMapping("/{id}/statistics")
+    @PutMapping("/{assetId}/statistics")
     public ResponseEntity<DrBhaDto> updateBhaStatistics(
-            @PathVariable UUID id,
+            @PathVariable UUID assetId,
             @RequestParam(required = false) BigDecimal footageDrilled,
             @RequestParam(required = false) BigDecimal hoursOnBottom) {
 
-        log.info("REST request to update statistics for BHA {}", id);
-        DrBhaDto updatedBha = bhaService.updateStatistics(id, footageDrilled, hoursOnBottom);
+        log.info("REST request to update statistics for BHA {}", assetId);
+        DrBhaDto updatedBha = bhaService.updateStatistics(assetId, footageDrilled, hoursOnBottom);
         return ResponseEntity.ok(updatedBha);
     }
 
-    @PostMapping("/{id}/increment-run")
-    public ResponseEntity<DrBhaDto> incrementRunCount(@PathVariable UUID id) {
-        log.info("REST request to increment run count for BHA {}", id);
-        DrBhaDto updatedBha = bhaService.incrementRunCount(id);
+    @PostMapping("/{assetId}/increment-run")
+    public ResponseEntity<DrBhaDto> incrementRunCount(@PathVariable UUID assetId) {
+        log.info("REST request to increment run count for BHA {}", assetId);
+        DrBhaDto updatedBha = bhaService.incrementRunCount(assetId);
         return ResponseEntity.ok(updatedBha);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBha(@PathVariable UUID id) {
-        log.info("REST request to delete BHA: {}", id);
-        bhaService.delete(id);
+    @DeleteMapping("/tenant/{tenantId}/{assetId}")
+    public ResponseEntity<Void> deleteBha(
+            @PathVariable UUID tenantId,
+            @PathVariable UUID assetId) {
+        log.info("REST request to delete BHA: {}", assetId);
+        bhaService.delete(tenantId, assetId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/tenant/{tenantId}/count")
+    public ResponseEntity<Long> countBhas(@PathVariable UUID tenantId) {
+        log.debug("REST request to count BHAs for tenant: {}", tenantId);
+        return ResponseEntity.ok(bhaService.countByTenant(tenantId));
     }
 
     @GetMapping("/tenant/{tenantId}/count/status/{status}")
     public ResponseEntity<Long> countByStatus(
             @PathVariable UUID tenantId,
             @PathVariable String status) {
+        log.debug("REST request to count BHAs by status: {}", status);
         long count = bhaService.countByStatus(tenantId, status);
         return ResponseEntity.ok(count);
     }
@@ -242,7 +242,8 @@ public class DrBhaController {
     @GetMapping("/tenant/{tenantId}/count/type/{bhaType}")
     public ResponseEntity<Long> countByType(
             @PathVariable UUID tenantId,
-            @PathVariable BhaType bhaType) {
+            @PathVariable String bhaType) {
+        log.debug("REST request to count BHAs by type: {}", bhaType);
         long count = bhaService.countByType(tenantId, bhaType);
         return ResponseEntity.ok(count);
     }

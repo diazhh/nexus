@@ -19,6 +19,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
 import { AppState } from '@core/core.state';
 import { getCurrentAuthUser } from '@core/auth/auth.selectors';
@@ -26,6 +27,7 @@ import { PageLink } from '@shared/models/page/page-link';
 import { RvService } from '@core/http/rv/rv.service';
 import { RvExportService } from '@core/http/rv/rv-export.service';
 import { RvCoreDialogComponent } from './rv-core-dialog.component';
+import { DialogService } from '@core/services/dialog.service';
 
 @Component({
   selector: 'tb-rv-core-list',
@@ -54,7 +56,9 @@ export class RvCoreListComponent implements OnInit, AfterViewInit {
     private store: Store<AppState>,
     private rvService: RvService,
     private rvExportService: RvExportService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private dialogService: DialogService,
+    private snackBar: MatSnackBar
   ) {
     this.dataSource = new MatTableDataSource<any>([]);
   }
@@ -81,7 +85,8 @@ export class RvCoreListComponent implements OnInit, AfterViewInit {
 
   loadData(): void {
     this.isLoading = true;
-    const pageLink = new PageLink(this.pageSize, this.pageIndex);
+    const textSearch = this.searchText?.trim() || null;
+    const pageLink = new PageLink(this.pageSize, this.pageIndex, textSearch);
 
     this.rvService.getCores(this.tenantId, pageLink).subscribe({
       next: (pageData) => {
@@ -124,7 +129,9 @@ export class RvCoreListComponent implements OnInit, AfterViewInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(RvCoreDialogComponent, {
-      width: '900px',
+      width: '90vw',
+      maxWidth: '900px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
@@ -132,16 +139,28 @@ export class RvCoreListComponent implements OnInit, AfterViewInit {
 
   openEditDialog(core: any): void {
     const dialogRef = this.dialog.open(RvCoreDialogComponent, {
-      width: '900px',
+      width: '90vw',
+      maxWidth: '900px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId, core }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
   }
 
   deleteCore(core: any): void {
-    if (confirm(`¿Eliminar muestra de núcleo "${core.name}"?`)) {
-      this.rvService.deleteCore(this.tenantId, core.assetId).subscribe(() => this.loadData());
-    }
+    this.dialogService.confirm(
+      'Confirmar eliminación',
+      `¿Está seguro de eliminar la muestra de núcleo "${core.name}"?`,
+      'Cancelar',
+      'Eliminar'
+    ).subscribe(result => {
+      if (result) {
+        this.rvService.deleteCore(this.tenantId, core.assetId).subscribe(() => {
+          this.snackBar.open('Núcleo eliminado correctamente', 'Cerrar', { duration: 3000 });
+          this.loadData();
+        });
+      }
+    });
   }
 
   formatPercent(value: number): string {

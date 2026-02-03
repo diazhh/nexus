@@ -19,11 +19,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.thingsboard.nexus.rv.dto.RvCatalogDto;
 import org.thingsboard.nexus.rv.exception.RvEntityNotFoundException;
+import org.thingsboard.server.common.data.CacheConstants;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -34,10 +38,13 @@ import java.util.UUID;
 /**
  * Service for managing RV catalog data.
  * Provides access to enumeration values like well types, lithologies, formations, etc.
+ *
+ * Uses Spring Cache to improve performance for frequently accessed catalog data.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@CacheConfig(cacheNames = CacheConstants.RV_CATALOGS_CACHE)
 public class RvCatalogService {
 
     private final JdbcTemplate jdbcTemplate;
@@ -51,7 +58,9 @@ public class RvCatalogService {
 
     /**
      * Get all catalog items of a specific type for a tenant.
+     * Results are cached with key: "type-{tenantId}-{catalogType}"
      */
+    @Cacheable(key = "'type-' + #tenantId + '-' + #catalogType")
     public List<RvCatalogDto> getCatalogsByType(UUID tenantId, String catalogType) {
         log.debug("Getting catalogs: tenantId={}, type={}", tenantId, catalogType);
 
@@ -65,7 +74,9 @@ public class RvCatalogService {
 
     /**
      * Get a specific catalog item by type and code.
+     * Results are cached with key: "code-{tenantId}-{catalogType}-{code}"
      */
+    @Cacheable(key = "'code-' + #tenantId + '-' + #catalogType + '-' + #code")
     public Optional<RvCatalogDto> getCatalogByCode(UUID tenantId, String catalogType, String code) {
         log.debug("Getting catalog: tenantId={}, type={}, code={}", tenantId, catalogType, code);
 
@@ -79,7 +90,9 @@ public class RvCatalogService {
 
     /**
      * Get a catalog item by ID.
+     * Results are cached with key: "id-{id}"
      */
+    @Cacheable(key = "'id-' + #id")
     public Optional<RvCatalogDto> getCatalogById(UUID id) {
         log.debug("Getting catalog by ID: {}", id);
 
@@ -91,7 +104,9 @@ public class RvCatalogService {
 
     /**
      * Get all available catalog types for a tenant.
+     * Results are cached with key: "types-{tenantId}"
      */
+    @Cacheable(key = "'types-' + #tenantId")
     public List<String> getAvailableCatalogTypes(UUID tenantId) {
         log.debug("Getting available catalog types for tenant: {}", tenantId);
 
@@ -106,7 +121,9 @@ public class RvCatalogService {
 
     /**
      * Create a new catalog item.
+     * Evicts all cache entries to ensure fresh data.
      */
+    @CacheEvict(allEntries = true)
     public RvCatalogDto createCatalog(RvCatalogDto catalog) {
         log.info("Creating catalog: type={}, code={}", catalog.getCatalogType(), catalog.getCode());
 
@@ -148,7 +165,9 @@ public class RvCatalogService {
 
     /**
      * Update an existing catalog item.
+     * Evicts all cache entries to ensure fresh data.
      */
+    @CacheEvict(allEntries = true)
     public RvCatalogDto updateCatalog(RvCatalogDto catalog) {
         log.info("Updating catalog: id={}", catalog.getId());
 
@@ -194,7 +213,9 @@ public class RvCatalogService {
 
     /**
      * Delete a catalog item (soft delete - sets is_active to false).
+     * Evicts all cache entries to ensure fresh data.
      */
+    @CacheEvict(allEntries = true)
     public void deleteCatalog(UUID id) {
         log.warn("Deleting catalog: id={}", id);
 

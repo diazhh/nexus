@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -38,52 +39,115 @@ public class RvReservoirDto {
 
     // Asset identity
     private UUID assetId;
+
+    @NotNull(message = "El ID del tenant es requerido")
     private UUID tenantId;
+
+    @NotBlank(message = "El nombre es requerido")
+    @Size(min = 2, max = 255, message = "El nombre debe tener entre 2 y 255 caracteres")
     private String name;
+
     private String label;
 
     // Hierarchy
+    @NotNull(message = "El campo (field) es requerido")
     private UUID fieldAssetId;
 
     // Reservoir identification
+    @Size(max = 50, message = "El código no debe exceder 50 caracteres")
     private String code;
+
+    @Size(max = 100, message = "El nombre de formación no debe exceder 100 caracteres")
     private String formationName;
     private String geologicAge;          // MIOCENE, OLIGOCENE, EOCENE, CRETACEOUS
 
     // Static properties (petrophysics)
+    @DecimalMin(value = "0.0", message = "La porosidad debe ser >= 0")
+    @DecimalMax(value = "1.0", message = "La porosidad debe ser <= 1")
     private BigDecimal averagePorosityFrac;    // φ (0-1)
+
+    @PositiveOrZero(message = "La permeabilidad debe ser >= 0")
     private BigDecimal averagePermeabilityMd;  // k (millidarcys)
+
+    @PositiveOrZero(message = "El espesor neto debe ser >= 0")
     private BigDecimal netPayThicknessM;       // h (meters)
+
+    @PositiveOrZero(message = "El espesor bruto debe ser >= 0")
     private BigDecimal grossThicknessM;
+
+    @DecimalMin(value = "0.0", message = "La relación net-to-gross debe ser >= 0")
+    @DecimalMax(value = "1.0", message = "La relación net-to-gross debe ser <= 1")
     private BigDecimal netToGrossRatio;
+
+    @DecimalMin(value = "0.0", message = "La saturación de agua debe ser >= 0")
+    @DecimalMax(value = "1.0", message = "La saturación de agua debe ser <= 1")
     private BigDecimal averageSwFrac;          // Sw inicial (0-1)
+
+    @DecimalMin(value = "0.0", message = "El volumen de arcilla debe ser >= 0")
+    @DecimalMax(value = "1.0", message = "El volumen de arcilla debe ser <= 1")
     private BigDecimal averageVshFrac;         // Vsh (0-1)
+
+    @PositiveOrZero(message = "El área debe ser >= 0")
     private BigDecimal areaKm2;
 
     // Rock properties
+    @Size(max = 50, message = "La litología no debe exceder 50 caracteres")
     private String lithology;                  // SANDSTONE, LIMESTONE, DOLOMITE, SHALE
+
+    @PositiveOrZero(message = "La compresibilidad de la roca debe ser >= 0")
     private BigDecimal rockCompressibilityCp;  // cf (1/psi)
+
+    @Positive(message = "La densidad del grano debe ser > 0")
     private BigDecimal grainDensityGcc;        // ρg (g/cc)
 
     // Initial conditions
+    @PositiveOrZero(message = "La presión inicial debe ser >= 0")
     private BigDecimal initialPressurePsi;     // Pi
+
+    @PositiveOrZero(message = "La presión actual debe ser >= 0")
     private BigDecimal currentPressurePsi;     // P actual
+
+    @PositiveOrZero(message = "La presión de burbuja debe ser >= 0")
     private BigDecimal bubblePointPressurePsi; // Pb
+
+    @Positive(message = "La temperatura debe ser > 0")
     private BigDecimal temperatureF;           // T
+
     private BigDecimal datumDepthM;            // Datum TVDss
 
     // Fluid properties (from PVT study)
+    @Size(max = 50, message = "El tipo de fluido no debe exceder 50 caracteres")
     private String fluidType;                  // OIL, GAS, CONDENSATE, HEAVY_OIL, EXTRA_HEAVY_OIL
+
+    @PositiveOrZero(message = "La gravedad API debe ser >= 0")
+    @DecimalMax(value = "100.0", message = "La gravedad API debe ser <= 100")
     private BigDecimal apiGravity;
+
+    @PositiveOrZero(message = "La viscosidad debe ser >= 0")
     private BigDecimal oilViscosityCp;         // μo @ reservoir conditions
+
+    @PositiveOrZero(message = "El GOR debe ser >= 0")
     private BigDecimal gasOilRatioScfStb;      // GOR
+
+    @Positive(message = "El factor volumétrico Bo debe ser > 0")
     private BigDecimal formationVolFactorBo;   // Bo
+
+    @DecimalMin(value = "0.0", message = "La saturación irreducible debe ser >= 0")
+    @DecimalMax(value = "1.0", message = "La saturación irreducible debe ser <= 1")
     private BigDecimal waterSaturationIrreducible; // Swirr
 
     // Volumetrics (OOIP)
+    @PositiveOrZero(message = "El OOIP debe ser >= 0")
     private BigDecimal ooipStb;                // Original Oil In Place
+
+    @PositiveOrZero(message = "El OGIP debe ser >= 0")
     private BigDecimal ogipScf;                // Original Gas In Place
+
+    @DecimalMin(value = "0.0", message = "El factor de recuperación debe ser >= 0")
+    @DecimalMax(value = "1.0", message = "El factor de recuperación debe ser <= 1")
     private BigDecimal recoveryFactorFrac;     // RF (0-1)
+
+    @PositiveOrZero(message = "Las reservas recuperables deben ser >= 0")
     private BigDecimal recoverableReservesStb;
 
     // Drive mechanism

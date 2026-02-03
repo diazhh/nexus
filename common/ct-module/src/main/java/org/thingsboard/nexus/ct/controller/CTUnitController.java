@@ -24,9 +24,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.thingsboard.nexus.ct.dto.CTReelDto;
 import org.thingsboard.nexus.ct.dto.CTUnitDto;
-import org.thingsboard.nexus.ct.model.CTUnit;
 import org.thingsboard.nexus.ct.model.UnitStatus;
+import org.thingsboard.nexus.ct.service.CTReelService;
 import org.thingsboard.nexus.ct.service.CTUnitService;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.template.CreateFromTemplateRequest;
@@ -35,6 +36,10 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST Controller for CT Unit operations.
+ * All Units are stored as ThingsBoard Assets of type "ct_unit".
+ */
 @RestController
 @RequestMapping("/api/nexus/ct/units")
 @RequiredArgsConstructor
@@ -42,18 +47,21 @@ import java.util.UUID;
 public class CTUnitController {
 
     private final CTUnitService unitService;
+    private final CTReelService reelService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<CTUnitDto> getUnitById(@PathVariable UUID id) {
-        log.debug("REST request to get CT Unit: {}", id);
-        CTUnitDto unit = unitService.getById(id);
+    @GetMapping("/{assetId}")
+    public ResponseEntity<CTUnitDto> getUnitById(@PathVariable UUID assetId) {
+        log.debug("REST request to get CT Unit: {}", assetId);
+        CTUnitDto unit = unitService.getById(assetId);
         return ResponseEntity.ok(unit);
     }
 
-    @GetMapping("/code/{unitCode}")
-    public ResponseEntity<CTUnitDto> getUnitByCode(@PathVariable String unitCode) {
+    @GetMapping("/tenant/{tenantId}/code/{unitCode}")
+    public ResponseEntity<CTUnitDto> getUnitByCode(
+            @PathVariable UUID tenantId,
+            @PathVariable String unitCode) {
         log.debug("REST request to get CT Unit by code: {}", unitCode);
-        CTUnitDto unit = unitService.getByCode(unitCode);
+        CTUnitDto unit = unitService.getByCode(tenantId, unitCode);
         return ResponseEntity.ok(unit);
     }
 
@@ -62,7 +70,7 @@ public class CTUnitController {
             @PathVariable UUID tenantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "unitCode") String sortBy,
+            @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "ASC") String sortDir) {
 
         log.debug("REST request to get CT Units for tenant: {}", tenantId);
@@ -77,26 +85,6 @@ public class CTUnitController {
 
     private <T> PageData<T> toPageData(Page<T> page) {
         return new PageData<>(page.getContent(), page.getTotalPages(), page.getTotalElements(), page.hasNext());
-    }
-
-    @GetMapping("/tenant/{tenantId}/filter")
-    public ResponseEntity<PageData<CTUnitDto>> getUnitsByFilters(
-            @PathVariable UUID tenantId,
-            @RequestParam(required = false) UnitStatus status,
-            @RequestParam(required = false) String location,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "unitCode") String sortBy,
-            @RequestParam(defaultValue = "ASC") String sortDir) {
-
-        log.debug("REST request to get CT Units with filters");
-
-        Sort sort = sortDir.equalsIgnoreCase("DESC") ?
-            Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<CTUnitDto> units = unitService.getByFilters(tenantId, status, location, pageable);
-        return ResponseEntity.ok(toPageData(units));
     }
 
     @GetMapping("/tenant/{tenantId}/status/{status}")
@@ -123,86 +111,106 @@ public class CTUnitController {
         return ResponseEntity.ok(units);
     }
 
-    @PostMapping("/from-template")
+    @PostMapping("/tenant/{tenantId}/from-template")
     public ResponseEntity<CTUnitDto> createUnitFromTemplate(
-            @RequestParam UUID tenantId,
+            @PathVariable UUID tenantId,
             @Valid @RequestBody CreateFromTemplateRequest request) {
         log.info("REST request to create CT Unit from template: {}", request.getTemplateId());
         CTUnitDto createdUnit = unitService.createFromTemplate(tenantId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUnit);
     }
 
-    @PostMapping
-    public ResponseEntity<CTUnitDto> createUnit(@Valid @RequestBody CTUnit unit) {
+    @PostMapping("/tenant/{tenantId}")
+    public ResponseEntity<CTUnitDto> createUnit(
+            @PathVariable UUID tenantId,
+            @Valid @RequestBody CTUnitDto unit) {
         log.info("REST request to create CT Unit: {}", unit.getUnitCode());
-        CTUnitDto createdUnit = unitService.create(unit);
+        CTUnitDto createdUnit = unitService.create(tenantId, unit);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUnit);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{assetId}")
     public ResponseEntity<CTUnitDto> updateUnit(
-            @PathVariable UUID id,
-            @Valid @RequestBody CTUnit unit) {
+            @PathVariable UUID assetId,
+            @Valid @RequestBody CTUnitDto unit) {
 
-        log.info("REST request to update CT Unit: {}", id);
-        CTUnitDto updatedUnit = unitService.update(id, unit);
+        log.info("REST request to update CT Unit: {}", assetId);
+        CTUnitDto updatedUnit = unitService.update(assetId, unit);
         return ResponseEntity.ok(updatedUnit);
     }
 
-    @PutMapping("/{id}/status")
+    @PutMapping("/{assetId}/status")
     public ResponseEntity<CTUnitDto> updateUnitStatus(
-            @PathVariable UUID id,
+            @PathVariable UUID assetId,
             @RequestParam UnitStatus status) {
 
-        log.info("REST request to update CT Unit status: {} to {}", id, status);
-        CTUnitDto updatedUnit = unitService.updateStatus(id, status);
+        log.info("REST request to update CT Unit status: {} to {}", assetId, status);
+        CTUnitDto updatedUnit = unitService.updateStatus(assetId, status);
         return ResponseEntity.ok(updatedUnit);
     }
 
-    @PutMapping("/{id}/location")
+    @PutMapping("/{assetId}/location")
     public ResponseEntity<CTUnitDto> updateUnitLocation(
-            @PathVariable UUID id,
+            @PathVariable UUID assetId,
             @RequestParam String location,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude) {
 
-        log.info("REST request to update CT Unit location: {}", id);
-        CTUnitDto updatedUnit = unitService.updateLocation(id, location, latitude, longitude);
+        log.info("REST request to update CT Unit location: {}", assetId);
+        CTUnitDto updatedUnit = unitService.updateLocation(assetId, location, latitude, longitude);
         return ResponseEntity.ok(updatedUnit);
     }
 
-    @PostMapping("/{unitId}/reel/{reelId}")
+    @PostMapping("/{unitAssetId}/reel/{reelAssetId}")
     public ResponseEntity<CTUnitDto> assignReel(
-            @PathVariable UUID unitId,
-            @PathVariable UUID reelId) {
+            @PathVariable UUID unitAssetId,
+            @PathVariable UUID reelAssetId) {
 
-        log.info("REST request to assign reel {} to unit {}", reelId, unitId);
-        CTUnitDto updatedUnit = unitService.assignReel(unitId, reelId);
+        log.info("REST request to assign reel {} to unit {}", reelAssetId, unitAssetId);
+        CTReelDto reelDto = reelService.getById(reelAssetId);
+        CTUnitDto updatedUnit = unitService.assignReel(unitAssetId, reelAssetId, reelDto);
         return ResponseEntity.ok(updatedUnit);
     }
 
-    @DeleteMapping("/{unitId}/reel")
-    public ResponseEntity<CTUnitDto> detachReel(@PathVariable UUID unitId) {
-        log.info("REST request to detach reel from unit {}", unitId);
-        CTUnitDto updatedUnit = unitService.detachReel(unitId);
+    @DeleteMapping("/{unitAssetId}/reel")
+    public ResponseEntity<CTUnitDto> detachReel(@PathVariable UUID unitAssetId) {
+        log.info("REST request to detach reel from unit {}", unitAssetId);
+        CTUnitDto updatedUnit = unitService.detachReel(unitAssetId);
         return ResponseEntity.ok(updatedUnit);
     }
 
-    @PutMapping("/{id}/maintenance")
+    @PutMapping("/{assetId}/maintenance")
     public ResponseEntity<CTUnitDto> recordMaintenance(
-            @PathVariable UUID id,
+            @PathVariable UUID assetId,
             @RequestParam Long maintenanceDate,
             @RequestParam(required = false) String notes) {
 
-        log.info("REST request to record maintenance for unit {}", id);
-        CTUnitDto updatedUnit = unitService.recordMaintenance(id, maintenanceDate, notes);
+        log.info("REST request to record maintenance for unit {}", assetId);
+        CTUnitDto updatedUnit = unitService.recordMaintenance(assetId, maintenanceDate, notes);
         return ResponseEntity.ok(updatedUnit);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUnit(@PathVariable UUID id) {
-        log.info("REST request to delete CT Unit: {}", id);
-        unitService.delete(id);
+    @DeleteMapping("/tenant/{tenantId}/{assetId}")
+    public ResponseEntity<Void> deleteUnit(
+            @PathVariable UUID tenantId,
+            @PathVariable UUID assetId) {
+        log.info("REST request to delete CT Unit: {}", assetId);
+        unitService.delete(tenantId, assetId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/tenant/{tenantId}/count")
+    public ResponseEntity<Long> countUnits(@PathVariable UUID tenantId) {
+        log.debug("REST request to count CT Units for tenant: {}", tenantId);
+        return ResponseEntity.ok(unitService.countByTenant(tenantId));
+    }
+
+    @GetMapping("/tenant/{tenantId}/count/status/{status}")
+    public ResponseEntity<Long> countByStatus(
+            @PathVariable UUID tenantId,
+            @PathVariable UnitStatus status) {
+        log.debug("REST request to count CT Units by status: {}", status);
+        long count = unitService.countByStatus(tenantId, status);
+        return ResponseEntity.ok(count);
     }
 }

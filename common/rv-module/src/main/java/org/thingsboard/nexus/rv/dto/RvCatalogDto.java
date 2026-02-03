@@ -21,6 +21,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 /**
@@ -34,26 +38,35 @@ import java.util.UUID;
 public class RvCatalogDto {
 
     private UUID id;
+
+    @NotNull(message = "El ID del tenant es requerido")
     private UUID tenantId;
 
     /**
      * Type of catalog (e.g., WELL_TYPE, LITHOLOGY, FORMATION_VE, FAJA_REGION)
      */
+    @NotBlank(message = "El tipo de catálogo es requerido")
+    @Size(max = 100, message = "El tipo de catálogo no debe exceder 100 caracteres")
     private String catalogType;
 
     /**
      * Unique code within the catalog type (e.g., PRODUCER, SANDSTONE)
      */
+    @NotBlank(message = "El código es requerido")
+    @Size(max = 50, message = "El código no debe exceder 50 caracteres")
     private String code;
 
     /**
      * Display name
      */
+    @NotBlank(message = "El nombre es requerido")
+    @Size(max = 100, message = "El nombre no debe exceder 100 caracteres")
     private String name;
 
     /**
      * Optional description
      */
+    @Size(max = 255, message = "La descripción no debe exceder 255 caracteres")
     private String description;
 
     /**
@@ -64,6 +77,7 @@ public class RvCatalogDto {
     /**
      * Sort order for display
      */
+    @PositiveOrZero(message = "El orden de clasificación debe ser >= 0")
     private Integer sortOrder;
 
     /**

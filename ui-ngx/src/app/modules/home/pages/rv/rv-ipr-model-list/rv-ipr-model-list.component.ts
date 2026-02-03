@@ -120,7 +120,8 @@ export class RvIprModelListComponent implements OnInit, AfterViewInit {
 
   openDialog(iprModel?: RvIprModel): void {
     const dialogRef = this.dialog.open(RvIprModelDialogComponent, {
-      width: '900px',
+      width: '90vw',
+      maxWidth: '900px',
       maxHeight: '90vh',
       data: { tenantId: this.tenantId, iprModel }
     });

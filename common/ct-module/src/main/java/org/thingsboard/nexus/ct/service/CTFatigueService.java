@@ -24,11 +24,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thingsboard.nexus.ct.dto.CTFatigueLogDto;
-import org.thingsboard.nexus.ct.exception.CTEntityNotFoundException;
+import org.thingsboard.nexus.ct.dto.CTReelDto;
 import org.thingsboard.nexus.ct.model.CTFatigueLog;
-import org.thingsboard.nexus.ct.model.CTReel;
 import org.thingsboard.nexus.ct.repository.CTFatigueLogRepository;
-import org.thingsboard.nexus.ct.repository.CTReelRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -41,7 +39,7 @@ import java.util.stream.Collectors;
 public class CTFatigueService {
 
     private final CTFatigueLogRepository fatigueLogRepository;
-    private final CTReelRepository reelRepository;
+    private final CTReelService reelService;
 
     @Async
     @Transactional
@@ -83,12 +81,8 @@ public class CTFatigueService {
 
     @Transactional
     public void updateReelAccumulatedFatigue(UUID reelId, BigDecimal accumulatedFatigue) {
-        CTReel reel = reelRepository.findById(reelId)
-            .orElseThrow(() -> new CTEntityNotFoundException("Reel", reelId.toString()));
-
-        reel.setAccumulatedFatiguePercent(accumulatedFatigue);
-        reelRepository.save(reel);
-
+        CTReelDto reel = reelService.getById(reelId);
+        reelService.updateFatigue(reelId, accumulatedFatigue, reel.getTotalCycles());
         log.debug("Updated reel {} accumulated fatigue to {}%", reelId, accumulatedFatigue);
     }
 

@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -38,25 +39,53 @@ public class RvFieldDto {
 
     // Asset identity
     private UUID assetId;
+
+    @NotNull(message = "El ID del tenant es requerido")
     private UUID tenantId;
+
+    @NotBlank(message = "El nombre es requerido")
+    @Size(min = 2, max = 255, message = "El nombre debe tener entre 2 y 255 caracteres")
     private String name;
+
     private String label;
 
     // Hierarchy
+    @NotNull(message = "La cuenca (basin) es requerida")
     private UUID basinAssetId;
 
     // Field-specific attributes
+    @Size(max = 50, message = "El código no debe exceder 50 caracteres")
     private String code;
+
+    @Size(max = 50, message = "El estado operacional no debe exceder 50 caracteres")
     private String operationalStatus;    // PRODUCING, DEVELOPMENT, EXPLORATION, ABANDONED
+
+    @Size(max = 100, message = "La compañía operadora no debe exceder 100 caracteres")
     private String operatorCompany;
+
+    @Size(max = 50, message = "El tipo de campo no debe exceder 50 caracteres")
     private String fieldType;            // ONSHORE, OFFSHORE, TRANSITION
+
+    @Min(value = 1800, message = "El año de descubrimiento debe ser >= 1800")
+    @Max(value = 2100, message = "El año de descubrimiento debe ser <= 2100")
     private Integer discoveryYear;
+
+    @Min(value = 1800, message = "El año de inicio de producción debe ser >= 1800")
+    @Max(value = 2100, message = "El año de inicio de producción debe ser <= 2100")
     private Integer productionStartYear;
 
     // Geographic data
+    @PositiveOrZero(message = "El área total debe ser >= 0")
     private BigDecimal totalAreaKm2;
+
     private JsonNode geojsonBoundary;
+
+    @DecimalMin(value = "-90.0", message = "La latitud debe ser >= -90")
+    @DecimalMax(value = "90.0", message = "La latitud debe ser <= 90")
     private BigDecimal centerLatitude;
+
+    @DecimalMin(value = "-180.0", message = "La longitud debe ser >= -180")
+    @DecimalMax(value = "180.0", message = "La longitud debe ser <= 180")
     private BigDecimal centerLongitude;
     private BigDecimal waterDepthM;      // For offshore fields
 

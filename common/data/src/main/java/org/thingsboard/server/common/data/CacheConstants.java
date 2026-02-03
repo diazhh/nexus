@@ -62,4 +62,7 @@ public final class CacheConstants {
     public static final String ROLE_CACHE = "roles";
     public static final String ROLE_PERMISSIONS_CACHE = "rolePermissions";
 
+    // Nexus RV Module Caches
+    public static final String RV_CATALOGS_CACHE = "rvCatalogs";
+
 }

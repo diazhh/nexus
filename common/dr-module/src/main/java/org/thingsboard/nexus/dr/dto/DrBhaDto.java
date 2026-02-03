@@ -20,14 +20,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.thingsboard.nexus.dr.model.DrBha;
-import org.thingsboard.nexus.dr.model.enums.BhaType;
+import org.thingsboard.server.common.data.asset.Asset;
+import org.thingsboard.server.common.data.kv.AttributeKvEntry;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * DTO for Bottom Hole Assembly (BHA)
+ * DTO for Bottom Hole Assembly (BHA).
+ * Maps to a ThingsBoard Asset of type "dr_bha" with SERVER_SCOPE attributes.
  */
 @Data
 @NoArgsConstructor
@@ -35,13 +39,56 @@ import java.util.UUID;
 @Builder
 public class DrBhaDto {
 
-    private UUID id;
-    private UUID tenantId;
-    private String bhaNumber;
+    // Asset Type constant
+    public static final String ASSET_TYPE = "dr_bha";
+
+    // Attribute key constants
+    public static final String ATTR_BHA_NUMBER = "bha_number";
+    public static final String ATTR_BHA_TYPE = "bha_type";
+    public static final String ATTR_IS_DIRECTIONAL = "is_directional";
+    public static final String ATTR_BIT_SERIAL = "bit_serial";
+    public static final String ATTR_BIT_TYPE = "bit_type";
+    public static final String ATTR_BIT_SIZE_IN = "bit_size_in";
+    public static final String ATTR_BIT_IADC_CODE = "bit_iadc_code";
+    public static final String ATTR_BIT_MANUFACTURER = "bit_manufacturer";
+    public static final String ATTR_BIT_MODEL = "bit_model";
+    public static final String ATTR_BIT_TFA_SQ_IN = "bit_tfa_sq_in";
+    public static final String ATTR_BIT_NOZZLES = "bit_nozzles";
+    public static final String ATTR_TOTAL_LENGTH_FT = "total_length_ft";
+    public static final String ATTR_TOTAL_WEIGHT_LBS = "total_weight_lbs";
+    public static final String ATTR_MOTOR_MANUFACTURER = "motor_manufacturer";
+    public static final String ATTR_MOTOR_MODEL = "motor_model";
+    public static final String ATTR_MOTOR_OD_IN = "motor_od_in";
+    public static final String ATTR_MOTOR_BEND_ANGLE_DEG = "motor_bend_angle_deg";
+    public static final String ATTR_MOTOR_LOBE_CONFIGURATION = "motor_lobe_configuration";
+    public static final String ATTR_RSS_MANUFACTURER = "rss_manufacturer";
+    public static final String ATTR_RSS_MODEL = "rss_model";
+    public static final String ATTR_RSS_TYPE = "rss_type";
+    public static final String ATTR_STATUS = "status";
+    public static final String ATTR_TOTAL_FOOTAGE_DRILLED = "total_footage_drilled";
+    public static final String ATTR_TOTAL_HOURS_ON_BOTTOM = "total_hours_on_bottom";
+    public static final String ATTR_TOTAL_RUNS = "total_runs";
+    public static final String ATTR_COMPONENTS_JSON = "components_json";
+    public static final String ATTR_BIT_DULL_INNER = "bit_dull_inner";
+    public static final String ATTR_BIT_DULL_OUTER = "bit_dull_outer";
+    public static final String ATTR_BIT_DULL_CHAR = "bit_dull_char";
+    public static final String ATTR_BIT_DULL_LOCATION = "bit_dull_location";
+    public static final String ATTR_BIT_BEARING_CONDITION = "bit_bearing_condition";
+    public static final String ATTR_BIT_GAUGE_CONDITION = "bit_gauge_condition";
+    public static final String ATTR_BIT_REASON_PULLED = "bit_reason_pulled";
+    public static final String ATTR_NOTES = "notes";
+
+    // Asset identity (the asset IS the BHA)
     private UUID assetId;
+    private UUID tenantId;
+    private String name;   // Asset name
+    private String label;  // Asset label
+
+    // BHA identification
+    private String bhaNumber;
 
     // BHA Type and Configuration
-    private BhaType bhaType;
+    private String bhaType;  // ROTARY, MOTOR, RSS, HYBRID
     private Boolean isDirectional;
 
     // Bit Information
@@ -71,7 +118,7 @@ public class DrBhaDto {
     private String rssType;
 
     // Status and Tracking
-    private String status;
+    private String status;  // AVAILABLE, IN_USE, RETIRED
     private BigDecimal totalFootageDrilled;
     private BigDecimal totalHoursOnBottom;
     private Integer totalRuns;
@@ -96,139 +143,179 @@ public class DrBhaDto {
     private Long updatedTime;
 
     /**
-     * Create DTO from entity
+     * Convert DTO to map of attributes for saving to ThingsBoard
      */
-    public static DrBhaDto fromEntity(DrBha entity) {
-        if (entity == null) {
+    public Map<String, Object> toAttributeMap() {
+        Map<String, Object> attributes = new HashMap<>();
+
+        putIfNotNull(attributes, ATTR_BHA_NUMBER, bhaNumber);
+        putIfNotNull(attributes, ATTR_BHA_TYPE, bhaType);
+        putIfNotNull(attributes, ATTR_IS_DIRECTIONAL, isDirectional);
+        putIfNotNull(attributes, ATTR_BIT_SERIAL, bitSerial);
+        putIfNotNull(attributes, ATTR_BIT_TYPE, bitType);
+        putIfNotNull(attributes, ATTR_BIT_SIZE_IN, bitSizeIn);
+        putIfNotNull(attributes, ATTR_BIT_IADC_CODE, bitIadcCode);
+        putIfNotNull(attributes, ATTR_BIT_MANUFACTURER, bitManufacturer);
+        putIfNotNull(attributes, ATTR_BIT_MODEL, bitModel);
+        putIfNotNull(attributes, ATTR_BIT_TFA_SQ_IN, bitTfaSqIn);
+        putIfNotNull(attributes, ATTR_BIT_NOZZLES, bitNozzles);
+        putIfNotNull(attributes, ATTR_TOTAL_LENGTH_FT, totalLengthFt);
+        putIfNotNull(attributes, ATTR_TOTAL_WEIGHT_LBS, totalWeightLbs);
+        putIfNotNull(attributes, ATTR_MOTOR_MANUFACTURER, motorManufacturer);
+        putIfNotNull(attributes, ATTR_MOTOR_MODEL, motorModel);
+        putIfNotNull(attributes, ATTR_MOTOR_OD_IN, motorOdIn);
+        putIfNotNull(attributes, ATTR_MOTOR_BEND_ANGLE_DEG, motorBendAngleDeg);
+        putIfNotNull(attributes, ATTR_MOTOR_LOBE_CONFIGURATION, motorLobeConfiguration);
+        putIfNotNull(attributes, ATTR_RSS_MANUFACTURER, rssManufacturer);
+        putIfNotNull(attributes, ATTR_RSS_MODEL, rssModel);
+        putIfNotNull(attributes, ATTR_RSS_TYPE, rssType);
+        putIfNotNull(attributes, ATTR_STATUS, status);
+        putIfNotNull(attributes, ATTR_TOTAL_FOOTAGE_DRILLED, totalFootageDrilled);
+        putIfNotNull(attributes, ATTR_TOTAL_HOURS_ON_BOTTOM, totalHoursOnBottom);
+        putIfNotNull(attributes, ATTR_TOTAL_RUNS, totalRuns);
+        putIfNotNull(attributes, ATTR_COMPONENTS_JSON, componentsJson);
+        putIfNotNull(attributes, ATTR_BIT_DULL_INNER, bitDullInner);
+        putIfNotNull(attributes, ATTR_BIT_DULL_OUTER, bitDullOuter);
+        putIfNotNull(attributes, ATTR_BIT_DULL_CHAR, bitDullChar);
+        putIfNotNull(attributes, ATTR_BIT_DULL_LOCATION, bitDullLocation);
+        putIfNotNull(attributes, ATTR_BIT_BEARING_CONDITION, bitBearingCondition);
+        putIfNotNull(attributes, ATTR_BIT_GAUGE_CONDITION, bitGaugeCondition);
+        putIfNotNull(attributes, ATTR_BIT_REASON_PULLED, bitReasonPulled);
+        putIfNotNull(attributes, ATTR_NOTES, notes);
+
+        return attributes;
+    }
+
+    /**
+     * Create DTO from Asset and its attributes
+     */
+    public static DrBhaDto fromAssetAndAttributes(Asset asset, List<AttributeKvEntry> attributes) {
+        if (asset == null) {
             return null;
         }
 
         DrBhaDto dto = new DrBhaDto();
-        dto.id = entity.getId();
-        dto.tenantId = entity.getTenantId();
-        dto.bhaNumber = entity.getBhaNumber();
-        dto.assetId = entity.getAssetId();
+        dto.assetId = asset.getId().getId();
+        dto.tenantId = asset.getTenantId().getId();
+        dto.name = asset.getName();
+        dto.label = asset.getLabel();
+        dto.createdTime = asset.getCreatedTime();
 
-        // BHA Type
-        dto.bhaType = entity.getBhaType();
-        dto.isDirectional = entity.getIsDirectional();
-
-        // Bit Information
-        dto.bitSerial = entity.getBitSerial();
-        dto.bitType = entity.getBitType();
-        dto.bitSizeIn = entity.getBitSizeIn();
-        dto.bitIadcCode = entity.getBitIadcCode();
-        dto.bitManufacturer = entity.getBitManufacturer();
-        dto.bitModel = entity.getBitModel();
-        dto.bitTfaSqIn = entity.getBitTfaSqIn();
-        dto.bitNozzles = entity.getBitNozzles();
-
-        // Dimensions
-        dto.totalLengthFt = entity.getTotalLengthFt();
-        dto.totalWeightLbs = entity.getTotalWeightLbs();
-
-        // Motor Information
-        dto.motorManufacturer = entity.getMotorManufacturer();
-        dto.motorModel = entity.getMotorModel();
-        dto.motorOdIn = entity.getMotorOdIn();
-        dto.motorBendAngleDeg = entity.getMotorBendAngleDeg();
-        dto.motorLobeConfiguration = entity.getMotorLobeConfiguration();
-
-        // RSS Information
-        dto.rssManufacturer = entity.getRssManufacturer();
-        dto.rssModel = entity.getRssModel();
-        dto.rssType = entity.getRssType();
-
-        // Status and Tracking
-        dto.status = entity.getStatus();
-        dto.totalFootageDrilled = entity.getTotalFootageDrilled();
-        dto.totalHoursOnBottom = entity.getTotalHoursOnBottom();
-        dto.totalRuns = entity.getTotalRuns();
-
-        // Components
-        dto.componentsJson = entity.getComponentsJson();
-
-        // Dull Grading
-        dto.bitDullInner = entity.getBitDullInner();
-        dto.bitDullOuter = entity.getBitDullOuter();
-        dto.bitDullChar = entity.getBitDullChar();
-        dto.bitDullLocation = entity.getBitDullLocation();
-        dto.bitBearingCondition = entity.getBitBearingCondition();
-        dto.bitGaugeCondition = entity.getBitGaugeCondition();
-        dto.bitReasonPulled = entity.getBitReasonPulled();
-
-        // Metadata
-        dto.notes = entity.getNotes();
-        dto.metadata = entity.getMetadata();
-
-        dto.createdTime = entity.getCreatedTime();
-        dto.updatedTime = entity.getUpdatedTime();
+        // Parse attributes
+        for (AttributeKvEntry attr : attributes) {
+            String key = attr.getKey();
+            switch (key) {
+                case ATTR_BHA_NUMBER:
+                    dto.bhaNumber = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BHA_TYPE:
+                    dto.bhaType = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_IS_DIRECTIONAL:
+                    dto.isDirectional = attr.getBooleanValue().orElse(null);
+                    break;
+                case ATTR_BIT_SERIAL:
+                    dto.bitSerial = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_TYPE:
+                    dto.bitType = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_SIZE_IN:
+                    dto.bitSizeIn = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_BIT_IADC_CODE:
+                    dto.bitIadcCode = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_MANUFACTURER:
+                    dto.bitManufacturer = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_MODEL:
+                    dto.bitModel = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_TFA_SQ_IN:
+                    dto.bitTfaSqIn = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_BIT_NOZZLES:
+                    dto.bitNozzles = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_TOTAL_LENGTH_FT:
+                    dto.totalLengthFt = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_TOTAL_WEIGHT_LBS:
+                    dto.totalWeightLbs = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_MOTOR_MANUFACTURER:
+                    dto.motorManufacturer = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_MOTOR_MODEL:
+                    dto.motorModel = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_MOTOR_OD_IN:
+                    dto.motorOdIn = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_MOTOR_BEND_ANGLE_DEG:
+                    dto.motorBendAngleDeg = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_MOTOR_LOBE_CONFIGURATION:
+                    dto.motorLobeConfiguration = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_RSS_MANUFACTURER:
+                    dto.rssManufacturer = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_RSS_MODEL:
+                    dto.rssModel = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_RSS_TYPE:
+                    dto.rssType = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_STATUS:
+                    dto.status = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_TOTAL_FOOTAGE_DRILLED:
+                    dto.totalFootageDrilled = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_TOTAL_HOURS_ON_BOTTOM:
+                    dto.totalHoursOnBottom = attr.getDoubleValue().map(BigDecimal::valueOf).orElse(null);
+                    break;
+                case ATTR_TOTAL_RUNS:
+                    dto.totalRuns = attr.getLongValue().map(Long::intValue).orElse(null);
+                    break;
+                case ATTR_BIT_DULL_INNER:
+                    dto.bitDullInner = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_DULL_OUTER:
+                    dto.bitDullOuter = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_DULL_CHAR:
+                    dto.bitDullChar = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_DULL_LOCATION:
+                    dto.bitDullLocation = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_BEARING_CONDITION:
+                    dto.bitBearingCondition = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_GAUGE_CONDITION:
+                    dto.bitGaugeCondition = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_BIT_REASON_PULLED:
+                    dto.bitReasonPulled = attr.getStrValue().orElse(null);
+                    break;
+                case ATTR_NOTES:
+                    dto.notes = attr.getStrValue().orElse(null);
+                    break;
+                default:
+                    // Ignore unknown attributes
+                    break;
+            }
+        }
 
         return dto;
     }
 
-    /**
-     * Convert DTO to entity for persistence
-     */
-    public DrBha toEntity() {
-        DrBha entity = new DrBha();
-        entity.setId(this.id);
-        entity.setTenantId(this.tenantId);
-        entity.setBhaNumber(this.bhaNumber);
-        entity.setAssetId(this.assetId);
-
-        // BHA Type
-        entity.setBhaType(this.bhaType);
-        entity.setIsDirectional(this.isDirectional);
-
-        // Bit Information
-        entity.setBitSerial(this.bitSerial);
-        entity.setBitType(this.bitType);
-        entity.setBitSizeIn(this.bitSizeIn);
-        entity.setBitIadcCode(this.bitIadcCode);
-        entity.setBitManufacturer(this.bitManufacturer);
-        entity.setBitModel(this.bitModel);
-        entity.setBitTfaSqIn(this.bitTfaSqIn);
-        entity.setBitNozzles(this.bitNozzles);
-
-        // Dimensions
-        entity.setTotalLengthFt(this.totalLengthFt);
-        entity.setTotalWeightLbs(this.totalWeightLbs);
-
-        // Motor Information
-        entity.setMotorManufacturer(this.motorManufacturer);
-        entity.setMotorModel(this.motorModel);
-        entity.setMotorOdIn(this.motorOdIn);
-        entity.setMotorBendAngleDeg(this.motorBendAngleDeg);
-        entity.setMotorLobeConfiguration(this.motorLobeConfiguration);
-
-        // RSS Information
-        entity.setRssManufacturer(this.rssManufacturer);
-        entity.setRssModel(this.rssModel);
-        entity.setRssType(this.rssType);
-
-        // Status and Tracking
-        entity.setStatus(this.status);
-        entity.setTotalFootageDrilled(this.totalFootageDrilled);
-        entity.setTotalHoursOnBottom(this.totalHoursOnBottom);
-        entity.setTotalRuns(this.totalRuns);
-
-        // Components
-        entity.setComponentsJson(this.componentsJson);
-
-        // Dull Grading
-        entity.setBitDullInner(this.bitDullInner);
-        entity.setBitDullOuter(this.bitDullOuter);
-        entity.setBitDullChar(this.bitDullChar);
-        entity.setBitDullLocation(this.bitDullLocation);
-        entity.setBitBearingCondition(this.bitBearingCondition);
-        entity.setBitGaugeCondition(this.bitGaugeCondition);
-        entity.setBitReasonPulled(this.bitReasonPulled);
-
-        // Metadata
-        entity.setNotes(this.notes);
-        entity.setMetadata(this.metadata);
-
-        return entity;
+    private void putIfNotNull(Map<String, Object> map, String key, Object value) {
+        if (value != null) {
+            map.put(key, value);
+        }
     }
 }

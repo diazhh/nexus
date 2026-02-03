@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -36,21 +37,44 @@ public class RvBasinDto {
 
     // Asset identity
     private UUID assetId;
+
+    @NotNull(message = "El ID del tenant es requerido")
     private UUID tenantId;
+
+    @NotBlank(message = "El nombre es requerido")
+    @Size(min = 2, max = 255, message = "El nombre debe tener entre 2 y 255 caracteres")
     private String name;
+
     private String label;
 
     // Basin-specific attributes (stored as SERVER_SCOPE attributes in TB)
+    @Size(max = 50, message = "El código no debe exceder 50 caracteres")
     private String code;
+
+    @Size(max = 50, message = "El tipo de cuenca no debe exceder 50 caracteres")
     private String basinType;        // SEDIMENTARY, FORELAND, RIFT, INTRACRATONIC
+
+    @Size(max = 100, message = "El país no debe exceder 100 caracteres")
     private String country;
+
+    @Size(max = 100, message = "La región no debe exceder 100 caracteres")
     private String region;
+
+    @PositiveOrZero(message = "El área total debe ser >= 0")
     private BigDecimal totalAreaKm2;
+
+    @PositiveOrZero(message = "Las reservas estimadas deben ser >= 0")
     private BigDecimal estimatedReservesMmbbl;
 
     // Geographic data
     private JsonNode geojsonBoundary;  // GeoJSON polygon for basin boundary
+
+    @DecimalMin(value = "-90.0", message = "La latitud debe ser >= -90")
+    @DecimalMax(value = "90.0", message = "La latitud debe ser <= 90")
     private BigDecimal centerLatitude;
+
+    @DecimalMin(value = "-180.0", message = "La longitud debe ser >= -180")
+    @DecimalMax(value = "180.0", message = "La longitud debe ser <= 180")
     private BigDecimal centerLongitude;
 
     // Statistics (can be computed or stored as telemetry)

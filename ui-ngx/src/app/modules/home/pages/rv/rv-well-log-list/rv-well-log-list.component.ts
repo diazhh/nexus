@@ -19,6 +19,7 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
 import { AppState } from '@core/core.state';
 import { getCurrentAuthUser } from '@core/auth/auth.selectors';
@@ -29,6 +30,7 @@ import { RvWellLog, RvWell } from '@shared/models/rv/rv.models';
 import { RvWellLogDialogComponent } from './rv-well-log-dialog.component';
 import { RvWellLogViewerDialogComponent } from '../rv-well-log-viewer/rv-well-log-viewer-dialog.component';
 import { RvLasImportDialogComponent } from '../rv-las-import/rv-las-import-dialog.component';
+import { DialogService } from '@core/services/dialog.service';
 
 @Component({
   selector: 'tb-rv-well-log-list',
@@ -57,7 +59,9 @@ export class RvWellLogListComponent implements OnInit, AfterViewInit {
     private store: Store<AppState>,
     private rvService: RvService,
     private rvExportService: RvExportService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private dialogService: DialogService,
+    private snackBar: MatSnackBar
   ) {
     this.dataSource = new MatTableDataSource<RvWellLog>([]);
   }
@@ -84,7 +88,8 @@ export class RvWellLogListComponent implements OnInit, AfterViewInit {
 
   loadData(): void {
     this.isLoading = true;
-    const pageLink = new PageLink(this.pageSize, this.pageIndex);
+    const textSearch = this.searchText?.trim() || null;
+    const pageLink = new PageLink(this.pageSize, this.pageIndex, textSearch);
 
     this.rvService.getWellLogs(this.tenantId, pageLink).subscribe({
       next: (pageData) => {
@@ -129,7 +134,9 @@ export class RvWellLogListComponent implements OnInit, AfterViewInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(RvWellLogDialogComponent, {
-      width: '800px',
+      width: '90vw',
+      maxWidth: '800px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
@@ -137,16 +144,28 @@ export class RvWellLogListComponent implements OnInit, AfterViewInit {
 
   openEditDialog(wellLog: RvWellLog): void {
     const dialogRef = this.dialog.open(RvWellLogDialogComponent, {
-      width: '800px',
+      width: '90vw',
+      maxWidth: '800px',
+      maxHeight: '90vh',
       data: { tenantId: this.tenantId, wellLog }
     });
     dialogRef.afterClosed().subscribe(result => { if (result) this.loadData(); });
   }
 
   deleteWellLog(wellLog: RvWellLog): void {
-    if (confirm(`¿Eliminar registro de pozo "${wellLog.name}"?`)) {
-      this.rvService.deleteWellLog(this.tenantId, wellLog.assetId).subscribe(() => this.loadData());
-    }
+    this.dialogService.confirm(
+      'Confirmar eliminación',
+      `¿Está seguro de eliminar el registro de pozo "${wellLog.name}"?`,
+      'Cancelar',
+      'Eliminar'
+    ).subscribe(result => {
+      if (result) {
+        this.rvService.deleteWellLog(this.tenantId, wellLog.assetId).subscribe(() => {
+          this.snackBar.open('Registro eliminado correctamente', 'Cerrar', { duration: 3000 });
+          this.loadData();
+        });
+      }
+    });
   }
 
   formatPercent(value: number): string {
