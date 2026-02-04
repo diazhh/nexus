@@ -1,0 +1,519 @@
+{
+  "title": "PO - Optimization Recommendations Dashboard",
+  "image": null,
+  "mobileHide": false,
+  "mobileOrder": null,
+  "configuration": {
+    "description": "Production Optimization recommendations dashboard - review, approve, and track optimization actions for ESP, PCP, Gas Lift, and Rod Pump systems",
+    "widgets": {
+      "recommendations-summary": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "simple_card",
+        "type": "static",
+        "title": "Recommendations Summary",
+        "sizeX": 24,
+        "sizeY": 3,
+        "config": {
+          "settings": {
+            "cards": [
+              {
+                "label": "Pending",
+                "color": "#ff9800",
+                "icon": "pending_actions",
+                "value": "15"
+              },
+              {
+                "label": "Approved",
+                "color": "#2196f3",
+                "icon": "thumb_up",
+                "value": "8"
+              },
+              {
+                "label": "Executed",
+                "color": "#4caf50",
+                "icon": "check_circle",
+                "value": "42"
+              },
+              {
+                "label": "Est. Benefit",
+                "color": "#9c27b0",
+                "icon": "trending_up",
+                "value": "+320 BPD"
+              }
+            ]
+          }
+        }
+      },
+      "pending-recommendations-table": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "entities_table",
+        "type": "latest",
+        "title": "Pending Recommendations",
+        "sizeX": 24,
+        "sizeY": 10,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "recommendations_alias",
+              "dataKeys": [
+                {"name": "well_name", "type": "attribute", "label": "Well"},
+                {"name": "type", "type": "attribute", "label": "Type"},
+                {"name": "priority", "type": "attribute", "label": "Priority"},
+                {"name": "current_value", "type": "attribute", "label": "Current"},
+                {"name": "recommended_value", "type": "attribute", "label": "Recommended"},
+                {"name": "unit", "type": "attribute", "label": "Unit"},
+                {"name": "expected_benefit_bpd", "type": "attribute", "label": "Benefit (BPD)"},
+                {"name": "confidence", "type": "attribute", "label": "Confidence"},
+                {"name": "created_time", "type": "attribute", "label": "Created"}
+              ]
+            }
+          ],
+          "settings": {
+            "enableSearch": true,
+            "enableSelectColumnDisplay": true,
+            "displayPagination": true,
+            "defaultPageSize": 15,
+            "defaultSortOrder": "-priority",
+            "rowStyleFunction": "if (data['priority'] === 'CRITICAL') return {'background-color': '#ffebee'}; else if (data['priority'] === 'HIGH') return {'background-color': '#fff3e0'}; return {};"
+          },
+          "actions": {
+            "rowClick": {
+              "type": "openDashboardState",
+              "targetDashboardStateId": "recommendation_detail"
+            }
+          }
+        }
+      },
+      "recommendations-by-type-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "doughnut",
+        "type": "latest",
+        "title": "By Optimization Type",
+        "sizeX": 8,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "esp_freq", "type": "function", "label": "ESP Frequency", "color": "#1976d2", "funcBody": "return 12;"},
+                {"name": "pcp_speed", "type": "function", "label": "PCP Speed", "color": "#388e3c", "funcBody": "return 8;"},
+                {"name": "gas_lift", "type": "function", "label": "Gas Lift", "color": "#f57c00", "funcBody": "return 15;"},
+                {"name": "rod_pump", "type": "function", "label": "Rod Pump", "color": "#7b1fa2", "funcBody": "return 7;"},
+                {"name": "maintenance", "type": "function", "label": "Maintenance", "color": "#455a64", "funcBody": "return 5;"}
+              ]
+            }
+          ],
+          "settings": {
+            "showLegend": true,
+            "legendPosition": "right"
+          }
+        }
+      },
+      "recommendations-by-priority-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "bar",
+        "type": "latest",
+        "title": "By Priority",
+        "sizeX": 8,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "critical", "type": "function", "label": "Critical", "color": "#d32f2f", "funcBody": "return 3;"},
+                {"name": "high", "type": "function", "label": "High", "color": "#f57c00", "funcBody": "return 8;"},
+                {"name": "medium", "type": "function", "label": "Medium", "color": "#fbc02d", "funcBody": "return 15;"},
+                {"name": "low", "type": "function", "label": "Low", "color": "#1976d2", "funcBody": "return 7;"}
+              ]
+            }
+          ],
+          "settings": {
+            "barSettings": {
+              "showValues": true
+            }
+          }
+        }
+      },
+      "potential-benefit-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "bar",
+        "type": "latest",
+        "title": "Potential Benefit by Well (Top 10)",
+        "sizeX": 8,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "well1", "type": "function", "label": "Well-001", "funcBody": "return 45;"},
+                {"name": "well2", "type": "function", "label": "Well-002", "funcBody": "return 38;"},
+                {"name": "well3", "type": "function", "label": "Well-003", "funcBody": "return 32;"},
+                {"name": "well4", "type": "function", "label": "Well-004", "funcBody": "return 28;"},
+                {"name": "well5", "type": "function", "label": "Well-005", "funcBody": "return 25;"}
+              ]
+            }
+          ],
+          "settings": {
+            "barSettings": {
+              "showValues": true,
+              "horizontal": true
+            },
+            "yaxis": {
+              "ticksFormatter": "return value + ' BPD';"
+            }
+          }
+        }
+      },
+      "executed-recommendations-table": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "entities_table",
+        "type": "latest",
+        "title": "Recently Executed",
+        "sizeX": 24,
+        "sizeY": 8,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "executed_recommendations",
+              "dataKeys": [
+                {"name": "well_name", "type": "attribute", "label": "Well"},
+                {"name": "type", "type": "attribute", "label": "Type"},
+                {"name": "change_made", "type": "attribute", "label": "Change"},
+                {"name": "expected_benefit_bpd", "type": "attribute", "label": "Expected"},
+                {"name": "actual_benefit_bpd", "type": "attribute", "label": "Actual"},
+                {"name": "effectiveness", "type": "attribute", "label": "Effectiveness"},
+                {"name": "executed_at", "type": "attribute", "label": "Executed At"},
+                {"name": "executed_by", "type": "attribute", "label": "Executed By"}
+              ]
+            }
+          ],
+          "settings": {
+            "displayPagination": true,
+            "defaultPageSize": 10,
+            "rowStyleFunction": "var eff = parseFloat(data['effectiveness']); if (eff >= 100) return {'color': '#4caf50'}; else if (eff >= 80) return {'color': '#ff9800'}; return {'color': '#f44336'};"
+          }
+        }
+      },
+      "effectiveness-trend-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "basic_timeseries",
+        "type": "timeseries",
+        "title": "Recommendation Effectiveness Trend",
+        "sizeX": 12,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "avg_effectiveness", "type": "function", "label": "Avg Effectiveness (%)", "color": "#4caf50"},
+                {"name": "target", "type": "function", "label": "Target (80%)", "color": "#f44336"}
+              ]
+            }
+          ],
+          "timewindow": {
+            "history": {
+              "historyType": 1,
+              "timewindowMs": 2592000000
+            }
+          }
+        }
+      },
+      "cumulative-benefit-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "basic_timeseries",
+        "type": "timeseries",
+        "title": "Cumulative Production Benefit",
+        "sizeX": 12,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "cumulative_bpd", "type": "function", "label": "Cumulative Benefit (BPD)", "color": "#1976d2"}
+              ]
+            }
+          ],
+          "timewindow": {
+            "history": {
+              "historyType": 1,
+              "timewindowMs": 7776000000
+            }
+          },
+          "settings": {
+            "fillAreaSettings": {
+              "fill": true,
+              "fillColor": "rgba(25, 118, 210, 0.2)"
+            }
+          }
+        }
+      },
+      "recommendation-detail-card": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "attributes_card",
+        "type": "latest",
+        "title": "Recommendation Details",
+        "sizeX": 10,
+        "sizeY": 10,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_recommendation",
+              "dataKeys": [
+                {"name": "well_name", "type": "attribute", "label": "Well"},
+                {"name": "type", "type": "attribute", "label": "Optimization Type"},
+                {"name": "priority", "type": "attribute", "label": "Priority"},
+                {"name": "status", "type": "attribute", "label": "Status"},
+                {"name": "current_value", "type": "attribute", "label": "Current Value"},
+                {"name": "recommended_value", "type": "attribute", "label": "Recommended Value"},
+                {"name": "unit", "type": "attribute", "label": "Unit"},
+                {"name": "expected_benefit_bpd", "type": "attribute", "label": "Expected Benefit (BPD)"},
+                {"name": "expected_savings_usd", "type": "attribute", "label": "Expected Savings (USD)"},
+                {"name": "confidence", "type": "attribute", "label": "Confidence (%)"},
+                {"name": "description", "type": "attribute", "label": "Description"},
+                {"name": "risks", "type": "attribute", "label": "Risks"},
+                {"name": "required_approval_level", "type": "attribute", "label": "Approval Level"},
+                {"name": "expires_at", "type": "attribute", "label": "Expires At"}
+              ]
+            }
+          ],
+          "settings": {
+            "labelPosition": "top"
+          }
+        }
+      },
+      "simulation-result-card": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "attributes_card",
+        "type": "latest",
+        "title": "Simulation Results",
+        "sizeX": 7,
+        "sizeY": 5,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_recommendation",
+              "dataKeys": [
+                {"name": "sim_production_bpd", "type": "attribute", "label": "Est. Production (BPD)"},
+                {"name": "sim_power_kw", "type": "attribute", "label": "Est. Power (kW)"},
+                {"name": "sim_efficiency", "type": "attribute", "label": "Est. Efficiency (%)"},
+                {"name": "sim_confidence_lower", "type": "attribute", "label": "Confidence Lower"},
+                {"name": "sim_confidence_upper", "type": "attribute", "label": "Confidence Upper"}
+              ]
+            }
+          ]
+        }
+      },
+      "well-current-performance": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "basic_timeseries",
+        "type": "timeseries",
+        "title": "Well Current Performance",
+        "sizeX": 7,
+        "sizeY": 5,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "recommendation_well",
+              "dataKeys": [
+                {"name": "production_bpd", "type": "timeseries", "label": "Production (BPD)", "color": "#4caf50"},
+                {"name": "frequency_hz", "type": "timeseries", "label": "Frequency (Hz)", "color": "#2196f3"}
+              ]
+            }
+          ],
+          "timewindow": {
+            "history": {
+              "historyType": 1,
+              "timewindowMs": 604800000
+            }
+          }
+        }
+      },
+      "approval-actions": {
+        "isSystemType": true,
+        "bundleAlias": "input_widgets",
+        "typeAlias": "command_button",
+        "type": "rpc",
+        "title": "Actions",
+        "sizeX": 7,
+        "sizeY": 2,
+        "config": {
+          "settings": {
+            "buttons": [
+              {
+                "label": "Approve",
+                "icon": "check",
+                "color": "#4caf50",
+                "rpcMethod": "approveRecommendation"
+              },
+              {
+                "label": "Reject",
+                "icon": "close",
+                "color": "#f44336",
+                "rpcMethod": "rejectRecommendation"
+              },
+              {
+                "label": "Execute Now",
+                "icon": "play_arrow",
+                "color": "#2196f3",
+                "rpcMethod": "executeRecommendation"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "states": {
+      "default": {
+        "name": "Recommendations Overview",
+        "root": true,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "recommendations-summary": {"row": 0, "col": 0, "sizeX": 24, "sizeY": 3},
+              "pending-recommendations-table": {"row": 3, "col": 0, "sizeX": 24, "sizeY": 10},
+              "recommendations-by-type-chart": {"row": 13, "col": 0, "sizeX": 8, "sizeY": 6},
+              "recommendations-by-priority-chart": {"row": 13, "col": 8, "sizeX": 8, "sizeY": 6},
+              "potential-benefit-chart": {"row": 13, "col": 16, "sizeX": 8, "sizeY": 6}
+            }
+          }
+        }
+      },
+      "executed": {
+        "name": "Executed Recommendations",
+        "root": false,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "executed-recommendations-table": {"row": 0, "col": 0, "sizeX": 24, "sizeY": 8},
+              "effectiveness-trend-chart": {"row": 8, "col": 0, "sizeX": 12, "sizeY": 6},
+              "cumulative-benefit-chart": {"row": 8, "col": 12, "sizeX": 12, "sizeY": 6}
+            }
+          }
+        }
+      },
+      "recommendation_detail": {
+        "name": "Recommendation Detail",
+        "root": false,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "recommendation-detail-card": {"row": 0, "col": 0, "sizeX": 10, "sizeY": 10},
+              "simulation-result-card": {"row": 0, "col": 10, "sizeX": 7, "sizeY": 5},
+              "well-current-performance": {"row": 5, "col": 10, "sizeX": 7, "sizeY": 5},
+              "approval-actions": {"row": 0, "col": 17, "sizeX": 7, "sizeY": 2}
+            }
+          }
+        }
+      }
+    },
+    "entityAliases": {
+      "recommendations_alias": {
+        "id": "recommendations_alias",
+        "alias": "Pending Recommendations",
+        "filter": {
+          "type": "assetType",
+          "resolveMultiple": true,
+          "assetType": "PO_RECOMMENDATION"
+        }
+      },
+      "executed_recommendations": {
+        "id": "executed_recommendations",
+        "alias": "Executed Recommendations",
+        "filter": {
+          "type": "assetType",
+          "resolveMultiple": true,
+          "assetType": "PO_RECOMMENDATION"
+        }
+      },
+      "selected_recommendation": {
+        "id": "selected_recommendation",
+        "alias": "Selected Recommendation",
+        "filter": {
+          "type": "stateEntity",
+          "singleEntity": true,
+          "stateEntityParamName": "recommendationId"
+        }
+      },
+      "recommendation_well": {
+        "id": "recommendation_well",
+        "alias": "Recommendation Well",
+        "filter": {
+          "type": "relationsQuery",
+          "rootStateEntity": true,
+          "stateEntityParamName": "recommendationId",
+          "direction": "FROM",
+          "maxLevel": 1,
+          "filters": [
+            {"relationType": "MANAGES", "entityTypes": ["ASSET"]}
+          ]
+        }
+      }
+    },
+    "filters": {
+      "pending_filter": {
+        "id": "pending_filter",
+        "filter": "status = 'PENDING'",
+        "keyFilters": [
+          {
+            "key": {"type": "ATTRIBUTE", "key": "status"},
+            "valueType": "STRING",
+            "predicate": {
+              "type": "STRING",
+              "operation": "EQUAL",
+              "value": {"defaultValue": "PENDING"}
+            }
+          }
+        ]
+      },
+      "executed_filter": {
+        "id": "executed_filter",
+        "filter": "status = 'EXECUTED'",
+        "keyFilters": [
+          {
+            "key": {"type": "ATTRIBUTE", "key": "status"},
+            "valueType": "STRING",
+            "predicate": {
+              "type": "STRING",
+              "operation": "EQUAL",
+              "value": {"defaultValue": "EXECUTED"}
+            }
+          }
+        ]
+      }
+    },
+    "timewindow": {
+      "realtime": {
+        "realtimeType": 1,
+        "timewindowMs": 86400000
+      }
+    },
+    "settings": {
+      "stateControllerId": "entity",
+      "showTitle": true,
+      "showDashboardsSelect": true,
+      "showDashboardTimewindow": true,
+      "showDashboardExport": true
+    }
+  }
+}

@@ -53,6 +53,8 @@ import { CTModule } from '@modules/home/pages/ct/ct.module';
 import { RvModule } from '@modules/home/pages/rv/rv.module';
 import { DrModule } from '@modules/home/pages/dr/dr.module';
 import { DataMappingModule } from '@home/pages/admin/data-mapping/data-mapping.module';
+import { PfModule } from '@modules/home/pages/pf/pf.module';
+import { PoModule } from '@modules/home/pages/po/po.module';
 
 @NgModule({
   exports: [
@@ -92,7 +94,9 @@ import { DataMappingModule } from '@home/pages/admin/data-mapping/data-mapping.m
     CTModule,
     RvModule,
     DrModule,
-    DataMappingModule
+    DataMappingModule,
+    PfModule,
+    PoModule
   ]
 })
 export class HomePagesModule { }

@@ -1,0 +1,138 @@
+{
+  "ruleChain": {
+    "name": "ML Prediction Alarms",
+    "type": "CORE",
+    "debugMode": false,
+    "configuration": null,
+    "additionalInfo": {
+      "description": "Rule chain for processing ML predictions and creating alarms for high-risk wells"
+    }
+  },
+  "metadata": {
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbMsgTypeFilterNode",
+        "name": "Filter RPC Response",
+        "debugMode": false,
+        "configuration": {
+          "messageTypes": ["RPC_CALL_FROM_SERVER_TO_DEVICE", "POST_ATTRIBUTES_REQUEST"]
+        },
+        "additionalInfo": {
+          "description": "Filter ML prediction responses",
+          "layoutX": 200,
+          "layoutY": 150
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "Check High Risk",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "// Check if prediction indicates high failure risk\nvar probability = msg.failureProbability || msg.probability || 0;\nvar threshold = 0.7;\nreturn probability >= threshold;"
+        },
+        "additionalInfo": {
+          "description": "Filter high-risk failure predictions",
+          "layoutX": 400,
+          "layoutY": 100
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "Check Anomaly",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "// Check if anomaly was detected\nvar isAnomaly = msg.isAnomaly || false;\nvar anomalyScore = msg.anomalyScore || 0;\nreturn isAnomaly === true || anomalyScore >= 0.8;"
+        },
+        "additionalInfo": {
+          "description": "Filter anomaly detections",
+          "layoutX": 400,
+          "layoutY": 250
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create Failure Risk Alarm",
+        "debugMode": false,
+        "configuration": {
+          "alarmType": "PREDICTED_FAILURE",
+          "severity": "CRITICAL",
+          "propagate": true,
+          "alarmDetailsBuildJs": "var details = {\n    probability: msg.probability,\n    daysToFailure: msg.daysToFailure,\n    confidence: msg.confidence,\n    contributingFactors: msg.contributingFactors,\n    predictionId: msg.predictionId,\n    modelId: msg.modelId,\n    source: 'ML_SERVICE'\n};\nreturn details;"
+        },
+        "additionalInfo": {
+          "description": "Create alarm for predicted equipment failure",
+          "layoutX": 600,
+          "layoutY": 100
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create Anomaly Alarm",
+        "debugMode": false,
+        "configuration": {
+          "alarmType": "ANOMALY_DETECTED",
+          "severity": "WARNING",
+          "propagate": true,
+          "alarmDetailsBuildJs": "var details = {\n    anomalyScore: msg.anomalyScore,\n    anomalousFeatures: msg.anomalousFeatures,\n    predictionId: msg.predictionId,\n    source: 'ML_SERVICE'\n};\nreturn details;"
+        },
+        "additionalInfo": {
+          "description": "Create alarm for detected anomaly",
+          "layoutX": 600,
+          "layoutY": 250
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.rest.TbRestApiCallNode",
+        "name": "Notify ML Service",
+        "debugMode": false,
+        "configuration": {
+          "restEndpointUrlPattern": "http://localhost:8090/api/v1/predictions/alarm-created",
+          "requestMethod": "POST",
+          "headers": {
+            "Content-Type": "application/json",
+            "X-Tenant-Id": "${metadata.tenantId}"
+          }
+        },
+        "additionalInfo": {
+          "description": "Notify ML service that alarm was created",
+          "layoutX": 800,
+          "layoutY": 175
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 1,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 2,
+        "type": "True"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 3,
+        "type": "True"
+      },
+      {
+        "fromIndex": 2,
+        "toIndex": 4,
+        "type": "True"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 5,
+        "type": "Created"
+      },
+      {
+        "fromIndex": 4,
+        "toIndex": 5,
+        "type": "Created"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}

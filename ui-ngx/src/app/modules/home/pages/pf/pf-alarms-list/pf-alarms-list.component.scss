@@ -1,0 +1,249 @@
+/**
+ * Copyright © 2016-2026 The Thingsboard Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+///
+/// Copyright © 2016-2026 The Thingsboard Authors
+///
+/// Licensed under the Apache License, Version 2.0 (the "License");
+/// you may not use this file except in compliance with the License.
+/// You may obtain a copy of the License at
+///
+///     http://www.apache.org/licenses/LICENSE-2.0
+///
+/// Unless required by applicable law or agreed to in writing, software
+/// distributed under the License is distributed on an "AS IS" BASIS,
+/// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+/// See the License for the specific language governing permissions and
+/// limitations under the License.
+///
+
+.pf-alarms-list-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// Alarm Summary Cards
+.alarm-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+
+  .summary-card {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-align: center;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    mat-card-content {
+      padding: 16px;
+    }
+
+    .count {
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    &.critical {
+      border-left: 4px solid #d32f2f;
+      .count { color: #d32f2f; }
+    }
+
+    &.high {
+      border-left: 4px solid #f57c00;
+      .count { color: #f57c00; }
+    }
+
+    &.medium {
+      border-left: 4px solid #fbc02d;
+      .count { color: #f9a825; }
+    }
+
+    &.low {
+      border-left: 4px solid #1976d2;
+      .count { color: #1976d2; }
+    }
+
+    &.total {
+      border-left: 4px solid #7b1fa2;
+      .count { color: #7b1fa2; }
+    }
+  }
+}
+
+// Filters
+.filters-card {
+  .filters-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+
+    mat-form-field {
+      min-width: 150px;
+    }
+
+    .spacer {
+      flex: 1;
+    }
+  }
+}
+
+// Table
+.table-card {
+  flex: 1;
+  min-height: 400px;
+}
+
+.table-container {
+  position: relative;
+  min-height: 300px;
+
+  &.loading {
+    opacity: 0.6;
+  }
+
+  mat-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+  }
+}
+
+.alarms-table {
+  width: 100%;
+
+  tr.mat-mdc-row {
+    &.active-alarm {
+      background-color: rgba(255, 152, 0, 0.05);
+    }
+
+    &.critical {
+      background-color: rgba(211, 47, 47, 0.08);
+    }
+  }
+
+  .severity-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 4px;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .alarm-type {
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  .well-link {
+    color: #1976d2;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .alarm-message {
+    font-size: 13px;
+    color: #666;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  mat-chip {
+    font-size: 11px;
+    min-height: 24px;
+
+    &.active {
+      background-color: #fff3e0;
+      color: #ef6c00;
+    }
+
+    &.cleared {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+  }
+}
+
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: #666;
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #ccc;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 4px 0;
+    font-size: 16px;
+
+    &.hint {
+      font-size: 14px;
+      color: #999;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  .alarm-summary-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .alarm-summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filters-row {
+    flex-direction: column;
+    align-items: stretch !important;
+
+    .spacer {
+      display: none;
+    }
+  }
+}

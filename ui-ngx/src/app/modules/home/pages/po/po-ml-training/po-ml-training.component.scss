@@ -1,0 +1,334 @@
+/**
+ * Copyright © 2016-2026 The Thingsboard Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+.po-ml-training-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .page-toolbar {
+    flex-shrink: 0;
+
+    .spacer {
+      flex: 1;
+    }
+  }
+
+  .content-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .running-jobs-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: #e3f2fd;
+    border-radius: 8px;
+    color: #1565c0;
+
+    mat-icon {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .training-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    gap: 16px;
+
+    @media (max-width: 1200px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .models-panel {
+    .model-option {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+
+      .model-info {
+        display: flex;
+        flex-direction: column;
+
+        .model-name {
+          font-weight: 500;
+        }
+
+        .model-type {
+          font-size: 12px;
+          color: rgba(0, 0, 0, 0.54);
+        }
+      }
+    }
+
+    .no-models {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      color: rgba(0, 0, 0, 0.54);
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        margin-bottom: 12px;
+      }
+
+      p {
+        margin: 0;
+      }
+    }
+  }
+
+  .training-form-panel {
+    .form-section {
+      margin-bottom: 24px;
+
+      .section-label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 16px;
+        color: rgba(0, 0, 0, 0.87);
+      }
+    }
+
+    .form-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+
+      mat-form-field {
+        flex: 1;
+        min-width: 150px;
+      }
+
+      mat-slide-toggle {
+        margin-top: -8px;
+      }
+    }
+
+    mat-divider {
+      margin: 24px 0;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 16px;
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .button-spinner {
+          margin-left: 8px;
+        }
+      }
+    }
+
+    .no-selection {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px;
+      color: rgba(0, 0, 0, 0.54);
+
+      mat-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        margin-bottom: 16px;
+      }
+
+      p {
+        margin: 0;
+        font-size: 16px;
+      }
+    }
+  }
+
+  .model-details-panel {
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
+
+      .metric-item {
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+
+        .metric-label {
+          font-size: 12px;
+          color: rgba(0, 0, 0, 0.54);
+          margin-bottom: 4px;
+        }
+
+        .metric-value {
+          font-size: 20px;
+          font-weight: 500;
+          color: #1976d2;
+        }
+      }
+    }
+
+    mat-divider {
+      margin: 16px 0;
+    }
+
+    .training-info {
+      margin-bottom: 16px;
+
+      .info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .info-label {
+          color: rgba(0, 0, 0, 0.54);
+        }
+
+        .info-value {
+          font-weight: 500;
+        }
+      }
+    }
+
+    .feature-importance {
+      h4 {
+        margin: 0 0 12px 0;
+        font-weight: 500;
+      }
+
+      .feature-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+
+        .feature-name {
+          width: 120px;
+          font-size: 12px;
+          color: rgba(0, 0, 0, 0.87);
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+
+        mat-progress-bar {
+          flex: 1;
+        }
+
+        .feature-value {
+          width: 50px;
+          text-align: right;
+          font-size: 12px;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .model-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+    }
+  }
+
+  .status-chip {
+    padding: 4px 12px;
+    border-radius: 16px;
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .jobs-card {
+    .jobs-table {
+      width: 100%;
+
+      .progress-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        mat-progress-bar {
+          width: 100px;
+        }
+
+        span {
+          font-size: 12px;
+          width: 40px;
+        }
+      }
+    }
+
+    .no-jobs {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px;
+      color: rgba(0, 0, 0, 0.54);
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        margin-bottom: 12px;
+      }
+
+      p {
+        margin: 0;
+      }
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+  }
+}

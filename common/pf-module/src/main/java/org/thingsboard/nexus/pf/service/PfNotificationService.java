@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright © 2016-2026 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +15,11 @@
  */
 package org.thingsboard.nexus.pf.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thingsboard.nexus.pf.dto.AlarmSeverity;
 import org.thingsboard.nexus.pf.dto.PfAlarmDto;
-import org.thingsboard.nexus.pf.websocket.PfWebSocketHandler;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -31,14 +29,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service for sending notifications about alarms and system events.
- * Supports multiple channels: WebSocket, Email, SMS, Webhook.
+ * Supports multiple channels: Email, SMS, Webhook.
+ *
+ * Note: Real-time WebSocket notifications are handled by ThingsBoard's native
+ * TelemetryWebsocketService. Nexus dashboards should use TB's WebSocket API
+ * at /api/ws for real-time data subscriptions.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class PfNotificationService {
-
-    private final PfWebSocketHandler webSocketHandler;
 
     // Notification configurations by tenant
     private final Map<UUID, NotificationConfig> tenantConfigs = new ConcurrentHashMap<>();
@@ -79,7 +78,6 @@ public class PfNotificationService {
         for (NotificationChannel channel : channels) {
             try {
                 switch (channel) {
-                    case WEBSOCKET -> sendWebSocketNotification(alarm);
                     case EMAIL -> sendEmailNotification(alarm, config);
                     case SMS -> sendSmsNotification(alarm, config);
                     case WEBHOOK -> sendWebhookNotification(alarm, config);
@@ -127,11 +125,6 @@ public class PfNotificationService {
     }
 
     // Channel implementations
-
-    private void sendWebSocketNotification(PfAlarmDto alarm) {
-        webSocketHandler.broadcastAlarm(alarm);
-        log.debug("Sent WebSocket notification for alarm {}", alarm.getId());
-    }
 
     private void sendEmailNotification(PfAlarmDto alarm, NotificationConfig config) {
         if (config.getEmailRecipients() == null || config.getEmailRecipients().isEmpty()) {
@@ -282,7 +275,6 @@ public class PfNotificationService {
     // Inner classes
 
     public enum NotificationChannel {
-        WEBSOCKET,
         EMAIL,
         SMS,
         WEBHOOK
@@ -301,19 +293,19 @@ public class PfNotificationService {
 
         @lombok.Builder.Default
         private Set<NotificationChannel> criticalChannels =
-                EnumSet.of(NotificationChannel.WEBSOCKET, NotificationChannel.EMAIL, NotificationChannel.SMS);
+                EnumSet.of(NotificationChannel.EMAIL, NotificationChannel.SMS);
 
         @lombok.Builder.Default
         private Set<NotificationChannel> highChannels =
-                EnumSet.of(NotificationChannel.WEBSOCKET, NotificationChannel.EMAIL);
+                EnumSet.of(NotificationChannel.EMAIL);
 
         @lombok.Builder.Default
         private Set<NotificationChannel> mediumChannels =
-                EnumSet.of(NotificationChannel.WEBSOCKET);
+                EnumSet.noneOf(NotificationChannel.class);
 
         @lombok.Builder.Default
         private Set<NotificationChannel> lowChannels =
-                EnumSet.of(NotificationChannel.WEBSOCKET);
+                EnumSet.noneOf(NotificationChannel.class);
 
         public static NotificationConfig defaultConfig() {
             return NotificationConfig.builder().build();

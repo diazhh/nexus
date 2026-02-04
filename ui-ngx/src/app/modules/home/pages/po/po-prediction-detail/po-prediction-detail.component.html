@@ -1,0 +1,230 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="po-prediction-detail-container">
+  <mat-toolbar color="primary" class="page-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <span>{{ well?.name || 'Well' }} - {{ 'po.prediction.failure-prediction' | translate }}</span>
+    <span class="spacer"></span>
+    <button mat-icon-button (click)="refreshPrediction()" matTooltip="Refresh Prediction">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <div class="content-container" *ngIf="!isLoading && predictionDetail; else loadingTemplate">
+    <!-- Alert Banner -->
+    <div class="alert-banner" *ngIf="predictionDetail.failurePrediction?.probability >= 0.6"
+         [style.background-color]="getRiskColor(predictionDetail.failurePrediction?.probability * 100)">
+      <mat-icon>warning</mat-icon>
+      <div class="alert-content">
+        <span class="alert-title">{{ 'po.prediction.failure-predicted' | translate }}</span>
+        <span class="alert-subtitle">
+          {{ 'po.prediction.probability' | translate }}: {{ formatProbability(predictionDetail.failurePrediction?.probability) }}
+          <span *ngIf="predictionDetail.failurePrediction?.daysToFailure">
+            - {{ 'po.prediction.estimated-days' | translate }}: {{ predictionDetail.failurePrediction?.daysToFailure }} {{ 'po.prediction.days' | translate }}
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <!-- Failure Prediction Card -->
+      <mat-card class="prediction-card" *ngIf="predictionDetail.failurePrediction">
+        <mat-card-header>
+          <mat-card-title>{{ 'po.prediction.failure-prediction' | translate }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="prediction-summary">
+            <div class="metric-item">
+              <span class="metric-label">{{ 'po.prediction.probability' | translate }}</span>
+              <span class="metric-value probability"
+                    [style.color]="getRiskColor(predictionDetail.failurePrediction.probability * 100)">
+                {{ formatProbability(predictionDetail.failurePrediction.probability) }}
+              </span>
+            </div>
+            <div class="metric-item" *ngIf="predictionDetail.failurePrediction.daysToFailure">
+              <span class="metric-label">{{ 'po.prediction.days-to-failure' | translate }}</span>
+              <span class="metric-value">{{ predictionDetail.failurePrediction.daysToFailure }} {{ 'po.prediction.days' | translate }}</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">{{ 'po.prediction.confidence' | translate }}</span>
+              <span class="metric-value">{{ formatProbability(predictionDetail.failurePrediction.confidence) }}</span>
+            </div>
+            <div class="metric-item" *ngIf="predictionDetail.failurePrediction.predictedFailureType">
+              <span class="metric-label">{{ 'po.prediction.failure-type' | translate }}</span>
+              <span class="metric-value">{{ predictionDetail.failurePrediction.predictedFailureType }}</span>
+            </div>
+          </div>
+
+          <div class="last-updated">
+            {{ 'po.prediction.last-updated' | translate }}: {{ formatDate(predictionDetail.failurePrediction.createdTime) }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Health Score Card -->
+      <mat-card class="prediction-card" *ngIf="predictionDetail.healthScorePrediction">
+        <mat-card-header>
+          <mat-card-title>{{ 'po.prediction.health-score' | translate }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="health-score-display">
+            <div class="score-circle"
+                 [style.border-color]="getHealthLevelColor(predictionDetail.healthScorePrediction.healthLevel)">
+              <span class="score-value">{{ predictionDetail.healthScorePrediction.healthScore }}</span>
+              <span class="score-label">{{ HealthLevelLabels[predictionDetail.healthScorePrediction.healthLevel] }}</span>
+            </div>
+            <div class="trend-indicator" *ngIf="predictionDetail.healthScorePrediction.healthTrend">
+              <mat-icon [style.color]="getTrendColor(predictionDetail.healthScorePrediction.healthTrend)">
+                {{ getTrendIcon(predictionDetail.healthScorePrediction.healthTrend) }}
+              </mat-icon>
+              <span>{{ predictionDetail.healthScorePrediction.healthTrend }}</span>
+            </div>
+          </div>
+
+          <!-- Component Scores -->
+          <div class="component-scores" *ngIf="predictionDetail.healthScorePrediction.componentScores">
+            <h4>{{ 'po.prediction.component-scores' | translate }}</h4>
+            <div class="score-bar" *ngFor="let component of ['mechanical', 'electrical', 'production', 'thermal']">
+              <span class="component-name">{{ 'po.prediction.' + component | translate }}</span>
+              <mat-progress-bar mode="determinate"
+                                [value]="predictionDetail.healthScorePrediction.componentScores[component] || 0">
+              </mat-progress-bar>
+              <span class="component-value">{{ predictionDetail.healthScorePrediction.componentScores[component] || 0 }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Contributing Factors Card -->
+      <mat-card class="factors-card" *ngIf="predictionDetail.failurePrediction?.contributingFactors?.length">
+        <mat-card-header>
+          <mat-card-title>{{ 'po.prediction.contributing-factors' | translate }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table mat-table [dataSource]="predictionDetail.failurePrediction.contributingFactors" class="factors-table">
+            <ng-container matColumnDef="feature">
+              <th mat-header-cell *matHeaderCellDef>{{ 'po.prediction.factor' | translate }}</th>
+              <td mat-cell *matCellDef="let factor">{{ getFeatureLabel(factor.feature) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="currentValue">
+              <th mat-header-cell *matHeaderCellDef>{{ 'po.prediction.current-value' | translate }}</th>
+              <td mat-cell *matCellDef="let factor">
+                {{ factor.currentValue | number:'1.1-1' }} {{ getFeatureUnit(factor.feature) }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="threshold">
+              <th mat-header-cell *matHeaderCellDef>{{ 'po.prediction.threshold' | translate }}</th>
+              <td mat-cell *matCellDef="let factor">
+                < {{ factor.threshold | number:'1.1-1' }} {{ getFeatureUnit(factor.feature) }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="impact">
+              <th mat-header-cell *matHeaderCellDef>{{ 'po.prediction.impact' | translate }}</th>
+              <td mat-cell *matCellDef="let factor">
+                <span class="impact-chip" [style.background-color]="getFactorImpactColor(factor.impact)">
+                  {{ factor.impact }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="trend">
+              <th mat-header-cell *matHeaderCellDef>{{ 'po.prediction.trend' | translate }}</th>
+              <td mat-cell *matCellDef="let factor">
+                <mat-icon>{{ getFactorTrendIcon(factor.trend) }}</mat-icon>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="['feature', 'currentValue', 'threshold', 'impact', 'trend']"></tr>
+            <tr mat-row *matRowDef="let row; columns: ['feature', 'currentValue', 'threshold', 'impact', 'trend'];"></tr>
+          </table>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Anomaly Detection Card -->
+      <mat-card class="prediction-card" *ngIf="predictionDetail.anomalyPrediction">
+        <mat-card-header>
+          <mat-card-title>{{ 'po.prediction.anomaly-detection' | translate }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="anomaly-status" [class.anomaly-detected]="predictionDetail.anomalyPrediction.isAnomaly">
+            <mat-icon>{{ predictionDetail.anomalyPrediction.isAnomaly ? 'error' : 'check_circle' }}</mat-icon>
+            <span>
+              {{ predictionDetail.anomalyPrediction.isAnomaly ?
+                ('po.prediction.anomaly-detected' | translate) :
+                ('po.prediction.no-anomaly' | translate) }}
+            </span>
+          </div>
+
+          <div class="anomalous-features" *ngIf="predictionDetail.anomalyPrediction.anomalousFeatures?.length">
+            <h4>{{ 'po.prediction.anomalous-features' | translate }}</h4>
+            <div class="feature-item" *ngFor="let feature of predictionDetail.anomalyPrediction.anomalousFeatures">
+              <span class="feature-name">{{ getFeatureLabel(feature.feature) }}</span>
+              <span class="feature-value">{{ feature.value | number:'1.1-1' }} {{ getFeatureUnit(feature.feature) }}</span>
+              <span class="feature-range">
+                ({{ 'po.prediction.expected' | translate }}: {{ feature.expectedMin | number:'1.0-0' }} - {{ feature.expectedMax | number:'1.0-0' }})
+              </span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Recommended Actions Card -->
+      <mat-card class="actions-card" *ngIf="predictionDetail.recommendedActions?.length">
+        <mat-card-header>
+          <mat-card-title>{{ 'po.prediction.recommended-actions' | translate }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-list>
+            <mat-list-item *ngFor="let action of predictionDetail.recommendedActions; let i = index">
+              <span matListItemTitle>{{ i + 1 }}. {{ action.action }}</span>
+              <span matListItemLine *ngIf="action.impact">{{ 'po.prediction.impact' | translate }}: {{ action.impact }}</span>
+            </mat-list-item>
+          </mat-list>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="page-actions">
+      <button mat-stroked-button (click)="viewRecommendations()">
+        <mat-icon>lightbulb</mat-icon>
+        {{ 'po.prediction.view-recommendations' | translate }}
+      </button>
+      <button mat-stroked-button (click)="dismissPrediction()" *ngIf="predictionDetail.failurePrediction">
+        <mat-icon>close</mat-icon>
+        {{ 'po.prediction.dismiss' | translate }}
+      </button>
+      <button mat-raised-button color="primary" (click)="createWorkOrder()" *ngIf="predictionDetail.failurePrediction?.probability >= 0.6">
+        <mat-icon>assignment</mat-icon>
+        {{ 'po.prediction.create-work-order' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <ng-template #loadingTemplate>
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p *ngIf="error" class="error-message">{{ error }}</p>
+    </div>
+  </ng-template>
+</div>

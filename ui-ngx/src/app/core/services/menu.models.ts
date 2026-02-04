@@ -146,7 +146,21 @@ export enum MenuId {
   // Data Mapping
   data_mapping = 'data_mapping',
   data_mapping_templates = 'data_mapping_templates',
-  data_mapping_sources = 'data_mapping_sources'
+  data_mapping_sources = 'data_mapping_sources',
+  // Production Facilities Module (PF)
+  production_facilities = 'production_facilities',
+  pf_wells = 'pf_wells',
+  pf_wellpads = 'pf_wellpads',
+  pf_flow_stations = 'pf_flow_stations',
+  pf_alarms = 'pf_alarms',
+  // Production Optimization Module (PO)
+  production_optimization = 'production_optimization',
+  po_health_dashboard = 'po_health_dashboard',
+  po_recommendations = 'po_recommendations',
+  po_optimization = 'po_optimization',
+  po_ml_config = 'po_ml_config',
+  po_ml_training = 'po_ml_training',
+  po_prediction_detail = 'po_prediction_detail'
 }
 
 declare type MenuFilter = (authState: AuthState) => boolean;
@@ -1063,6 +1077,140 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
       path: '/dataMapping/sources',
       icon: 'input'
     }
+  ],
+  // Production Facilities Module (PF)
+  [
+    MenuId.production_facilities,
+    {
+      id: MenuId.production_facilities,
+      name: 'pf.production-facilities',
+      type: 'toggle',
+      path: '/pf',
+      icon: 'mdi:oil-lamp',
+      moduleKey: 'PF'
+    }
+  ],
+  [
+    MenuId.pf_wells,
+    {
+      id: MenuId.pf_wells,
+      name: 'pf.wells',
+      fullName: 'pf.pf-wells',
+      type: 'link',
+      path: '/pf/wells',
+      icon: 'mdi:water-well'
+    }
+  ],
+  [
+    MenuId.pf_wellpads,
+    {
+      id: MenuId.pf_wellpads,
+      name: 'pf.wellpads',
+      fullName: 'pf.pf-wellpads',
+      type: 'link',
+      path: '/pf/wellpads',
+      icon: 'mdi:map-marker-multiple'
+    }
+  ],
+  [
+    MenuId.pf_flow_stations,
+    {
+      id: MenuId.pf_flow_stations,
+      name: 'pf.flow-stations',
+      fullName: 'pf.pf-flow-stations',
+      type: 'link',
+      path: '/pf/flow-stations',
+      icon: 'mdi:pipe-valve'
+    }
+  ],
+  [
+    MenuId.pf_alarms,
+    {
+      id: MenuId.pf_alarms,
+      name: 'pf.alarms',
+      fullName: 'pf.pf-alarms',
+      type: 'link',
+      path: '/pf/alarms',
+      icon: 'mdi:alert-circle-outline'
+    }
+  ],
+  // Production Optimization Module (PO)
+  [
+    MenuId.production_optimization,
+    {
+      id: MenuId.production_optimization,
+      name: 'po.production-optimization',
+      type: 'toggle',
+      path: '/po',
+      icon: 'mdi:chart-timeline-variant',
+      moduleKey: 'PO'
+    }
+  ],
+  [
+    MenuId.po_health_dashboard,
+    {
+      id: MenuId.po_health_dashboard,
+      name: 'po.health-dashboard',
+      fullName: 'po.health-score-dashboard',
+      type: 'link',
+      path: '/po/health',
+      icon: 'favorite'
+    }
+  ],
+  [
+    MenuId.po_recommendations,
+    {
+      id: MenuId.po_recommendations,
+      name: 'po.recommendations',
+      fullName: 'po.po-recommendations',
+      type: 'link',
+      path: '/po/recommendations',
+      icon: 'lightbulb'
+    }
+  ],
+  [
+    MenuId.po_optimization,
+    {
+      id: MenuId.po_optimization,
+      name: 'po.optimization',
+      fullName: 'po.po-optimization',
+      type: 'link',
+      path: '/po/optimization',
+      icon: 'tune'
+    }
+  ],
+  [
+    MenuId.po_ml_config,
+    {
+      id: MenuId.po_ml_config,
+      name: 'po.ml.config',
+      fullName: 'po.ml.configuration',
+      type: 'link',
+      path: '/po/ml-config',
+      icon: 'settings'
+    }
+  ],
+  [
+    MenuId.po_ml_training,
+    {
+      id: MenuId.po_ml_training,
+      name: 'po.ml.training',
+      fullName: 'po.ml.model-training',
+      type: 'link',
+      path: '/po/ml-training',
+      icon: 'model_training'
+    }
+  ],
+  [
+    MenuId.po_prediction_detail,
+    {
+      id: MenuId.po_prediction_detail,
+      name: 'po.ml.prediction',
+      fullName: 'po.ml.prediction-detail',
+      type: 'link',
+      path: '/po/prediction',
+      icon: 'assessment'
+    }
   ]
 ]);
 
@@ -1209,6 +1357,22 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
           {id: MenuId.dr_rigs},
           {id: MenuId.dr_runs},
           {id: MenuId.dr_bhas}
+        ]
+      },
+      {
+        id: MenuId.production_facilities,
+        pages: [
+          {id: MenuId.pf_wells},
+          {id: MenuId.pf_alarms}
+        ]
+      },
+      {
+        id: MenuId.production_optimization,
+        pages: [
+          {id: MenuId.po_health_dashboard},
+          {id: MenuId.po_recommendations},
+          {id: MenuId.po_ml_config},
+          {id: MenuId.po_ml_training}
         ]
       },
       {
@@ -1566,5 +1730,17 @@ export const menuModuleKeyMap = new Map<MenuId, string>([
   [MenuId.dr_rigs, 'DR'],
   [MenuId.dr_runs, 'DR'],
   [MenuId.dr_bhas, 'DR'],
-  [MenuId.dr_wellcontrol_monitor, 'DR']
+  [MenuId.dr_wellcontrol_monitor, 'DR'],
+  [MenuId.production_facilities, 'PF'],
+  [MenuId.pf_wells, 'PF'],
+  [MenuId.pf_wellpads, 'PF'],
+  [MenuId.pf_flow_stations, 'PF'],
+  [MenuId.pf_alarms, 'PF'],
+  [MenuId.production_optimization, 'PO'],
+  [MenuId.po_health_dashboard, 'PO'],
+  [MenuId.po_recommendations, 'PO'],
+  [MenuId.po_optimization, 'PO'],
+  [MenuId.po_ml_config, 'PO'],
+  [MenuId.po_ml_training, 'PO'],
+  [MenuId.po_prediction_detail, 'PO']
 ]);

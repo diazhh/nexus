@@ -1,0 +1,250 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="po-recommendations-list-container">
+  <!-- Stats Cards -->
+  <div class="stats-cards" *ngIf="stats">
+    <mat-card class="stat-card pending" (click)="onStatusFilterChange([RecommendationStatus.PENDING])">
+      <mat-card-content>
+        <div class="stat-value">{{ stats.pending }}</div>
+        <div class="stat-label">Pending</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card approved" (click)="onStatusFilterChange([RecommendationStatus.APPROVED])">
+      <mat-card-content>
+        <div class="stat-value">{{ stats.approved }}</div>
+        <div class="stat-label">Approved</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card executed" (click)="onStatusFilterChange([RecommendationStatus.EXECUTED])">
+      <mat-card-content>
+        <div class="stat-value">{{ stats.executed }}</div>
+        <div class="stat-label">Executed</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card benefit">
+      <mat-card-content>
+        <div class="stat-value">+{{ formatValue(stats.totalBenefitBpd) }}</div>
+        <div class="stat-label">Potential BPD Gain</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card savings">
+      <mat-card-content>
+        <div class="stat-value">${{ formatValue(stats.totalSavingsUsd, 0) }}</div>
+        <div class="stat-label">Potential Savings</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Filters -->
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <div class="filters-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select [value]="statusFilter" (selectionChange)="onStatusFilterChange($event.value)" multiple>
+            <mat-option [value]="RecommendationStatus.PENDING">Pending</mat-option>
+            <mat-option [value]="RecommendationStatus.APPROVED">Approved</mat-option>
+            <mat-option [value]="RecommendationStatus.EXECUTED">Executed</mat-option>
+            <mat-option [value]="RecommendationStatus.REJECTED">Rejected</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Priority</mat-label>
+          <mat-select [value]="priorityFilter" (selectionChange)="onPriorityFilterChange($event.value)" multiple>
+            <mat-option [value]="RecommendationPriority.CRITICAL">Critical</mat-option>
+            <mat-option [value]="RecommendationPriority.HIGH">High</mat-option>
+            <mat-option [value]="RecommendationPriority.MEDIUM">Medium</mat-option>
+            <mat-option [value]="RecommendationPriority.LOW">Low</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Optimization Type</mat-label>
+          <mat-select [value]="typeFilter" (selectionChange)="onTypeFilterChange($event.value)" multiple>
+            <mat-option [value]="OptimizationType.ESP_FREQUENCY">ESP Frequency</mat-option>
+            <mat-option [value]="OptimizationType.PCP_SPEED">PCP Speed</mat-option>
+            <mat-option [value]="OptimizationType.GAS_LIFT_ALLOCATION">Gas Lift</mat-option>
+            <mat-option [value]="OptimizationType.ROD_PUMP_SPM">Rod Pump</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <span class="spacer"></span>
+
+        <button mat-raised-button color="accent" (click)="generateRecommendations()">
+          <mat-icon>auto_awesome</mat-icon>
+          Generate Recommendations
+        </button>
+
+        <button mat-button (click)="clearFilters()">
+          <mat-icon>clear</mat-icon>
+          Clear Filters
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Recommendations Table -->
+  <mat-card class="table-card">
+    <mat-card-content>
+      <div class="table-container" [class.loading]="isLoading">
+        <mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+
+        <table mat-table [dataSource]="dataSource" class="recommendations-table">
+
+          <!-- Priority Column -->
+          <ng-container matColumnDef="priority">
+            <th mat-header-cell *matHeaderCellDef>Priority</th>
+            <td mat-cell *matCellDef="let rec">
+              <div class="priority-badge" [style.background-color]="getPriorityColor(rec.priority)">
+                {{ rec.priority }}
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Well Name Column -->
+          <ng-container matColumnDef="wellName">
+            <th mat-header-cell *matHeaderCellDef>Well</th>
+            <td mat-cell *matCellDef="let rec">
+              <a class="well-link" (click)="viewWellDetails(rec); $event.stopPropagation()">
+                {{ rec.wellName || rec.wellId }}
+              </a>
+            </td>
+          </ng-container>
+
+          <!-- Type Column -->
+          <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let rec">
+              <span class="rec-type">{{ getTypeLabel(rec.type) }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Change Column -->
+          <ng-container matColumnDef="change">
+            <th mat-header-cell *matHeaderCellDef>Recommended Change</th>
+            <td mat-cell *matCellDef="let rec">
+              <div class="change-display">
+                <span class="current">{{ formatValue(rec.currentValue) }}</span>
+                <mat-icon>arrow_forward</mat-icon>
+                <span class="recommended">{{ formatValue(rec.recommendedValue) }}</span>
+                <span class="unit">{{ getUnit(rec.type) }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Benefit Column -->
+          <ng-container matColumnDef="benefit">
+            <th mat-header-cell *matHeaderCellDef>Expected Benefit</th>
+            <td mat-cell *matCellDef="let rec">
+              <div class="benefit-display" *ngIf="rec.expectedBenefitBpd">
+                <span class="bpd">+{{ formatValue(rec.expectedBenefitBpd) }} BPD</span>
+                <span class="usd" *ngIf="rec.expectedSavingsUsd">
+                  (${{ formatValue(rec.expectedSavingsUsd, 0) }}/day)
+                </span>
+              </div>
+              <span *ngIf="!rec.expectedBenefitBpd">-</span>
+            </td>
+          </ng-container>
+
+          <!-- Confidence Column -->
+          <ng-container matColumnDef="confidence">
+            <th mat-header-cell *matHeaderCellDef>Confidence</th>
+            <td mat-cell *matCellDef="let rec">
+              <div class="confidence-display" *ngIf="rec.confidence">
+                <mat-progress-bar
+                  mode="determinate"
+                  [value]="rec.confidence * 100"
+                  [color]="rec.confidence > 0.8 ? 'primary' : rec.confidence > 0.5 ? 'accent' : 'warn'">
+                </mat-progress-bar>
+                <span class="confidence-value">{{ (rec.confidence * 100).toFixed(0) }}%</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let rec">
+              <mat-chip [style.background-color]="getStatusColor(rec.status)" class="status-chip">
+                {{ RecommendationStatusLabels[rec.status] }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Created Time Column -->
+          <ng-container matColumnDef="createdTime">
+            <th mat-header-cell *matHeaderCellDef>Created</th>
+            <td mat-cell *matCellDef="let rec">
+              {{ rec.createdTime | date:'short' }}
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let rec">
+              <ng-container *ngIf="rec.status === RecommendationStatus.PENDING">
+                <button mat-icon-button color="primary" matTooltip="Approve"
+                        (click)="approveRecommendation(rec); $event.stopPropagation()">
+                  <mat-icon>check_circle</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" matTooltip="Reject"
+                        (click)="rejectRecommendation(rec); $event.stopPropagation()">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </ng-container>
+              <ng-container *ngIf="rec.status === RecommendationStatus.APPROVED">
+                <button mat-icon-button color="accent" matTooltip="Execute"
+                        (click)="executeRecommendation(rec); $event.stopPropagation()">
+                  <mat-icon>play_arrow</mat-icon>
+                </button>
+              </ng-container>
+              <button mat-icon-button matTooltip="View Well"
+                      (click)="viewWellDetails(rec); $event.stopPropagation()">
+                <mat-icon>visibility</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+              [class.pending]="row.status === RecommendationStatus.PENDING"
+              [class.high-priority]="row.priority === RecommendationPriority.HIGH || row.priority === RecommendationPriority.CRITICAL">
+          </tr>
+        </table>
+
+        <!-- Empty State -->
+        <div *ngIf="!isLoading && dataSource.data.length === 0" class="empty-state">
+          <mat-icon>lightbulb</mat-icon>
+          <p>No recommendations found</p>
+          <p class="hint">Click "Generate Recommendations" to analyze wells</p>
+        </div>
+      </div>
+
+      <mat-paginator
+        [length]="totalElements"
+        [pageSize]="pageSize"
+        [pageIndex]="pageIndex"
+        [pageSizeOptions]="[10, 20, 50, 100]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    </mat-card-content>
+  </mat-card>
+</div>

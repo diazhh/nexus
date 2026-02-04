@@ -1,0 +1,246 @@
+<!--
+
+    Copyright © 2016-2026 The Thingsboard Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="pf-well-detail-container" *ngIf="!isLoading && well">
+  <!-- Header -->
+  <div class="header">
+    <button mat-icon-button (click)="goBack()" matTooltip="Back to wells">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="well-info">
+      <h1 class="well-name">{{ well.name }}</h1>
+      <div class="well-meta">
+        <span class="api-number" *ngIf="well.apiNumber">{{ well.apiNumber }}</span>
+        <span class="separator" *ngIf="well.apiNumber && well.wellpadName">•</span>
+        <span class="wellpad" *ngIf="well.wellpadName">{{ well.wellpadName }}</span>
+      </div>
+    </div>
+    <div class="header-badges">
+      <div class="status-badge" [style.background-color]="getStatusColor()">
+        {{ well.status.replace('_', ' ') }}
+      </div>
+      <mat-chip class="lift-system-badge">
+        {{ LiftSystemTypeLabels[well.liftSystemType] }}
+      </mat-chip>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="content-grid">
+    <!-- Left Column - Telemetry -->
+    <div class="left-column">
+      <!-- Real-time Telemetry Card -->
+      <mat-card class="telemetry-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>sensors</mat-icon>
+            Real-time Telemetry
+          </mat-card-title>
+          <div class="telemetry-status" *ngIf="latestTelemetry">
+            <span class="timestamp">Last update: {{ latestTelemetry.timestamp | date:'short' }}</span>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="telemetry-grid" *ngIf="latestTelemetry && !telemetryError">
+            <div class="telemetry-item" *ngFor="let key of telemetryKeys">
+              <div class="telemetry-label">{{ TelemetryKeyLabels[key] || key }}</div>
+              <div class="telemetry-value">{{ formatTelemetryValue(key, getTelemetryValue(key)) }}</div>
+            </div>
+          </div>
+          <div class="telemetry-error" *ngIf="telemetryError">
+            <mat-icon>error_outline</mat-icon>
+            <span>Unable to load telemetry data</span>
+          </div>
+          <div class="telemetry-loading" *ngIf="!latestTelemetry && !telemetryError">
+            <mat-spinner diameter="32"></mat-spinner>
+            <span>Loading telemetry...</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Lift System Details Card -->
+      <mat-card class="lift-system-card" *ngIf="liftSystem">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>settings</mat-icon>
+            {{ LiftSystemTypeLabels[well.liftSystemType] }} Details
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <!-- ESP Details -->
+          <div class="system-details" *ngIf="well.liftSystemType === LiftSystemType.ESP">
+            <div class="detail-row">
+              <span class="label">Pump Model:</span>
+              <span class="value">{{ $any(liftSystem).pumpModel || '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Stages:</span>
+              <span class="value">{{ $any(liftSystem).stages || '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Motor HP:</span>
+              <span class="value">{{ $any(liftSystem).motorHp || '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Setting Depth:</span>
+              <span class="value">{{ $any(liftSystem).settingDepthFt ? $any(liftSystem).settingDepthFt + ' ft' : '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Run Life:</span>
+              <span class="value">{{ $any(liftSystem).runLifeDays ? $any(liftSystem).runLifeDays + ' days' : '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Frequency Range:</span>
+              <span class="value">{{ $any(liftSystem).minFrequencyHz || 30 }} - {{ $any(liftSystem).maxFrequencyHz || 60 }} Hz</span>
+            </div>
+          </div>
+
+          <!-- PCP Details -->
+          <div class="system-details" *ngIf="well.liftSystemType === LiftSystemType.PCP">
+            <div class="detail-row">
+              <span class="label">Pump Model:</span>
+              <span class="value">{{ $any(liftSystem).pumpModel || '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Rated RPM:</span>
+              <span class="value">{{ $any(liftSystem).ratedRpm || '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Rated Flow:</span>
+              <span class="value">{{ $any(liftSystem).ratedFlowBpd ? $any(liftSystem).ratedFlowBpd + ' BPD' : '-' }}</span>
+            </div>
+          </div>
+
+          <!-- Gas Lift Details -->
+          <div class="system-details" *ngIf="well.liftSystemType === LiftSystemType.GAS_LIFT">
+            <div class="detail-row">
+              <span class="label">Mandrel Count:</span>
+              <span class="value">{{ $any(liftSystem).mandrelCount || '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Operating Valve Depth:</span>
+              <span class="value">{{ $any(liftSystem).operatingValveDepthFt ? $any(liftSystem).operatingValveDepthFt + ' ft' : '-' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Design Gas Rate:</span>
+              <span class="value">{{ $any(liftSystem).designGasRateMscfd ? $any(liftSystem).designGasRateMscfd + ' Mscfd' : '-' }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Right Column - Alarms, Health, Recommendations -->
+    <div class="right-column">
+      <!-- Health Score Card -->
+      <mat-card class="health-score-card" *ngIf="healthScore">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>favorite</mat-icon>
+            Health Score
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="health-score-display">
+            <div class="score-circle" [style.border-color]="HealthLevelColors[healthScore.level]">
+              <span class="score-value">{{ healthScore.score }}</span>
+              <span class="score-label">{{ healthScore.level }}</span>
+            </div>
+            <div class="health-details">
+              <div class="trend" [class]="healthScore.trend.toLowerCase()">
+                <mat-icon>{{ HealthTrendIcons[healthScore.trend] }}</mat-icon>
+                {{ healthScore.trend }}
+              </div>
+              <div class="failure-prediction" *ngIf="healthScore.failureProbability !== undefined">
+                <span class="label">Failure Probability:</span>
+                <span class="value" [class.high]="healthScore.failureProbability > 0.5">
+                  {{ (healthScore.failureProbability * 100).toFixed(0) }}%
+                </span>
+              </div>
+              <div class="days-to-failure" *ngIf="healthScore.estimatedDaysToFailure">
+                <span class="label">Est. Days to Failure:</span>
+                <span class="value">{{ healthScore.estimatedDaysToFailure }}</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Active Alarms Card -->
+      <mat-card class="alarms-card" [class.has-alarms]="activeAlarms.length > 0">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon [color]="activeAlarms.length > 0 ? 'warn' : ''">notifications</mat-icon>
+            Active Alarms ({{ activeAlarms.length }})
+          </mat-card-title>
+          <button mat-button color="primary" (click)="viewAlarmHistory()">View History</button>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="alarms-list" *ngIf="activeAlarms.length > 0">
+            <div class="alarm-item" *ngFor="let alarm of activeAlarms">
+              <div class="alarm-severity" [style.background-color]="getAlarmSeverityColor(alarm.severity)">
+                {{ alarm.severity }}
+              </div>
+              <div class="alarm-info">
+                <div class="alarm-type">{{ formatType(alarm.type) }}</div>
+                <div class="alarm-message">{{ alarm.details?.message }}</div>
+                <div class="alarm-time">{{ alarm.startTs | date:'short' }}</div>
+              </div>
+              <button mat-icon-button matTooltip="Acknowledge" (click)="acknowledgeAlarm(alarm)">
+                <mat-icon>check</mat-icon>
+              </button>
+            </div>
+          </div>
+          <div class="no-alarms" *ngIf="activeAlarms.length === 0">
+            <mat-icon>check_circle</mat-icon>
+            <span>No active alarms</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Recommendations Card -->
+      <mat-card class="recommendations-card" *ngIf="pendingRecommendations.length > 0">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>lightbulb</mat-icon>
+            Pending Recommendations ({{ pendingRecommendations.length }})
+          </mat-card-title>
+          <button mat-button color="primary" (click)="viewRecommendations()">View All</button>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="recommendations-list">
+            <div class="recommendation-item" *ngFor="let rec of pendingRecommendations.slice(0, 3)">
+              <div class="rec-type">{{ formatType(rec.type) }}</div>
+              <div class="rec-value">
+                {{ rec.currentValue }} → {{ rec.recommendedValue }} {{ rec.unit }}
+              </div>
+              <div class="rec-benefit" *ngIf="rec.expectedBenefitBpd">
+                +{{ rec.expectedBenefitBpd.toFixed(1) }} BPD
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div class="loading-container" *ngIf="isLoading">
+  <mat-spinner></mat-spinner>
+  <p>Loading well data...</p>
+</div>

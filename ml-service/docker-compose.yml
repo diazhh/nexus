@@ -1,0 +1,112 @@
+#
+# Copyright © 2016-2026 The Thingsboard Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+version: '3.8'
+
+services:
+  ml-service:
+    build: .
+    container_name: nexus-ml-service
+    ports:
+      - "8090:8090"
+    environment:
+      - ML_DEBUG=true
+      # Connect to existing PostgreSQL on host
+      - ML_DB_HOST=host.docker.internal
+      - ML_DB_PORT=5432
+      - ML_DB_NAME=tb_dev
+      - ML_DB_USER=postgres
+      - ML_DB_PASSWORD=postgres
+      # Java Backend (when running on host)
+      - ML_NEXUS_API_URL=http://host.docker.internal:8080
+      - ML_MLFLOW_TRACKING_URI=http://mlflow:5050
+      # Kafka
+      - ML_KAFKA_ENABLED=true
+      - ML_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - ML_KAFKA_TELEMETRY_TOPIC=tb.rule-engine.telemetry
+    volumes:
+      - ml-models:/var/lib/nexus/ml-models
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - mlflow
+      - kafka
+    networks:
+      - nexus-network
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.10.2
+    container_name: nexus-mlflow
+    ports:
+      - "5050:5050"
+    environment:
+      - MLFLOW_TRACKING_URI=sqlite:///mlflow.db
+    volumes:
+      - mlflow-data:/mlflow
+    command: mlflow server --host 0.0.0.0 --port 5050 --backend-store-uri sqlite:///mlflow/mlflow.db --default-artifact-root /mlflow/artifacts
+    networks:
+      - nexus-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.3
+    container_name: nexus-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - nexus-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.3
+    container_name: nexus-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - nexus-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: nexus-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8089:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: nexus
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - nexus-network
+
+volumes:
+  ml-models:
+  mlflow-data:
+
+networks:
+  nexus-network:
+    driver: bridge

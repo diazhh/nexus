@@ -1,0 +1,441 @@
+{
+  "title": "PF - Well Monitoring Dashboard",
+  "image": null,
+  "mobileHide": false,
+  "mobileOrder": null,
+  "configuration": {
+    "description": "Real-time monitoring dashboard for production wells including ESP, PCP, Gas Lift and Rod Pump systems",
+    "widgets": {
+      "well-status-cards": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "entities_table",
+        "type": "latest",
+        "title": "Well Status Overview",
+        "sizeX": 24,
+        "sizeY": 8,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "wells_alias",
+              "dataKeys": [
+                {"name": "name", "type": "attribute", "label": "Well Name"},
+                {"name": "status", "type": "attribute", "label": "Status"},
+                {"name": "liftSystemType", "type": "attribute", "label": "Lift System"},
+                {"name": "fieldName", "type": "attribute", "label": "Field"},
+                {"name": "production_bpd", "type": "timeseries", "label": "Production (BPD)"},
+                {"name": "water_cut_percent", "type": "timeseries", "label": "Water Cut (%)"}
+              ]
+            }
+          ],
+          "settings": {
+            "enableSearch": true,
+            "enableSelectColumnDisplay": true,
+            "displayPagination": true,
+            "defaultPageSize": 10,
+            "defaultSortOrder": "name"
+          },
+          "actions": {
+            "rowClick": {
+              "type": "openDashboardState",
+              "targetDashboardStateId": "well_detail"
+            }
+          }
+        }
+      },
+      "production-gauge": {
+        "isSystemType": true,
+        "bundleAlias": "analogue_gauges",
+        "typeAlias": "radial_100",
+        "type": "latest",
+        "title": "Total Production",
+        "sizeX": 6,
+        "sizeY": 5,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "production_bpd", "type": "timeseries", "label": "Production"}
+              ]
+            }
+          ],
+          "settings": {
+            "minValue": 0,
+            "maxValue": 5000,
+            "unitTitle": "BPD",
+            "showUnitTitle": true,
+            "majorTicksCount": 11,
+            "colorPlate": "#fff",
+            "colorMajorTicks": "#444",
+            "colorNumbers": "#444",
+            "colorNeedle": "#1976d2",
+            "colorNeedleEnd": "#1976d2"
+          }
+        }
+      },
+      "pressure-gauge": {
+        "isSystemType": true,
+        "bundleAlias": "analogue_gauges",
+        "typeAlias": "radial_100",
+        "type": "latest",
+        "title": "Wellhead Pressure",
+        "sizeX": 6,
+        "sizeY": 5,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "wellhead_pressure_psi", "type": "timeseries", "label": "Pressure"}
+              ]
+            }
+          ],
+          "settings": {
+            "minValue": 0,
+            "maxValue": 1000,
+            "unitTitle": "PSI",
+            "showUnitTitle": true,
+            "majorTicksCount": 11,
+            "colorPlate": "#fff",
+            "colorNeedle": "#f57c00",
+            "colorNeedleEnd": "#f57c00"
+          }
+        }
+      },
+      "temperature-gauge": {
+        "isSystemType": true,
+        "bundleAlias": "analogue_gauges",
+        "typeAlias": "radial_100",
+        "type": "latest",
+        "title": "Motor Temperature",
+        "sizeX": 6,
+        "sizeY": 5,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "motor_temp_f", "type": "timeseries", "label": "Temperature"}
+              ]
+            }
+          ],
+          "settings": {
+            "minValue": 0,
+            "maxValue": 400,
+            "unitTitle": "F",
+            "showUnitTitle": true,
+            "majorTicksCount": 9,
+            "colorPlate": "#fff",
+            "colorNeedle": "#d32f2f",
+            "colorNeedleEnd": "#d32f2f",
+            "highlights": [
+              {"from": 0, "to": 250, "color": "#4caf50"},
+              {"from": 250, "to": 320, "color": "#ffc107"},
+              {"from": 320, "to": 400, "color": "#d32f2f"}
+            ]
+          }
+        }
+      },
+      "water-cut-gauge": {
+        "isSystemType": true,
+        "bundleAlias": "analogue_gauges",
+        "typeAlias": "radial_100",
+        "type": "latest",
+        "title": "Water Cut",
+        "sizeX": 6,
+        "sizeY": 5,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "water_cut_percent", "type": "timeseries", "label": "Water Cut"}
+              ]
+            }
+          ],
+          "settings": {
+            "minValue": 0,
+            "maxValue": 100,
+            "unitTitle": "%",
+            "showUnitTitle": true,
+            "majorTicksCount": 11,
+            "colorPlate": "#fff",
+            "colorNeedle": "#2196f3",
+            "colorNeedleEnd": "#2196f3"
+          }
+        }
+      },
+      "production-trend-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "basic_timeseries",
+        "type": "timeseries",
+        "title": "Production Trend (24h)",
+        "sizeX": 12,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "production_bpd", "type": "timeseries", "label": "Oil Production", "color": "#4caf50"},
+                {"name": "water_bpd", "type": "timeseries", "label": "Water Production", "color": "#2196f3"},
+                {"name": "gas_mcfd", "type": "timeseries", "label": "Gas Production", "color": "#ff9800"}
+              ]
+            }
+          ],
+          "timewindow": {
+            "realtime": {
+              "timewindowMs": 86400000
+            }
+          },
+          "settings": {
+            "shadowSize": 4,
+            "fontColor": "#545454",
+            "fontSize": 10,
+            "xaxis": {"showLabels": true, "color": "#545454"},
+            "yaxis": {"showLabels": true, "color": "#545454", "ticksFormatter": "return value + ' BPD';"},
+            "grid": {"color": "#545454", "backgroundColor": null, "tickColor": "#DDDDDD"}
+          }
+        }
+      },
+      "esp-metrics-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "basic_timeseries",
+        "type": "timeseries",
+        "title": "ESP Performance Metrics",
+        "sizeX": 12,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "frequency_hz", "type": "timeseries", "label": "Frequency (Hz)", "color": "#1976d2"},
+                {"name": "current_amps", "type": "timeseries", "label": "Current (A)", "color": "#d32f2f"},
+                {"name": "intake_pressure_psi", "type": "timeseries", "label": "Intake Pressure (PSI)", "color": "#4caf50"}
+              ]
+            }
+          ],
+          "timewindow": {
+            "realtime": {
+              "timewindowMs": 86400000
+            }
+          }
+        }
+      },
+      "well-info-card": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "attributes_card",
+        "type": "latest",
+        "title": "Well Information",
+        "sizeX": 8,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "name", "type": "attribute", "label": "Well Name"},
+                {"name": "apiNumber", "type": "attribute", "label": "API Number"},
+                {"name": "fieldName", "type": "attribute", "label": "Field"},
+                {"name": "wellpadName", "type": "attribute", "label": "Wellpad"},
+                {"name": "liftSystemType", "type": "attribute", "label": "Lift System"},
+                {"name": "status", "type": "attribute", "label": "Status"},
+                {"name": "latitude", "type": "attribute", "label": "Latitude"},
+                {"name": "longitude", "type": "attribute", "label": "Longitude"}
+              ]
+            }
+          ],
+          "settings": {
+            "labelPosition": "left"
+          }
+        }
+      },
+      "active-alarms-table": {
+        "isSystemType": true,
+        "bundleAlias": "alarm_widgets",
+        "typeAlias": "alarms_table",
+        "type": "alarm",
+        "title": "Active Alarms",
+        "sizeX": 16,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well"
+            }
+          ],
+          "alarmFilterConfig": {
+            "statusList": ["ACTIVE_UNACK", "ACTIVE_ACK"],
+            "severityList": ["CRITICAL", "MAJOR", "MINOR", "WARNING"],
+            "typeList": []
+          },
+          "settings": {
+            "displayDetails": true,
+            "allowAcknowledgment": true,
+            "displayPagination": true,
+            "defaultPageSize": 5
+          }
+        }
+      },
+      "wells-map": {
+        "isSystemType": true,
+        "bundleAlias": "maps",
+        "typeAlias": "openstreetmap",
+        "type": "latest",
+        "title": "Wells Location Map",
+        "sizeX": 12,
+        "sizeY": 10,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "wells_alias",
+              "dataKeys": [
+                {"name": "latitude", "type": "attribute", "label": "latitude"},
+                {"name": "longitude", "type": "attribute", "label": "longitude"},
+                {"name": "name", "type": "attribute", "label": "name"},
+                {"name": "status", "type": "attribute", "label": "status"},
+                {"name": "production_bpd", "type": "timeseries", "label": "production"}
+              ]
+            }
+          ],
+          "settings": {
+            "mapProvider": "OpenStreetMap.Mapnik",
+            "latKeyName": "latitude",
+            "lngKeyName": "longitude",
+            "showLabel": true,
+            "labelFunction": "return data['name'];",
+            "tooltipFunction": "return '<b>' + data['name'] + '</b><br/>Status: ' + data['status'] + '<br/>Production: ' + data['production'] + ' BPD';",
+            "markerImageFunction": "if (data['status'] === 'PRODUCING') return 'green'; else if (data['status'] === 'SHUT_IN') return 'yellow'; else return 'red';",
+            "defaultCenterPosition": "25.0,-100.0",
+            "defaultZoomLevel": 8,
+            "fitMapBounds": true,
+            "draggableMarker": false,
+            "showPolygon": false
+          }
+        }
+      },
+      "health-score-indicator": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "value_card",
+        "type": "latest",
+        "title": "Health Score",
+        "sizeX": 4,
+        "sizeY": 3,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "health_score", "type": "timeseries", "label": "Health"}
+              ]
+            }
+          ],
+          "settings": {
+            "labelPosition": "top",
+            "valueFont": {"family": "Roboto", "size": 36, "weight": "500"},
+            "valueColor": "function(value) { if(value >= 80) return '#4caf50'; else if(value >= 60) return '#ff9800'; else return '#f44336'; }",
+            "showLabel": true,
+            "label": "Health Score",
+            "units": "%"
+          }
+        }
+      }
+    },
+    "states": {
+      "default": {
+        "name": "Wells Overview",
+        "root": true,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "well-status-cards": {"row": 0, "col": 0, "sizeX": 24, "sizeY": 8},
+              "wells-map": {"row": 8, "col": 0, "sizeX": 12, "sizeY": 10},
+              "production-gauge": {"row": 8, "col": 12, "sizeX": 6, "sizeY": 5},
+              "pressure-gauge": {"row": 8, "col": 18, "sizeX": 6, "sizeY": 5},
+              "temperature-gauge": {"row": 13, "col": 12, "sizeX": 6, "sizeY": 5},
+              "water-cut-gauge": {"row": 13, "col": 18, "sizeX": 6, "sizeY": 5}
+            }
+          }
+        }
+      },
+      "well_detail": {
+        "name": "Well Detail",
+        "root": false,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "well-info-card": {"row": 0, "col": 0, "sizeX": 8, "sizeY": 6},
+              "health-score-indicator": {"row": 0, "col": 8, "sizeX": 4, "sizeY": 3},
+              "production-gauge": {"row": 0, "col": 12, "sizeX": 6, "sizeY": 5},
+              "pressure-gauge": {"row": 0, "col": 18, "sizeX": 6, "sizeY": 5},
+              "temperature-gauge": {"row": 5, "col": 12, "sizeX": 6, "sizeY": 5},
+              "water-cut-gauge": {"row": 5, "col": 18, "sizeX": 6, "sizeY": 5},
+              "production-trend-chart": {"row": 6, "col": 0, "sizeX": 12, "sizeY": 6},
+              "esp-metrics-chart": {"row": 10, "col": 0, "sizeX": 12, "sizeY": 6},
+              "active-alarms-table": {"row": 10, "col": 12, "sizeX": 12, "sizeY": 6}
+            }
+          }
+        }
+      }
+    },
+    "entityAliases": {
+      "wells_alias": {
+        "id": "wells_alias",
+        "alias": "Production Wells",
+        "filter": {
+          "type": "assetType",
+          "resolveMultiple": true,
+          "assetType": "PF_WELL"
+        }
+      },
+      "selected_well": {
+        "id": "selected_well",
+        "alias": "Selected Well",
+        "filter": {
+          "type": "stateEntity",
+          "singleEntity": true,
+          "stateEntityParamName": "wellId"
+        }
+      }
+    },
+    "filters": {},
+    "timewindow": {
+      "realtime": {
+        "realtimeType": 1,
+        "timewindowMs": 86400000
+      },
+      "aggregation": {
+        "type": "AVG",
+        "limit": 200
+      }
+    },
+    "settings": {
+      "stateControllerId": "entity",
+      "showTitle": true,
+      "showDashboardLogo": false,
+      "hideToolbar": false,
+      "showDashboardsSelect": true,
+      "showEntitiesSelect": true,
+      "showDashboardTimewindow": true,
+      "showDashboardExport": true,
+      "toolbarAlwaysOpen": false
+    }
+  }
+}

@@ -1,0 +1,406 @@
+{
+  "title": "PF - Alarms & Events Dashboard",
+  "image": null,
+  "mobileHide": false,
+  "mobileOrder": null,
+  "configuration": {
+    "description": "Alarm management dashboard for Production Facilities - monitor, acknowledge, and analyze well alarms",
+    "widgets": {
+      "alarm-summary-cards": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "simple_card",
+        "type": "static",
+        "title": "Alarm Summary",
+        "sizeX": 24,
+        "sizeY": 3,
+        "config": {
+          "settings": {
+            "cards": [
+              {
+                "label": "CRITICAL",
+                "color": "#d32f2f",
+                "icon": "error",
+                "countAlias": "critical_count"
+              },
+              {
+                "label": "HIGH",
+                "color": "#f57c00",
+                "icon": "warning",
+                "countAlias": "high_count"
+              },
+              {
+                "label": "MEDIUM",
+                "color": "#fbc02d",
+                "icon": "info",
+                "countAlias": "medium_count"
+              },
+              {
+                "label": "LOW",
+                "color": "#1976d2",
+                "icon": "notifications",
+                "countAlias": "low_count"
+              }
+            ]
+          }
+        }
+      },
+      "active-alarms-table": {
+        "isSystemType": true,
+        "bundleAlias": "alarm_widgets",
+        "typeAlias": "alarms_table",
+        "type": "alarm",
+        "title": "Active Alarms",
+        "sizeX": 24,
+        "sizeY": 10,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "all_wells"
+            }
+          ],
+          "alarmFilterConfig": {
+            "statusList": ["ACTIVE_UNACK", "ACTIVE_ACK"],
+            "severityList": ["CRITICAL", "MAJOR", "MINOR", "WARNING", "INDETERMINATE"],
+            "typeList": []
+          },
+          "settings": {
+            "enableFilter": true,
+            "enableStickyAction": true,
+            "displayDetails": true,
+            "allowAcknowledgment": true,
+            "allowClear": true,
+            "displayPagination": true,
+            "defaultPageSize": 20,
+            "displayEntityName": true,
+            "displayEntityLabel": true,
+            "alarmsTitle": "Active Alarms",
+            "displaySeverity": true,
+            "displayStatus": true,
+            "displayStartTime": true,
+            "displayEndTime": false,
+            "displayAckTime": true,
+            "displayClearTime": false
+          },
+          "alarmColumns": [
+            {"name": "severity", "label": "Severity", "width": "100px"},
+            {"name": "originator", "label": "Well", "width": "150px"},
+            {"name": "type", "label": "Alarm Type", "width": "200px"},
+            {"name": "status", "label": "Status", "width": "120px"},
+            {"name": "startTs", "label": "Start Time", "width": "180px"},
+            {"name": "ackTs", "label": "Acknowledged", "width": "180px"}
+          ],
+          "actions": {
+            "rowClick": {
+              "type": "openDashboardState",
+              "targetDashboardStateId": "alarm_detail"
+            }
+          }
+        }
+      },
+      "alarm-history-table": {
+        "isSystemType": true,
+        "bundleAlias": "alarm_widgets",
+        "typeAlias": "alarms_table",
+        "type": "alarm",
+        "title": "Alarm History (Last 7 Days)",
+        "sizeX": 24,
+        "sizeY": 10,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "all_wells"
+            }
+          ],
+          "alarmFilterConfig": {
+            "statusList": ["CLEARED_UNACK", "CLEARED_ACK"],
+            "severityList": ["CRITICAL", "MAJOR", "MINOR", "WARNING", "INDETERMINATE"],
+            "typeList": []
+          },
+          "timewindow": {
+            "history": {
+              "historyType": 1,
+              "timewindowMs": 604800000
+            }
+          },
+          "settings": {
+            "enableFilter": true,
+            "displayDetails": true,
+            "displayPagination": true,
+            "defaultPageSize": 20,
+            "displayEntityName": true,
+            "displaySeverity": true,
+            "displayStatus": true,
+            "displayStartTime": true,
+            "displayEndTime": true,
+            "displayClearTime": true
+          }
+        }
+      },
+      "alarms-by-severity-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "doughnut",
+        "type": "latest",
+        "title": "Alarms by Severity",
+        "sizeX": 8,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "critical", "type": "function", "label": "Critical", "color": "#d32f2f", "funcBody": "return prevValue || 5;"},
+                {"name": "high", "type": "function", "label": "High", "color": "#f57c00", "funcBody": "return prevValue || 12;"},
+                {"name": "medium", "type": "function", "label": "Medium", "color": "#fbc02d", "funcBody": "return prevValue || 23;"},
+                {"name": "low", "type": "function", "label": "Low", "color": "#1976d2", "funcBody": "return prevValue || 8;"}
+              ]
+            }
+          ],
+          "settings": {
+            "showLegend": true,
+            "legendPosition": "right",
+            "legendLabel": "{value} - {percentage}"
+          }
+        }
+      },
+      "alarms-by-type-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "bar",
+        "type": "latest",
+        "title": "Alarms by Type",
+        "sizeX": 8,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "HIGH_TEMPERATURE", "type": "function", "label": "High Temperature", "color": "#d32f2f"},
+                {"name": "LOW_PRODUCTION", "type": "function", "label": "Low Production", "color": "#f57c00"},
+                {"name": "HIGH_VIBRATION", "type": "function", "label": "High Vibration", "color": "#fbc02d"},
+                {"name": "PUMP_FAILURE", "type": "function", "label": "Pump Failure", "color": "#9c27b0"},
+                {"name": "GAS_LOCK", "type": "function", "label": "Gas Lock", "color": "#2196f3"}
+              ]
+            }
+          ],
+          "settings": {
+            "barSettings": {
+              "showValues": true,
+              "horizontal": true
+            }
+          }
+        }
+      },
+      "alarms-by-well-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "bar",
+        "type": "latest",
+        "title": "Alarms by Well (Top 10)",
+        "sizeX": 8,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "well1", "type": "function", "label": "Well-001"},
+                {"name": "well2", "type": "function", "label": "Well-002"},
+                {"name": "well3", "type": "function", "label": "Well-003"},
+                {"name": "well4", "type": "function", "label": "Well-004"},
+                {"name": "well5", "type": "function", "label": "Well-005"}
+              ]
+            }
+          ],
+          "settings": {
+            "barSettings": {
+              "showValues": true,
+              "horizontal": true
+            }
+          }
+        }
+      },
+      "alarm-trend-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "basic_timeseries",
+        "type": "timeseries",
+        "title": "Alarm Trend (Last 30 Days)",
+        "sizeX": 24,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "critical", "type": "function", "label": "Critical", "color": "#d32f2f"},
+                {"name": "high", "type": "function", "label": "High", "color": "#f57c00"},
+                {"name": "medium", "type": "function", "label": "Medium", "color": "#fbc02d"},
+                {"name": "low", "type": "function", "label": "Low", "color": "#1976d2"}
+              ]
+            }
+          ],
+          "timewindow": {
+            "history": {
+              "historyType": 1,
+              "timewindowMs": 2592000000
+            },
+            "aggregation": {
+              "type": "COUNT",
+              "limit": 30
+            }
+          },
+          "settings": {
+            "stack": true,
+            "showLegend": true
+          }
+        }
+      },
+      "alarm-detail-card": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "attributes_card",
+        "type": "latest",
+        "title": "Alarm Details",
+        "sizeX": 12,
+        "sizeY": 8,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_alarm",
+              "dataKeys": [
+                {"name": "type", "type": "attribute", "label": "Alarm Type"},
+                {"name": "severity", "type": "attribute", "label": "Severity"},
+                {"name": "status", "type": "attribute", "label": "Status"},
+                {"name": "originator", "type": "attribute", "label": "Well"},
+                {"name": "startTs", "type": "attribute", "label": "Start Time"},
+                {"name": "ackTs", "type": "attribute", "label": "Acknowledge Time"},
+                {"name": "clearTs", "type": "attribute", "label": "Clear Time"},
+                {"name": "details", "type": "attribute", "label": "Details"}
+              ]
+            }
+          ]
+        }
+      },
+      "alarm-telemetry-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "basic_timeseries",
+        "type": "timeseries",
+        "title": "Related Telemetry",
+        "sizeX": 12,
+        "sizeY": 8,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "alarm_originator",
+              "dataKeys": [
+                {"name": "motor_temp_f", "type": "timeseries", "label": "Motor Temp (F)", "color": "#d32f2f"},
+                {"name": "intake_pressure_psi", "type": "timeseries", "label": "Intake Pressure (PSI)", "color": "#4caf50"},
+                {"name": "current_amps", "type": "timeseries", "label": "Current (A)", "color": "#2196f3"}
+              ]
+            }
+          ],
+          "timewindow": {
+            "history": {
+              "historyType": 1,
+              "timewindowMs": 86400000
+            }
+          }
+        }
+      }
+    },
+    "states": {
+      "default": {
+        "name": "Alarms Overview",
+        "root": true,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "alarm-summary-cards": {"row": 0, "col": 0, "sizeX": 24, "sizeY": 3},
+              "active-alarms-table": {"row": 3, "col": 0, "sizeX": 24, "sizeY": 10},
+              "alarms-by-severity-chart": {"row": 13, "col": 0, "sizeX": 8, "sizeY": 6},
+              "alarms-by-type-chart": {"row": 13, "col": 8, "sizeX": 8, "sizeY": 6},
+              "alarms-by-well-chart": {"row": 13, "col": 16, "sizeX": 8, "sizeY": 6},
+              "alarm-trend-chart": {"row": 19, "col": 0, "sizeX": 24, "sizeY": 6}
+            }
+          }
+        }
+      },
+      "history": {
+        "name": "Alarm History",
+        "root": false,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "alarm-history-table": {"row": 0, "col": 0, "sizeX": 24, "sizeY": 10},
+              "alarm-trend-chart": {"row": 10, "col": 0, "sizeX": 24, "sizeY": 6}
+            }
+          }
+        }
+      },
+      "alarm_detail": {
+        "name": "Alarm Detail",
+        "root": false,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "alarm-detail-card": {"row": 0, "col": 0, "sizeX": 12, "sizeY": 8},
+              "alarm-telemetry-chart": {"row": 0, "col": 12, "sizeX": 12, "sizeY": 8}
+            }
+          }
+        }
+      }
+    },
+    "entityAliases": {
+      "all_wells": {
+        "id": "all_wells",
+        "alias": "All Production Wells",
+        "filter": {
+          "type": "assetType",
+          "resolveMultiple": true,
+          "assetType": "PF_WELL"
+        }
+      },
+      "selected_alarm": {
+        "id": "selected_alarm",
+        "alias": "Selected Alarm",
+        "filter": {
+          "type": "stateEntity",
+          "singleEntity": true,
+          "stateEntityParamName": "alarmId"
+        }
+      },
+      "alarm_originator": {
+        "id": "alarm_originator",
+        "alias": "Alarm Originator",
+        "filter": {
+          "type": "stateEntity",
+          "singleEntity": true,
+          "stateEntityParamName": "originatorId"
+        }
+      }
+    },
+    "filters": {},
+    "timewindow": {
+      "realtime": {
+        "realtimeType": 1,
+        "timewindowMs": 86400000
+      }
+    },
+    "settings": {
+      "stateControllerId": "entity",
+      "showTitle": true,
+      "showDashboardsSelect": true,
+      "showDashboardTimewindow": true,
+      "showDashboardExport": true,
+      "toolbarAlwaysOpen": false
+    }
+  }
+}

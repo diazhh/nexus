@@ -1,0 +1,140 @@
+{
+  "ruleChain": {
+    "name": "ML Telemetry Pipeline",
+    "type": "CORE",
+    "debugMode": false,
+    "configuration": null,
+    "additionalInfo": {
+      "description": "Rule chain for routing well telemetry to ML service via Kafka for real-time predictions"
+    }
+  },
+  "metadata": {
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbMsgTypeFilterNode",
+        "name": "Filter Telemetry",
+        "debugMode": false,
+        "configuration": {
+          "messageTypes": ["POST_TELEMETRY_REQUEST"]
+        },
+        "additionalInfo": {
+          "description": "Filter only telemetry messages",
+          "layoutX": 200,
+          "layoutY": 150
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "Filter Well Assets",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "// Filter messages from well assets\nvar assetType = metadata.deviceType || metadata.assetType || '';\nreturn assetType.toLowerCase().includes('well') || assetType.toLowerCase().includes('pozo');"
+        },
+        "additionalInfo": {
+          "description": "Filter only well-related telemetry",
+          "layoutX": 400,
+          "layoutY": 150
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Enrich Telemetry",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "// Enrich telemetry with metadata for ML processing\nvar enrichedMsg = {\n    tenantId: metadata.tenantId,\n    wellAssetId: metadata.originatorId,\n    wellName: metadata.originatorName,\n    assetType: metadata.assetType,\n    timestamp: metadata.ts,\n    telemetry: msg\n};\nreturn {msg: enrichedMsg, metadata: metadata, msgType: msgType};"
+        },
+        "additionalInfo": {
+          "description": "Add metadata for ML processing",
+          "layoutX": 600,
+          "layoutY": 150
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.kafka.TbKafkaNode",
+        "name": "Send to Kafka",
+        "debugMode": false,
+        "configuration": {
+          "topicPattern": "tb.rule-engine.telemetry",
+          "bootstrapServers": "localhost:9092",
+          "retries": 3,
+          "batchSize": 16384,
+          "linger": 5,
+          "bufferMemory": 33554432,
+          "acks": "1",
+          "keySerializer": "org.apache.kafka.common.serialization.StringSerializer",
+          "valueSerializer": "org.apache.kafka.common.serialization.StringSerializer",
+          "otherProperties": {},
+          "addMetadataKeyValuesAsKafkaHeaders": true,
+          "kafkaHeadersCharset": "UTF-8"
+        },
+        "additionalInfo": {
+          "description": "Send enriched telemetry to Kafka for ML processing",
+          "layoutX": 800,
+          "layoutY": 150
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.telemetry.TbMsgTimeseriesNode",
+        "name": "Save Timeseries",
+        "debugMode": false,
+        "configuration": {
+          "defaultTTL": 0,
+          "skipLatestPersistence": false,
+          "useServerTs": false
+        },
+        "additionalInfo": {
+          "description": "Save telemetry to ThingsBoard timeseries",
+          "layoutX": 600,
+          "layoutY": 300
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.action.TbLogNode",
+        "name": "Log ML Telemetry",
+        "debugMode": false,
+        "configuration": {
+          "jsScript": "return 'ML Telemetry sent for well: ' + metadata.originatorName;"
+        },
+        "additionalInfo": {
+          "description": "Log telemetry sent to ML service",
+          "layoutX": 1000,
+          "layoutY": 150
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 1,
+        "type": "True"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "True"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 4,
+        "type": "False"
+      },
+      {
+        "fromIndex": 2,
+        "toIndex": 3,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 2,
+        "toIndex": 4,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 5,
+        "type": "Success"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}

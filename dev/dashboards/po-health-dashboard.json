@@ -1,0 +1,472 @@
+{
+  "title": "PO - Health Score Dashboard",
+  "image": null,
+  "mobileHide": false,
+  "mobileOrder": null,
+  "configuration": {
+    "description": "Production Optimization health score dashboard - monitor equipment health, predict failures, and track component degradation",
+    "widgets": {
+      "overall-health-gauge": {
+        "isSystemType": true,
+        "bundleAlias": "analogue_gauges",
+        "typeAlias": "radial_100",
+        "type": "latest",
+        "title": "Overall Fleet Health",
+        "sizeX": 6,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "overall_health", "type": "function", "label": "Health", "funcBody": "return 78;"}
+              ]
+            }
+          ],
+          "settings": {
+            "minValue": 0,
+            "maxValue": 100,
+            "unitTitle": "Health Score",
+            "showUnitTitle": true,
+            "majorTicksCount": 11,
+            "colorPlate": "#fff",
+            "colorMajorTicks": "#444",
+            "colorNumbers": "#444",
+            "highlights": [
+              {"from": 0, "to": 40, "color": "#d32f2f"},
+              {"from": 40, "to": 60, "color": "#f57c00"},
+              {"from": 60, "to": 80, "color": "#fbc02d"},
+              {"from": 80, "to": 100, "color": "#4caf50"}
+            ]
+          }
+        }
+      },
+      "health-summary-cards": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "simple_card",
+        "type": "static",
+        "title": "Health Summary",
+        "sizeX": 18,
+        "sizeY": 3,
+        "config": {
+          "settings": {
+            "cards": [
+              {
+                "label": "Healthy (80-100)",
+                "color": "#4caf50",
+                "icon": "check_circle",
+                "value": "45 wells"
+              },
+              {
+                "label": "Warning (60-79)",
+                "color": "#fbc02d",
+                "icon": "warning",
+                "value": "12 wells"
+              },
+              {
+                "label": "At Risk (40-59)",
+                "color": "#f57c00",
+                "icon": "error_outline",
+                "value": "5 wells"
+              },
+              {
+                "label": "Critical (<40)",
+                "color": "#d32f2f",
+                "icon": "dangerous",
+                "value": "2 wells"
+              }
+            ]
+          }
+        }
+      },
+      "wells-health-table": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "entities_table",
+        "type": "latest",
+        "title": "Wells Health Overview",
+        "sizeX": 24,
+        "sizeY": 10,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "wells_alias",
+              "dataKeys": [
+                {"name": "name", "type": "attribute", "label": "Well Name"},
+                {"name": "health_score", "type": "timeseries", "label": "Health Score"},
+                {"name": "health_level", "type": "timeseries", "label": "Level"},
+                {"name": "health_trend", "type": "timeseries", "label": "Trend"},
+                {"name": "mechanical_score", "type": "timeseries", "label": "Mechanical"},
+                {"name": "electrical_score", "type": "timeseries", "label": "Electrical"},
+                {"name": "production_score", "type": "timeseries", "label": "Production"},
+                {"name": "last_updated", "type": "timeseries", "label": "Last Updated"}
+              ]
+            }
+          ],
+          "settings": {
+            "enableSearch": true,
+            "enableSelectColumnDisplay": true,
+            "displayPagination": true,
+            "defaultPageSize": 15,
+            "defaultSortOrder": "-health_score",
+            "rowStyleFunction": "if (data['health_score'] < 40) return {'background-color': '#ffebee'}; else if (data['health_score'] < 60) return {'background-color': '#fff3e0'}; else if (data['health_score'] < 80) return {'background-color': '#fffde7'}; return {};"
+          },
+          "actions": {
+            "rowClick": {
+              "type": "openDashboardState",
+              "targetDashboardStateId": "well_health_detail"
+            }
+          }
+        }
+      },
+      "health-trend-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "basic_timeseries",
+        "type": "timeseries",
+        "title": "Fleet Health Trend (30 Days)",
+        "sizeX": 12,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "avg_health", "type": "function", "label": "Avg Health Score", "color": "#4caf50"},
+                {"name": "min_health", "type": "function", "label": "Min Health Score", "color": "#f44336"},
+                {"name": "max_health", "type": "function", "label": "Max Health Score", "color": "#2196f3"}
+              ]
+            }
+          ],
+          "timewindow": {
+            "history": {
+              "historyType": 1,
+              "timewindowMs": 2592000000
+            },
+            "aggregation": {
+              "type": "AVG",
+              "limit": 30
+            }
+          },
+          "settings": {
+            "showLegend": true,
+            "legendPosition": "bottom"
+          }
+        }
+      },
+      "health-distribution-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "doughnut",
+        "type": "latest",
+        "title": "Health Distribution",
+        "sizeX": 6,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "function",
+              "dataKeys": [
+                {"name": "healthy", "type": "function", "label": "Healthy", "color": "#4caf50", "funcBody": "return 45;"},
+                {"name": "warning", "type": "function", "label": "Warning", "color": "#fbc02d", "funcBody": "return 12;"},
+                {"name": "at_risk", "type": "function", "label": "At Risk", "color": "#f57c00", "funcBody": "return 5;"},
+                {"name": "critical", "type": "function", "label": "Critical", "color": "#d32f2f", "funcBody": "return 2;"}
+              ]
+            }
+          ],
+          "settings": {
+            "showLegend": true,
+            "legendPosition": "right",
+            "legendLabel": "{value} wells"
+          }
+        }
+      },
+      "component-health-bars": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "bar",
+        "type": "latest",
+        "title": "Component Health (Selected Well)",
+        "sizeX": 6,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "mechanical_score", "type": "timeseries", "label": "Mechanical", "color": "#1976d2"},
+                {"name": "electrical_score", "type": "timeseries", "label": "Electrical", "color": "#7b1fa2"},
+                {"name": "production_score", "type": "timeseries", "label": "Production", "color": "#388e3c"},
+                {"name": "thermal_score", "type": "timeseries", "label": "Thermal", "color": "#d32f2f"},
+                {"name": "hydraulic_score", "type": "timeseries", "label": "Hydraulic", "color": "#0288d1"}
+              ]
+            }
+          ],
+          "settings": {
+            "barSettings": {
+              "showValues": true,
+              "horizontal": true
+            }
+          }
+        }
+      },
+      "well-health-detail-card": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "attributes_card",
+        "type": "latest",
+        "title": "Well Health Details",
+        "sizeX": 8,
+        "sizeY": 8,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "name", "type": "attribute", "label": "Well Name"},
+                {"name": "health_score", "type": "timeseries", "label": "Health Score"},
+                {"name": "health_level", "type": "timeseries", "label": "Health Level"},
+                {"name": "health_trend", "type": "timeseries", "label": "Trend"},
+                {"name": "failure_probability", "type": "timeseries", "label": "Failure Probability"},
+                {"name": "estimated_remaining_life_days", "type": "timeseries", "label": "Est. Remaining Life (days)"},
+                {"name": "last_maintenance", "type": "attribute", "label": "Last Maintenance"},
+                {"name": "next_maintenance", "type": "attribute", "label": "Next Maintenance"}
+              ]
+            }
+          ],
+          "settings": {
+            "labelPosition": "left"
+          }
+        }
+      },
+      "health-factors-table": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "entities_table",
+        "type": "latest",
+        "title": "Contributing Factors",
+        "sizeX": 8,
+        "sizeY": 8,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "factor_name", "type": "timeseries", "label": "Factor"},
+                {"name": "factor_impact", "type": "timeseries", "label": "Impact"},
+                {"name": "factor_value", "type": "timeseries", "label": "Current Value"},
+                {"name": "factor_threshold", "type": "timeseries", "label": "Threshold"}
+              ]
+            }
+          ],
+          "settings": {
+            "displayPagination": false,
+            "rowStyleFunction": "if (data['factor_impact'] === 'HIGH') return {'color': '#d32f2f', 'font-weight': 'bold'}; return {};"
+          }
+        }
+      },
+      "well-health-trend": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "basic_timeseries",
+        "type": "timeseries",
+        "title": "Health Score History",
+        "sizeX": 8,
+        "sizeY": 8,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "health_score", "type": "timeseries", "label": "Health Score", "color": "#4caf50"}
+              ]
+            }
+          ],
+          "timewindow": {
+            "history": {
+              "historyType": 1,
+              "timewindowMs": 2592000000
+            }
+          },
+          "settings": {
+            "thresholds": [
+              {"value": 80, "color": "#4caf50", "label": "Healthy"},
+              {"value": 60, "color": "#fbc02d", "label": "Warning"},
+              {"value": 40, "color": "#f57c00", "label": "At Risk"}
+            ]
+          }
+        }
+      },
+      "wells-at-risk-list": {
+        "isSystemType": true,
+        "bundleAlias": "cards",
+        "typeAlias": "entities_table",
+        "type": "latest",
+        "title": "Wells Requiring Attention",
+        "sizeX": 12,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "at_risk_wells",
+              "dataKeys": [
+                {"name": "name", "type": "attribute", "label": "Well"},
+                {"name": "health_score", "type": "timeseries", "label": "Score"},
+                {"name": "health_trend", "type": "timeseries", "label": "Trend"},
+                {"name": "failure_probability", "type": "timeseries", "label": "Failure Risk"},
+                {"name": "primary_issue", "type": "timeseries", "label": "Primary Issue"}
+              ]
+            }
+          ],
+          "settings": {
+            "displayPagination": true,
+            "defaultPageSize": 10,
+            "rowStyleFunction": "return {'background-color': '#fff3e0'};"
+          }
+        }
+      },
+      "failure-prediction-chart": {
+        "isSystemType": true,
+        "bundleAlias": "charts",
+        "typeAlias": "basic_timeseries",
+        "type": "timeseries",
+        "title": "Failure Probability Trend",
+        "sizeX": 12,
+        "sizeY": 6,
+        "config": {
+          "datasources": [
+            {
+              "type": "entity",
+              "entityAliasId": "selected_well",
+              "dataKeys": [
+                {"name": "failure_probability", "type": "timeseries", "label": "Failure Probability (%)", "color": "#d32f2f"}
+              ]
+            }
+          ],
+          "timewindow": {
+            "history": {
+              "historyType": 1,
+              "timewindowMs": 2592000000
+            }
+          },
+          "settings": {
+            "fillAreaSettings": {
+              "fill": true,
+              "fillColor": "rgba(244, 67, 54, 0.2)"
+            }
+          }
+        }
+      }
+    },
+    "states": {
+      "default": {
+        "name": "Fleet Health Overview",
+        "root": true,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "overall-health-gauge": {"row": 0, "col": 0, "sizeX": 6, "sizeY": 6},
+              "health-summary-cards": {"row": 0, "col": 6, "sizeX": 18, "sizeY": 3},
+              "health-distribution-chart": {"row": 3, "col": 6, "sizeX": 6, "sizeY": 6},
+              "health-trend-chart": {"row": 3, "col": 12, "sizeX": 12, "sizeY": 6},
+              "wells-health-table": {"row": 9, "col": 0, "sizeX": 24, "sizeY": 10}
+            }
+          }
+        }
+      },
+      "at_risk": {
+        "name": "At Risk Wells",
+        "root": false,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "wells-at-risk-list": {"row": 0, "col": 0, "sizeX": 12, "sizeY": 6},
+              "failure-prediction-chart": {"row": 0, "col": 12, "sizeX": 12, "sizeY": 6}
+            }
+          }
+        }
+      },
+      "well_health_detail": {
+        "name": "Well Health Detail",
+        "root": false,
+        "layouts": {
+          "main": {
+            "widgets": {
+              "well-health-detail-card": {"row": 0, "col": 0, "sizeX": 8, "sizeY": 8},
+              "component-health-bars": {"row": 0, "col": 8, "sizeX": 8, "sizeY": 8},
+              "well-health-trend": {"row": 0, "col": 16, "sizeX": 8, "sizeY": 8},
+              "health-factors-table": {"row": 8, "col": 0, "sizeX": 12, "sizeY": 8},
+              "failure-prediction-chart": {"row": 8, "col": 12, "sizeX": 12, "sizeY": 8}
+            }
+          }
+        }
+      }
+    },
+    "entityAliases": {
+      "wells_alias": {
+        "id": "wells_alias",
+        "alias": "All Wells",
+        "filter": {
+          "type": "assetType",
+          "resolveMultiple": true,
+          "assetType": "PF_WELL"
+        }
+      },
+      "at_risk_wells": {
+        "id": "at_risk_wells",
+        "alias": "At Risk Wells",
+        "filter": {
+          "type": "assetType",
+          "resolveMultiple": true,
+          "assetType": "PF_WELL"
+        }
+      },
+      "selected_well": {
+        "id": "selected_well",
+        "alias": "Selected Well",
+        "filter": {
+          "type": "stateEntity",
+          "singleEntity": true,
+          "stateEntityParamName": "wellId"
+        }
+      }
+    },
+    "filters": {
+      "at_risk_filter": {
+        "id": "at_risk_filter",
+        "filter": "health_score < 60",
+        "keyFilters": [
+          {
+            "key": {"type": "TIMESERIES", "key": "health_score"},
+            "valueType": "NUMERIC",
+            "predicate": {
+              "type": "NUMERIC",
+              "operation": "LESS",
+              "value": {"defaultValue": 60}
+            }
+          }
+        ]
+      }
+    },
+    "timewindow": {
+      "realtime": {
+        "realtimeType": 1,
+        "timewindowMs": 86400000
+      }
+    },
+    "settings": {
+      "stateControllerId": "entity",
+      "showTitle": true,
+      "showDashboardsSelect": true,
+      "showDashboardTimewindow": true,
+      "showDashboardExport": true
+    }
+  }
+}
