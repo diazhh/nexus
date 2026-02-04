@@ -54,6 +54,8 @@
         <module>ct-module</module>
         <module>rv-module</module>
         <module>dr-module</module>
+        <module>pf-module</module>
+        <module>po-module</module>
     </modules>
 
 </project>

@@ -1,8 +1,9 @@
 # ROADMAP - Production Facilities & Optimization Modules
 
 **Proyecto**: Nexus PF & PO Modules
-**Versión**: 1.0
+**Versión**: 1.1
 **Última Actualización**: 2026-02-03
+**Estado de Desarrollo**: PF Module ~70% | PO Module ~60% (Backend)
 **Duración Total**: 18-22 meses
 
 ---
@@ -76,8 +77,8 @@
 #### Semana 3-4 (Feb 17-28)
 - [ ] Setup de environments (Dev/Stg/Prod)
 - [ ] Configurar CI/CD pipeline (GitHub Actions o Jenkins)
-- [ ] Setup de bases de datos (PostgreSQL, TimescaleDB)
-- [ ] Setup de Kafka cluster
+- [ ] Setup de ThingsBoard instance (PostgreSQL + ts_kv configurado)
+- [ ] Configurar Kafka cluster
 - [ ] Configurar SonarQube
 - [ ] Configurar Jira / Linear para project management
 
@@ -120,21 +121,21 @@
 **Focus**: Fundamentos
 
 **User Stories**:
-- [PF-001] Como developer, crear entidades base (PfWell, PfWellpad)
-- [PF-002] Como developer, crear DTOs y mappers
-- [PF-003] Como developer, crear servicios CRUD básicos
-- [PF-004] Como developer, crear REST Controllers
-- [PF-005] Como developer, setup de TimescaleDB hypertables
-- [PF-006] Como developer, crear migration scripts
+- [PF-001] Como developer, crear DTOs con ASSET_TYPE constants (PfWellDto, PfWellpadDto)
+- [PF-002] Como developer, crear PfAssetService wrapper sobre TB Asset API
+- [PF-003] Como developer, crear PfAttributeService wrapper sobre TB Attributes API
+- [PF-004] Como developer, crear servicios de dominio (PfWellService, PfWellpadService)
+- [PF-005] Como developer, configurar Rule Chain para telemetría PF
+- [PF-006] Como developer, crear Asset Profiles con Alarm Rules
 
 **Tech Tasks**:
 - Setup del módulo pf en `/common/pf-module`
-- Crear estructura de paquetes
-- Configurar Spring Data JPA
-- Configurar conexión a TimescaleDB
+- Crear estructura de paquetes (dto, service, controller, model)
+- Configurar wrapper services sobre TB Core APIs
+- Crear Rule Nodes custom (PfDataQualityNode)
 
 **Definition of Done**:
-- ✅ Entidades creadas y mapeadas a base de datos
+- ✅ DTOs creados con constantes de atributos (patrón CT/RV)
 - ✅ APIs REST funcionales (/api/nexus/pf/wells)
 - ✅ Unit tests (coverage > 80%)
 - ✅ Integration tests para APIs
@@ -145,48 +146,47 @@
 
 **User Stories**:
 - [PF-010] Como ingeniero, conectar a broker MQTT de campo
-- [PF-011] Como ingeniero, configurar tópicos por pozo
-- [PF-012] Como sistema, procesar telemetría y almacenar en TimescaleDB
-- [PF-013] Como sistema, validar calidad de datos
+- [PF-011] Como ingeniero, configurar tópicos por pozo (TB Device integration)
+- [PF-012] Como sistema, procesar telemetría via Rule Engine y almacenar en ts_kv
+- [PF-013] Como sistema, validar calidad de datos con PfDataQualityNode
 - [PF-014] Como operador, ver última telemetría de pozo en dashboard
 
 **Tech Tasks**:
-- Implementar `TelemetryProcessor`
-- Implementar `DataQualityValidator`
-- Configurar Kafka topics (pf.telemetry)
-- Stream processing con Kafka Streams
-- WebSocket para push de datos a frontend
+- Implementar `PfDataQualityNode` (Rule Node custom)
+- Implementar `PfTelemetryService` (wrapper sobre TB Telemetry API)
+- Configurar Rule Chain para flujo de telemetría PF
+- WebSocket para push de datos a frontend (TB nativo)
 
 **Definition of Done**:
 - ✅ Telemetría recibida desde MQTT
-- ✅ Datos almacenados en TimescaleDB (< 1 seg latencia)
-- ✅ Quality checks implementados
+- ✅ Datos almacenados en ts_kv de TB (< 1 seg latencia)
+- ✅ Quality checks implementados via Rule Engine
 - ✅ Dashboard muestra datos en tiempo real
 - ✅ Load test: 50 pozos @ 1 mensaje/seg
 
 #### Sprint 5-6 (May 6 - Jun 2): Alarm System
-**Focus**: Detección y notificación de alarmas
+**Focus**: Detección y notificación de alarmas (TB Alarm System)
 
 **User Stories**:
-- [PF-020] Como ingeniero, configurar límites operacionales por pozo
-- [PF-021] Como sistema, detectar alarmas cuando se exceden límites
-- [PF-022] Como sistema, clasificar alarmas (crítico/alto/medio/bajo)
-- [PF-023] Como operador, ver lista de alarmas activas
-- [PF-024] Como operador, reconocer y cerrar alarmas
-- [PF-025] Como supervisor, recibir notificación por email de alarma crítica
+- [PF-020] Como ingeniero, configurar Alarm Rules en Asset Profiles por tipo de pozo
+- [PF-021] Como sistema, detectar alarmas via TB Alarm System cuando se exceden límites
+- [PF-022] Como sistema, clasificar alarmas usando TB severity (CRITICAL, MAJOR, MINOR, WARNING)
+- [PF-023] Como operador, ver lista de alarmas activas (TB Alarm API)
+- [PF-024] Como operador, reconocer y cerrar alarmas (TB Alarm lifecycle)
+- [PF-025] Como supervisor, recibir notificación por email de alarma crítica (TB Notification System)
 
 **Tech Tasks**:
-- Implementar `AlarmService`
-- Implementar `AlarmClassifier`
-- Implementar `NotificationService` (email, SMS)
-- Rule engine para evaluación de alarmas
-- Alarm history y audit log
+- Configurar Asset Profiles con Alarm Rules para pf_well, pf_esp_system, etc.
+- Implementar `PfAlarmService` (wrapper sobre TB Alarm API)
+- Configurar TB Notification Rules para email/SMS
+- Crear Rule Chain con PfAlarmEvaluationNode para alarmas complejas
+- Configurar alarm escalation via TB
 
 **Definition of Done**:
-- ✅ Alarmas detectadas en < 5 segundos
-- ✅ Clasificación automática funcional
-- ✅ Notificaciones enviadas correctamente
-- ✅ Dashboard de alarmas operativo
+- ✅ Alarmas detectadas en < 5 segundos via TB Alarm System
+- ✅ Clasificación automática funcional via Alarm Rules
+- ✅ Notificaciones enviadas correctamente via TB Notifications
+- ✅ Dashboard de alarmas operativo (TB native + custom UI)
 - ✅ Escalamiento automático si no se reconoce en 30 min
 
 #### Sprint 7-8 (Jun 3 - Jun 30): Frontend - Wellpad & Well Dashboards
@@ -239,13 +239,15 @@
 - ✅ No hay bugs críticos
 
 ### Entregables Fase 1
-- [x] Módulo PF base implementado
+- [x] Módulo PF base implementado (56 archivos Java, ~11K LOC)
+- [x] DTOs y Services para Well, Wellpad, FlowStation
+- [x] Controllers REST /api/nexus/pf/*
+- [x] Integración con TB Core (Assets, Attributes, ts_kv)
+- [x] PfTelemetryService, PfAlarmService
 - [ ] 5 pozos monitoreados en piloto
-- [ ] Dashboards de campo y pozo
-- [ ] Sistema de alarmas funcional
+- [ ] Dashboards de campo y pozo (Frontend)
 - [ ] Integración SCADA operativa
 - [ ] Documentación de usuario
-- [ ] Training materials
 
 ### Budget: $600K
 ### Team: 8 personas (2 backend, 2 frontend, 1 data engineer, 1 QA, 1 PM, 1 PO)
@@ -281,10 +283,10 @@
 - [PF-054] Como operador, ver curva de operación de ESP
 
 **Entregables**:
-- Modelo `PfEspSystem` completo
-- Variables ESP monitoreadas
-- Dashboard ESP
-- Alarmas específicas ESP
+- Asset type `pf_esp_system` con atributos específicos
+- Variables ESP monitoreadas via ts_kv
+- Dashboard ESP (TB Dashboard + componentes custom)
+- Alarmas específicas ESP via Asset Profile
 
 #### Sprint 13-14 (Aug 29 - Sep 25): PCP & Gas Lift Systems
 **User Stories**:
@@ -295,9 +297,9 @@
 - [PF-064] Como operador, ver dashboards de PCP y Gas Lift
 
 **Entregables**:
-- Modelos `PfPcpSystem` y `PfGasLiftSystem`
-- Variables monitoreadas
-- Dashboards especializados
+- Asset types `pf_pcp_system` y `pf_gas_lift_system` con atributos específicos
+- Variables monitoreadas via ts_kv
+- Dashboards especializados (TB + custom)
 
 #### Sprint 15-16 (Sep 26 - Oct 31): Expansion to 50 Wells + Beta Release
 **User Stories**:
@@ -312,10 +314,12 @@
 - Beta release estable
 
 ### Entregables Fase 2
-- [ ] ESP/PCP/Gas Lift/Rod Pump implementados
+- [x] ESP System implementado (PfEspSystemDto, PfEspSystemService, Controller)
+- [x] PCP System implementado (PfPcpSystemDto, PfPcpSystemService, Controller)
+- [x] Gas Lift System implementado (PfGasLiftSystemDto, PfGasLiftSystemService, Controller)
+- [x] Rod Pump System implementado (PfRodPumpSystemDto, PfRodPumpSystemService, Controller)
 - [ ] 50 pozos monitoreados
-- [ ] Dashboards especializados por tipo
-- [ ] Library de límites operacionales
+- [ ] Dashboards especializados por tipo (Frontend)
 - [ ] Performance validated para 100+ pozos
 
 ### Budget: $450K
@@ -390,11 +394,15 @@
 - ROI calculator
 
 ### Entregables Fase 3
-- [ ] Módulo PO base implementado
-- [ ] Optimizador ESP funcional
-- [ ] Optimizador Gas Lift funcional
-- [ ] Sistema de recomendaciones
-- [ ] KPI dashboard
+- [x] Módulo PO base implementado (27 archivos Java, ~4.5K LOC)
+- [x] DTOs: HealthScoreDto, RecommendationDto, OptimizationResultDto, EspOptimizationDto
+- [x] Entidades JPA: PoOptimizationResult, PoRecommendation
+- [x] Services: PoHealthScoreService, PoRecommendationService, PoOptimizationService
+- [x] Optimizador ESP funcional (PoEspFrequencyOptimizer)
+- [x] Sistema de recomendaciones con workflow (PENDING→APPROVED→EXECUTED)
+- [x] Controllers REST /api/nexus/po/*
+- [ ] Optimizador Gas Lift funcional (DTO ready, falta algoritmo)
+- [ ] KPI dashboard (Frontend)
 - [ ] 10+ recomendaciones aplicadas con éxito
 
 ### Budget: $650K

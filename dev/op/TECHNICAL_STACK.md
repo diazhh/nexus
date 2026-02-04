@@ -1,14 +1,17 @@
 # TECHNICAL STACK - PF & PO Modules
 
 **Proyecto**: Nexus Production Facilities & Optimization
-**Versión**: 1.0
+**Versión**: 2.0
 **Fecha**: 2026-02-03
+**Arquitectura**: ThingsBoard Core (Assets, Attributes, ts_kv, Alarm System)
 
 ---
 
 ## 📋 Stack Overview
 
 El stack tecnológico está basado en la arquitectura existente de **Nexus (ThingsBoard 4.3.0 Extended)** para mantener consistencia y aprovechar la infraestructura actual.
+
+> **Decisión Arquitectónica Clave**: Los módulos PF y PO utilizan **tablas core de ThingsBoard** (asset, attribute_kv, ts_kv, alarm) en lugar de tablas custom, siguiendo el patrón establecido por los módulos CT (Coiled Tubing) y RV (Yacimientos).
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -29,34 +32,40 @@ El stack tecnológico está basado en la arquitectura existente de **Nexus (Thin
 │  BACKEND                                                        │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │  Java 17 + Spring Boot 3.4.10                            │  │
-│  │  ├─ Spring Data JPA                                      │  │
+│  │  ├─ ThingsBoard Service Wrappers                         │  │
 │  │  ├─ Spring Security 6                                    │  │
 │  │  ├─ Spring WebFlux (Reactive)                            │  │
 │  │  ├─ Spring Cloud (Microservices)                         │  │
 │  │  └─ Lombok (Boilerplate reduction)                       │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
-│  DATA LAYER                                                     │
+│  DATA LAYER (ThingsBoard Core)                                  │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │  PostgreSQL 14+ (Relational)                             │  │
-│  │  TimescaleDB 2.11+ (Time-Series)                         │  │
+│  │  PostgreSQL 14+ (TB Core Tables)                         │  │
+│  │  ├─ asset (Asset Types: pf_well, pf_wellpad, etc.)      │  │
+│  │  ├─ attribute_kv (SERVER_SCOPE attributes)              │  │
+│  │  ├─ ts_kv, ts_kv_latest (Time-series telemetry)        │  │
+│  │  ├─ alarm (TB Alarm System)                              │  │
+│  │  └─ relation (Asset hierarchies)                         │  │
+│  │  Custom Tables (Solo 2):                                 │  │
+│  │  ├─ pf_optimization_result                               │  │
+│  │  └─ pf_recommendation                                    │  │
 │  │  Redis 7.0 (Cache)                                       │  │
-│  │  RocksDB (State Store)                                   │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
 │  MESSAGING & STREAMING                                          │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │  Apache Kafka 3.3                                        │  │
-│  │  Kafka Streams (Stream Processing)                       │  │
-│  │  Kafka Connect (Integration)                             │  │
+│  │  TB Rule Engine (Stream Processing)                      │  │
+│  │  Custom Rule Nodes (PfDataQualityNode, etc.)            │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
-│  IoT PROTOCOLS                                                  │
+│  IoT PROTOCOLS (ThingsBoard Native)                             │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │  MQTT (Eclipse Paho)                                     │  │
-│  │  OPC-UA (Eclipse Milo)                                   │  │
-│  │  Modbus (Modbus4j)                                       │  │
-│  │  HTTP/REST                                               │  │
+│  │  MQTT (TB MQTT Transport)                                │  │
+│  │  OPC-UA (TB Gateway)                                     │  │
+│  │  Modbus (TB Gateway)                                     │  │
+│  │  HTTP/REST (TB HTTP Transport)                           │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
 │  MACHINE LEARNING                                               │
@@ -147,7 +156,7 @@ import { createAction, createReducer } from '@ngrx/store';
 
 **Estado Gestionado**:
 - Estado de pozos (wellState)
-- Alarmas activas (alarmState)
+- Alarmas activas (alarmState) - via TB Alarm Service
 - Recomendaciones (recommendationState)
 - Configuración de usuario (userPreferencesState)
 
@@ -182,15 +191,68 @@ import { createAction, createReducer } from '@ngrx/store';
 
 ### Spring Modules
 
-#### Spring Data JPA
-**Uso**: Persistencia de entidades
+#### Wrapper Services Pattern (ThingsBoard Core)
+
+> **IMPORTANTE**: Los módulos PF y PO **NO** usan Spring Data JPA directamente para las entidades del dominio. En su lugar, usan **Wrapper Services** que encapsulan los servicios core de ThingsBoard.
+
+**Patrón Correcto - Wrapper Service**:
 ```java
-@Entity
-@Table(name = "pf_well")
-public class PfWell extends BaseEntity {
-    @ManyToOne
-    @JoinColumn(name = "wellpad_id")
-    private PfWellpad wellpad;
+@Service
+@RequiredArgsConstructor
+public class PfAssetService {
+
+    private final AssetService assetService;  // TB Core Service
+
+    public static final String TYPE_WELL = "pf_well";
+    public static final String TYPE_WELLPAD = "pf_wellpad";
+
+    public Asset createAsset(UUID tenantId, String type, String name) {
+        Asset asset = new Asset();
+        asset.setTenantId(new TenantId(tenantId));
+        asset.setType(type);
+        asset.setName(name);
+        return assetService.saveAsset(asset);
+    }
+
+    public List<Asset> getAssetsByType(UUID tenantId, String type) {
+        return assetService.findAssetsByTenantIdAndType(
+            new TenantId(tenantId), type, new PageLink(1000)
+        ).getData();
+    }
+}
+```
+
+**DTO Pattern con Constantes**:
+```java
+@Data
+@Builder
+public class PfWellDto {
+    // Asset Type constant
+    public static final String ASSET_TYPE = "pf_well";
+
+    // Attribute key constants
+    public static final String ATTR_API_NUMBER = "api_number";
+    public static final String ATTR_STATUS = "status";
+    public static final String ATTR_LIFT_SYSTEM_TYPE = "lift_system_type";
+    public static final String ATTR_MEASURED_DEPTH_FT = "measured_depth_ft";
+
+    // DTO fields
+    private UUID assetId;  // TB Asset ID
+    private String name;
+    private String apiNumber;
+    private WellStatus status;
+    private LiftSystemType liftSystemType;
+    private Double measuredDepthFt;
+
+    // Convert to attribute map
+    public Map<String, Object> toAttributeMap() {
+        Map<String, Object> attrs = new HashMap<>();
+        attrs.put(ATTR_API_NUMBER, apiNumber);
+        attrs.put(ATTR_STATUS, status.name());
+        attrs.put(ATTR_LIFT_SYSTEM_TYPE, liftSystemType.name());
+        attrs.put(ATTR_MEASURED_DEPTH_FT, measuredDepthFt);
+        return attrs;
+    }
 }
 ```
 
@@ -198,15 +260,16 @@ public class PfWell extends BaseEntity {
 **Uso**: Autenticación y autorización
 ```java
 @PreAuthorize("hasAuthority('TENANT_ADMIN')")
-public PfWell createWell(PfWell well) { }
+public PfWellDto createWell(PfWellDto well) { }
 ```
 
 #### Spring WebFlux (Reactive)
-**Uso**: APIs reactivas para telemetría en tiempo real
+**Uso**: APIs reactivas para telemetría en tiempo real via TB WebSocket
 ```java
 @GetMapping(value = "/telemetry/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-public Flux<TelemetryData> streamTelemetry(@PathParam String wellId) {
-    return telemetryService.getRealtimeStream(wellId);
+public Flux<TelemetryData> streamTelemetry(@PathParam String assetId) {
+    // Uses TB TelemetryService internally
+    return telemetryService.getRealtimeStream(new AssetId(UUID.fromString(assetId)));
 }
 ```
 
@@ -227,7 +290,7 @@ public Flux<TelemetryData> streamTelemetry(@PathParam String wellId) {
     <version>3.0.2</version>
 </dependency>
 
-<!-- Kafka -->
+<!-- Kafka (via TB Rule Engine) -->
 <dependency>
     <groupId>org.springframework.kafka</groupId>
     <artifactId>spring-kafka</artifactId>
@@ -240,98 +303,197 @@ public Flux<TelemetryData> streamTelemetry(@PathParam String wellId) {
     <artifactId>jackson-databind</artifactId>
     <version>2.15.3</version>
 </dependency>
+
+<!-- ThingsBoard Common (for service access) -->
+<dependency>
+    <groupId>org.thingsboard</groupId>
+    <artifactId>common-data</artifactId>
+</dependency>
 ```
 
 ---
 
 ## 🗄️ Data Layer
 
-### PostgreSQL 14+
-**Uso**: Base de datos relacional principal
+### Arquitectura de Datos - ThingsBoard Core
 
-**Schema**:
+> **Decisión Arquitectónica**: El módulo PF/PO utiliza las **tablas core de ThingsBoard** para almacenar datos, NO tablas custom en un schema separado. Esto garantiza consistencia con otros módulos (CT, RV) y aprovecha las capacidades nativas de TB.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    DATA LAYER ARCHITECTURE                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ThingsBoard Core Tables (Public Schema)                        │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  asset                                                    │  │
+│  │  ├─ type: pf_well, pf_wellpad, pf_esp_system, etc.       │  │
+│  │  ├─ tenant_id, customer_id                               │  │
+│  │  └─ additional_info (JSONB)                              │  │
+│  ├──────────────────────────────────────────────────────────┤  │
+│  │  attribute_kv (SERVER_SCOPE)                              │  │
+│  │  ├─ entity_id → asset.id                                 │  │
+│  │  ├─ attribute_key: api_number, status, etc.              │  │
+│  │  └─ str_v, long_v, dbl_v, json_v                         │  │
+│  ├──────────────────────────────────────────────────────────┤  │
+│  │  ts_kv, ts_kv_latest (Time-series)                        │  │
+│  │  ├─ entity_id → asset.id                                 │  │
+│  │  ├─ key: motor_temp, wellhead_pressure, etc.             │  │
+│  │  └─ ts, dbl_v (or str_v, bool_v, json_v)                 │  │
+│  ├──────────────────────────────────────────────────────────┤  │
+│  │  alarm                                                    │  │
+│  │  ├─ originator_id → asset.id                             │  │
+│  │  ├─ type: HIGH_MOTOR_TEMP, LOW_PRODUCTION, etc.          │  │
+│  │  └─ severity, status, start_ts, ack_ts, clear_ts         │  │
+│  ├──────────────────────────────────────────────────────────┤  │
+│  │  relation                                                 │  │
+│  │  ├─ from_id, to_id                                       │  │
+│  │  └─ relation_type: Contains, BelongsTo, HasSystem        │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  Custom Tables (SOLO para datos que no encajan en TB Core)     │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  pf_optimization_result                                   │  │
+│  │  ├─ Resultados de optimización con workflow complejo     │  │
+│  │  └─ JOINs analíticos, agregaciones históricas            │  │
+│  ├──────────────────────────────────────────────────────────┤  │
+│  │  pf_recommendation                                        │  │
+│  │  ├─ Recomendaciones con ciclo de vida                    │  │
+│  │  └─ Estados: PENDING → APPROVED → EXECUTING → COMPLETED  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### PostgreSQL 14+ - ThingsBoard Core Tables
+
+**NO SE CREAN SCHEMAS CUSTOM (pf.*, po.*)**. Los módulos usan las tablas existentes de ThingsBoard:
+
 ```sql
-CREATE SCHEMA pf;
-CREATE SCHEMA po;
+-- TABLA: asset (ThingsBoard Core)
+-- Se usa el campo 'type' para identificar assets del módulo PF
+-- Ejemplo de consulta para obtener pozos:
+SELECT * FROM asset WHERE type = 'pf_well' AND tenant_id = :tenantId;
 
--- Example table
-CREATE TABLE pf.well (
-    id UUID PRIMARY KEY,
+-- TABLA: attribute_kv (ThingsBoard Core)
+-- Almacena propiedades de los assets como atributos SERVER_SCOPE
+-- Ejemplo de consulta para obtener atributos de un pozo:
+SELECT * FROM attribute_kv
+WHERE entity_id = :assetId
+  AND attribute_type = 'SERVER_SCOPE';
+
+-- TABLA: ts_kv (ThingsBoard Core)
+-- Almacena telemetría time-series (nativo TB, particionado)
+-- Ejemplo de consulta para obtener telemetría:
+SELECT ts, key, dbl_v FROM ts_kv
+WHERE entity_id = :assetId
+  AND key IN ('motor_temp', 'current_amps', 'wellhead_pressure')
+  AND ts BETWEEN :startTs AND :endTs
+ORDER BY ts DESC;
+
+-- TABLA: alarm (ThingsBoard Core)
+-- Almacena alarmas usando el TB Alarm System
+-- Ejemplo de consulta para alarmas activas:
+SELECT * FROM alarm
+WHERE originator_id = :assetId
+  AND status = 'ACTIVE_UNACK'
+ORDER BY start_ts DESC;
+```
+
+### Custom Tables (Solo 2)
+
+**Justificación**: Estas tablas custom son necesarias porque:
+1. Tienen ciclo de vida con workflow de aprobación
+2. Requieren queries analíticos complejos (JOINs, agregaciones)
+3. No encajan en el modelo Asset/Attribute de ThingsBoard
+
+```sql
+-- Tabla Custom: pf_optimization_result
+-- Almacena resultados de optimización con análisis complejo
+CREATE TABLE pf_optimization_result (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    wellpad_id UUID,
-    status VARCHAR(50),
-    created_time BIGINT NOT NULL,
-    CONSTRAINT fk_wellpad FOREIGN KEY (wellpad_id) REFERENCES pf.wellpad(id)
+    well_id UUID NOT NULL,  -- Referencia a TB Asset (pf_well)
+    optimization_type VARCHAR(50) NOT NULL,
+    input_parameters JSONB,
+    output_parameters JSONB,
+    improvement_percent DOUBLE PRECISION,
+    energy_savings_kwh DOUBLE PRECISION,
+    production_increase_bpd DOUBLE PRECISION,
+    calculated_at BIGINT NOT NULL,
+    created_time BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()) * 1000
 );
 
-CREATE INDEX idx_well_tenant ON pf.well(tenant_id);
-CREATE INDEX idx_well_wellpad ON pf.well(wellpad_id);
-```
+CREATE INDEX idx_opt_result_tenant ON pf_optimization_result(tenant_id);
+CREATE INDEX idx_opt_result_well ON pf_optimization_result(well_id);
+CREATE INDEX idx_opt_result_type ON pf_optimization_result(optimization_type);
+CREATE INDEX idx_opt_result_time ON pf_optimization_result(calculated_at);
 
-**Connection Pool**: HikariCP
-```yaml
-spring:
-  datasource:
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
-```
-
-### TimescaleDB 2.11+
-**Uso**: Series temporales (telemetría)
-
-**Hypertables**:
-```sql
-CREATE TABLE pf.telemetry (
-    time TIMESTAMPTZ NOT NULL,
-    entity_id UUID NOT NULL,
-    key VARCHAR(255) NOT NULL,
-    value_numeric DOUBLE PRECISION,
-    value_string TEXT,
-    value_boolean BOOLEAN
+-- Tabla Custom: pf_recommendation
+-- Almacena recomendaciones con workflow de aprobación
+CREATE TABLE pf_recommendation (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL,
+    well_id UUID NOT NULL,  -- Referencia a TB Asset (pf_well)
+    type VARCHAR(50) NOT NULL,
+    current_value DOUBLE PRECISION,
+    recommended_value DOUBLE PRECISION,
+    expected_benefit_bpd DOUBLE PRECISION,
+    expected_savings_usd DOUBLE PRECISION,
+    confidence DOUBLE PRECISION,
+    priority VARCHAR(20) NOT NULL DEFAULT 'MEDIUM',
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    created_by UUID,
+    approved_by UUID,
+    executed_by UUID,
+    created_time BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()) * 1000,
+    approved_time BIGINT,
+    executed_time BIGINT,
+    expires_at BIGINT,
+    notes TEXT
 );
 
-SELECT create_hypertable('pf.telemetry', 'time',
-    chunk_time_interval => INTERVAL '1 day',
-    if_not_exists => TRUE
-);
-
--- Compression for old data
-ALTER TABLE pf.telemetry SET (
-    timescaledb.compress,
-    timescaledb.compress_segmentby = 'entity_id, key'
-);
-
-SELECT add_compression_policy('pf.telemetry', INTERVAL '7 days');
+CREATE INDEX idx_rec_tenant ON pf_recommendation(tenant_id);
+CREATE INDEX idx_rec_well ON pf_recommendation(well_id);
+CREATE INDEX idx_rec_status ON pf_recommendation(status);
+CREATE INDEX idx_rec_priority ON pf_recommendation(priority);
 ```
 
-**Retention Policy**:
-```sql
--- Keep raw data for 30 days
-SELECT add_retention_policy('pf.telemetry', INTERVAL '30 days');
-```
+### Time-Series: ts_kv (ThingsBoard Native)
 
-**Continuous Aggregates** (para performance):
-```sql
--- 1-minute aggregates
-CREATE MATERIALIZED VIEW pf.telemetry_1min
-WITH (timescaledb.continuous) AS
-SELECT
-    time_bucket('1 minute', time) AS bucket,
-    entity_id,
-    key,
-    AVG(value_numeric) AS avg_value,
-    MAX(value_numeric) AS max_value,
-    MIN(value_numeric) AS min_value
-FROM pf.telemetry
-GROUP BY bucket, entity_id, key;
+> **NO SE USA TimescaleDB CUSTOM**. ThingsBoard ya proporciona almacenamiento time-series optimizado con las tablas `ts_kv` y `ts_kv_latest`.
 
-SELECT add_continuous_aggregate_policy('pf.telemetry_1min',
-    start_offset => INTERVAL '1 hour',
-    end_offset => INTERVAL '1 minute',
-    schedule_interval => INTERVAL '1 minute');
+**ThingsBoard Time-Series Features**:
+- Particionamiento automático por tiempo
+- Políticas de retención configurables
+- Agregaciones nativas (AVG, MIN, MAX, SUM, COUNT)
+- API de telemetría con subscripciones WebSocket
+
+**Consulta de Telemetría via TB Service**:
+```java
+@Service
+@RequiredArgsConstructor
+public class PfTelemetryService {
+
+    private final TimeseriesService timeseriesService;  // TB Core Service
+
+    public List<TsKvEntry> getLatestTelemetry(UUID assetId, List<String> keys) {
+        return timeseriesService.findLatest(
+            TenantId.SYS_TENANT_ID,
+            new AssetId(assetId),
+            keys
+        ).get();
+    }
+
+    public List<TsKvEntry> getTelemetryHistory(UUID assetId, List<String> keys,
+                                                long startTs, long endTs) {
+        return timeseriesService.findAll(
+            TenantId.SYS_TENANT_ID,
+            new AssetId(assetId),
+            new BaseReadTsKvQuery(keys, startTs, endTs, 0, 10000, Aggregation.NONE)
+        ).get();
+    }
+}
 ```
 
 ### Redis 7.0
@@ -339,16 +501,17 @@ SELECT add_continuous_aggregate_policy('pf.telemetry_1min',
 
 **Data Structures**:
 ```
-# Current well status
-well:{wellId}:status → JSON string
+# Current well status (from TB attributes)
+well:{assetId}:status → JSON string
 TTL: 5 minutes
 
-# Latest telemetry
-well:{wellId}:telemetry:latest → Hash
+# Latest telemetry (from ts_kv_latest)
+well:{assetId}:telemetry:latest → Hash
 TTL: 1 minute
 
-# Active alarms
-alarms:active → Sorted Set (by timestamp)
+# Active alarms (from TB alarm table)
+alarms:active:{tenantId} → Sorted Set (by timestamp)
+TTL: 30 seconds (refresh from TB)
 
 # Session data
 session:{sessionId} → Hash
@@ -369,28 +532,71 @@ spring:
         min-idle: 0
 ```
 
-### RocksDB
-**Uso**: State store para Kafka Streams
-
-**Purpose**: Mantener estado de procesamiento de streams
-- Windowed aggregations
-- Join state
-- Deduplication state
-
 ---
 
 ## 📨 Messaging & Streaming
 
+### ThingsBoard Rule Engine
+
+> **Procesamiento de Telemetría**: Los módulos PF/PO usan el **TB Rule Engine** para procesar telemetría, NO Kafka Streams custom.
+
+**Rule Chain: PF Root**
+```
+Device → [Message Type Switch]
+              ↓
+    [Post Telemetry] → [PfDataQualityNode] → [Save Timeseries]
+              ↓                   ↓
+    [PfAlarmEvaluationNode] → [Create/Clear Alarm]
+              ↓
+    [Route to PO Module] → [PfOptimizationTriggerNode]
+```
+
+**Custom Rule Nodes**:
+
+```java
+@RuleNode(
+    type = ComponentType.FILTER,
+    name = "PF Data Quality",
+    nodeDescription = "Validates and enriches PF telemetry data"
+)
+public class PfDataQualityNode implements TbNode {
+
+    @Override
+    public void onMsg(TbContext ctx, TbMsg msg) {
+        JsonNode data = JacksonUtil.toJsonNode(msg.getData());
+
+        // Calculate quality score
+        double qualityScore = calculateQuality(data);
+
+        if (qualityScore >= 0.7) {
+            // Enrich with quality metadata
+            ObjectNode enriched = JacksonUtil.newObjectNode();
+            enriched.setAll((ObjectNode) data);
+            enriched.put("quality_score", qualityScore);
+
+            TbMsg newMsg = TbMsg.transformMsgData(msg, enriched.toString());
+            ctx.tellSuccess(newMsg);
+        } else {
+            ctx.tellFailure(msg, new RuntimeException("Low quality data: " + qualityScore));
+        }
+    }
+}
+```
+
 ### Apache Kafka 3.3
 
-**Topics**:
+**Topics** (via TB Rule Engine):
 ```
-pf.telemetry.raw        - Telemetría cruda desde MQTT
-pf.telemetry.validated  - Telemetría validada
-pf.alarms               - Alarmas generadas
-pf.events               - Eventos operacionales
-po.recommendations      - Recomendaciones generadas
-po.setpoint-changes     - Cambios de setpoint
+tb_rule_engine.main             - Main rule engine queue
+tb_rule_engine.notifications    - Notification queue
+tb_core.transport.api.requests  - Transport API requests
+```
+
+**Custom Topics** (solo para PO optimization):
+```
+nexus.pf.telemetry.enriched     - Telemetría enriquecida para ML
+nexus.po.recommendations        - Recomendaciones generadas
+nexus.po.setpoint-changes       - Cambios de setpoint
 ```
 
 **Configuration**:
@@ -399,93 +605,81 @@ spring:
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
-      group-id: nexus-pf-consumer
+      group-id: nexus-po-consumer
       auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
     producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       acks: all
       retries: 3
-```
-
-**Kafka Streams**:
-```java
-@Bean
-public KStream<String, TelemetryData> telemetryStream(
-    StreamsBuilder builder) {
-
-    return builder.stream("pf.telemetry.raw")
-        .filter((key, value) -> value.getQuality() > 0.9)
-        .mapValues(this::enrichWithMetadata)
-        .to("pf.telemetry.validated");
-}
 ```
 
 ---
 
 ## 🌐 IoT Protocols
 
-### MQTT (Eclipse Paho)
+### ThingsBoard Native Transports
+
+> Los módulos PF/PO utilizan los **transportes nativos de ThingsBoard** para comunicación con dispositivos, NO implementaciones custom.
+
+### MQTT (TB MQTT Transport)
 **Uso**: Comunicación con devices de campo
 
-```xml
-<dependency>
-    <groupId>org.eclipse.paho</groupId>
-    <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-    <version>1.2.5</version>
-</dependency>
+**Topic Structure** (TB Standard):
 ```
-
-**Topic Structure**:
-```
-v1/devices/{deviceId}/telemetry    - Device → Platform
-v1/devices/{deviceId}/attributes   - Device → Platform
-v1/devices/{deviceId}/rpc/request  - Platform → Device
-v1/devices/{deviceId}/rpc/response - Device → Platform
+v1/devices/me/telemetry         - Device → Platform (telemetry)
+v1/devices/me/attributes        - Device → Platform (attributes)
+v1/devices/me/rpc/request/+     - Platform → Device (RPC)
+v1/devices/me/rpc/response/+    - Device → Platform (RPC response)
 ```
 
 **QoS**: QoS 1 (at least once delivery)
 
-### OPC-UA (Eclipse Milo)
+### OPC-UA (TB Gateway)
 **Uso**: Integración con PLCs y SCADA
 
-```xml
-<dependency>
-    <groupId>org.eclipse.milo</groupId>
-    <artifactId>sdk-client</artifactId>
-    <version>0.6.11</version>
-</dependency>
+**Configuration** (tb-gateway.yaml):
+```yaml
+connectors:
+  - name: SCADA OPC-UA
+    type: opcua
+    configuration:
+      server:
+        url: opc.tcp://scada-server:4840/nexus/pf
+        security: None
+      mapping:
+        - deviceNodePattern: ns=2;s=Well\.*
+          deviceNamePattern: ${Well.name}
+          attributes:
+            - key: frequency
+              path: ns=2;s=Well.${deviceName}.Frequency
+          timeseries:
+            - key: motor_temp
+              path: ns=2;s=Well.${deviceName}.MotorTemp
+            - key: current_amps
+              path: ns=2;s=Well.${deviceName}.Current
 ```
 
-**Endpoints**:
-```
-opc.tcp://scada-server:4840/nexus/pf
-```
-
-**Node IDs**:
-```
-ns=2;s=Well.ABC123.Frequency
-ns=2;s=Well.ABC123.Current
-ns=2;s=Well.ABC123.Temperature
-```
-
-### Modbus (Modbus4j)
+### Modbus (TB Gateway)
 **Uso**: RTUs y PLCs legacy
 
-```xml
-<dependency>
-    <groupId>com.infiniteautomation</groupId>
-    <artifactId>modbus4j</artifactId>
-    <version>3.0.6</version>
-</dependency>
+**Configuration**:
+```yaml
+connectors:
+  - name: RTU Modbus
+    type: modbus
+    configuration:
+      master:
+        port: 502
+        slaves:
+          - host: 192.168.1.100
+            unitId: 1
+            timeseries:
+              - key: wellhead_pressure
+                address: 40001
+                type: float
+              - key: casing_pressure
+                address: 40003
+                type: float
 ```
-
-**Supported**:
-- Modbus TCP
-- Modbus RTU (via serial)
-- Function codes: 03 (Read Holding Registers), 06 (Write Single Register)
 
 ---
 
@@ -607,7 +801,7 @@ def predict_esp_failure():
     probability = float(prediction[0][0])
 
     return jsonify({
-        'well_id': data['well_id'],
+        'well_id': data['well_id'],  # TB Asset ID
         'failure_probability': probability,
         'days_to_failure': estimate_days(probability),
         'confidence': calculate_confidence(features)
@@ -659,48 +853,31 @@ CMD ["python", "api/app.py"]
 version: '3.8'
 
 services:
-  postgres:
-    image: timescale/timescaledb:latest-pg14
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: nexus
-      POSTGRES_USER: nexus
-      POSTGRES_PASSWORD: nexus
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+  # ThingsBoard handles PostgreSQL, Redis, Kafka internally
+  # For dev, we can use TB docker-compose
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-
-  nexus-backend:
-    build: ./backend
+  thingsboard:
+    image: thingsboard/tb-postgres:latest
     ports:
       - "8080:8080"
-    depends_on:
-      - postgres
-      - redis
-      - kafka
+      - "1883:1883"  # MQTT
+      - "5683:5683"  # CoAP
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nexus
-      SPRING_REDIS_HOST: redis
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      TB_QUEUE_TYPE: in-memory
+    volumes:
+      - tb_data:/data
+      - tb_logs:/var/log/thingsboard
+
+  nexus-pf-module:
+    build: ./pf-module
+    ports:
+      - "8081:8081"
+    depends_on:
+      - thingsboard
+    environment:
+      TB_URL: http://thingsboard:8080
+      TB_USERNAME: tenant@thingsboard.org
+      TB_PASSWORD: tenant
 
   ml-service:
     build: ./ml-service
@@ -710,7 +887,8 @@ services:
       - ml_models:/app/models
 
 volumes:
-  postgres_data:
+  tb_data:
+  tb_logs:
   ml_models:
 ```
 
@@ -741,11 +919,11 @@ spec:
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "production"
-        - name: SPRING_DATASOURCE_URL
+        - name: TB_URL
           valueFrom:
-            secretKeyRef:
-              name: nexus-secrets
-              key: database-url
+            configMapKeyRef:
+              name: nexus-config
+              key: thingsboard-url
         resources:
           requests:
             memory: "1Gi"
@@ -858,8 +1036,8 @@ scrape_configs:
 **Grafana Dashboards**:
 - JVM metrics (heap, CPU, threads)
 - HTTP request metrics (rate, latency, errors)
-- Database connection pool
-- Kafka consumer lag
+- TB Asset counts by type
+- TB Alarm statistics
 - Custom business metrics (pozos monitoreados, alarmas activas)
 
 ---
@@ -880,7 +1058,7 @@ scrape_configs:
 ### Testing
 - **JUnit 5** (Unit tests Java)
 - **Mockito** (Mocking)
-- **TestContainers** (Integration tests)
+- **TestContainers** (Integration tests with TB)
 - **Jest** (Unit tests TypeScript)
 - **Cypress** (E2E tests)
 - **pytest** (Python tests)
@@ -897,8 +1075,9 @@ public class OpenApiConfig {
         return new OpenAPI()
             .info(new Info()
                 .title("Nexus PF/PO API")
-                .version("1.0")
-                .description("Production Facilities & Optimization APIs"));
+                .version("2.0")
+                .description("Production Facilities & Optimization APIs\n\n" +
+                    "Uses ThingsBoard Core for data storage (Assets, Attributes, ts_kv, Alarms)"));
     }
 }
 ```
@@ -913,14 +1092,16 @@ Acceso: `http://localhost:8080/swagger-ui.html`
 |----------|----------------------|----------------|---------------|
 | **Backend Language** | Java, Python, Go | Java 17 | Consistencia con ThingsBoard, ecosystem maduro |
 | **Frontend Framework** | Angular, React, Vue | Angular 18 | Ya usado en Nexus, TypeScript nativo |
-| **Database** | PostgreSQL, MySQL, Oracle | PostgreSQL 14 | Open source, JSON support, extensible |
-| **Time-Series DB** | InfluxDB, TimescaleDB, Cassandra | TimescaleDB | Compatible con PostgreSQL, SQL queries |
-| **Message Queue** | Kafka, RabbitMQ, Redis Streams | Kafka | Ya usado en ThingsBoard, stream processing |
+| **Entity Storage** | Custom Tables, TB Assets | **TB Assets** | Consistencia con CT/RV, evita duplicación |
+| **Properties Storage** | DB Columns, TB Attributes | **TB Attributes** | Flexible, no requiere migrations |
+| **Time-Series DB** | TimescaleDB custom, TB ts_kv | **TB ts_kv** | Ya optimizado, API nativa, particionado |
+| **Alarm System** | Custom table, TB Alarms | **TB Alarms** | Dashboard integration, API completa |
+| **Message Queue** | Kafka, RabbitMQ | Kafka (via TB) | Ya integrado en ThingsBoard |
 | **Cache** | Redis, Memcached | Redis | Data structures ricas, pub/sub |
-| **ML Framework** | TensorFlow, PyTorch, scikit-learn | TensorFlow + scikit-learn | TF para DL, sklearn para traditional ML |
-| **Containerization** | Docker, Podman | Docker | Estándar de industria, ecosistema amplio |
-| **Orchestration** | Kubernetes, Docker Swarm | Kubernetes | Estándar para producción, cloud-agnostic |
-| **CI/CD** | GitHub Actions, Jenkins, GitLab CI | GitHub Actions | Integración nativa con GitHub, fácil setup |
+| **ML Framework** | TensorFlow, PyTorch | TensorFlow + scikit-learn | TF para DL, sklearn para traditional ML |
+| **Containerization** | Docker, Podman | Docker | Estándar de industria |
+| **Orchestration** | Kubernetes, Docker Swarm | Kubernetes | Estándar para producción |
+| **CI/CD** | GitHub Actions, Jenkins | GitHub Actions | Integración nativa con GitHub |
 
 ---
 
@@ -929,7 +1110,7 @@ Acceso: `http://localhost:8080/swagger-ui.html`
 ### Authentication & Authorization
 - **JWT** tokens (siguiendo estándar ThingsBoard)
 - **Role-Based Access Control (RBAC)**
-- **Multi-tenant isolation** a nivel de base de datos
+- **Multi-tenant isolation** via TB TenantId
 
 ### Data Encryption
 - **TLS 1.3** para todas las comunicaciones
@@ -939,7 +1120,7 @@ Acceso: `http://localhost:8080/swagger-ui.html`
 ### API Security
 - **Rate limiting** (100 requests/min por usuario)
 - **Input validation** con Jakarta Validation
-- **SQL injection prevention** con prepared statements
+- **SQL injection prevention** con prepared statements (TB Services)
 - **XSS prevention** con sanitización de inputs
 
 ---
@@ -961,8 +1142,8 @@ Acceso: `http://localhost:8080/swagger-ui.html`
 | Métrica | Target | Medición |
 |---------|--------|----------|
 | **API Latency (p95)** | < 200ms | Prometheus |
-| **Telemetry Processing** | < 1 seg | Kafka lag |
-| **Database Query Time** | < 100ms (p95) | pg_stat_statements |
+| **Telemetry Processing** | < 1 seg | TB Rule Engine metrics |
+| **TB API Query Time** | < 100ms (p95) | TB metrics |
 | **Frontend Page Load** | < 2 seg | Lighthouse |
 | **Concurrent Users** | 1000+ | Load testing (JMeter) |
 | **Throughput** | 10K req/sec | Gatling |
@@ -971,9 +1152,10 @@ Acceso: `http://localhost:8080/swagger-ui.html`
 
 ## 📚 Referencias
 
+- [ThingsBoard Documentation](https://thingsboard.io/docs/)
+- [ThingsBoard API Reference](https://thingsboard.io/docs/reference/rest-api/)
 - [Spring Boot Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/)
 - [Angular Documentation](https://angular.io/docs)
-- [TimescaleDB Best Practices](https://docs.timescale.com/timescaledb/latest/how-to-guides/)
 - [Apache Kafka Documentation](https://kafka.apache.org/documentation/)
 - [TensorFlow Guide](https://www.tensorflow.org/guide)
 - [Kubernetes Documentation](https://kubernetes.io/docs/home/)
@@ -981,4 +1163,5 @@ Acceso: `http://localhost:8080/swagger-ui.html`
 ---
 
 **Última Actualización**: 2026-02-03
+**Arquitectura**: ThingsBoard Core (Assets, Attributes, ts_kv, Alarm System)
 **Mantenedor**: Tech Lead Backend / Architect

@@ -38,10 +38,10 @@ Este directorio contiene toda la documentación de diseño, arquitectura y plani
 ### 🏗️ Especificaciones Técnicas
 
 5. **[PF_MODULE_SPEC.md](./PF_MODULE_SPEC.md)** - Especificaciones del módulo PF (33 KB)
-   - Arquitectura y componentes
-   - Modelo de datos (entities + SQL schemas)
-   - Servicios y REST APIs
-   - Telemetry processor y alarm system
+   - Arquitectura y componentes (patrón CT/RV)
+   - Modelo de datos (Asset Types + Attributes + ts_kv)
+   - Wrapper Services y REST APIs
+   - Rule Engine integration y TB Alarm System
    - Frontend components
 
 6. **[PO_MODULE_SPEC.md](./PO_MODULE_SPEC.md)** - Especificaciones del módulo PO (52 KB)
@@ -54,7 +54,7 @@ Este directorio contiene toda la documentación de diseño, arquitectura y plani
 7. **[TECHNICAL_STACK.md](./TECHNICAL_STACK.md)** - Stack tecnológico (27 KB)
    - Backend: Spring Boot 3.4, Java 17
    - Frontend: Angular 18, TypeScript 5.5
-   - Base de datos: PostgreSQL 14, TimescaleDB 2.11
+   - Base de datos: ThingsBoard Core (PostgreSQL + ts_kv + attribute_kv)
    - Mensajería: Kafka 3.3
    - ML: Python 3.11, TensorFlow 2.15
    - Incluye ejemplos de código
@@ -153,8 +153,8 @@ Sistema inteligente de optimización operacional:
 ## 👥 Equipo Requerido
 
 ### Backend Team
-- 2 Senior Java Developers (Spring Boot)
-- 1 Data Engineer (TimescaleDB, Kafka)
+- 2 Senior Java Developers (Spring Boot, ThingsBoard Core)
+- 1 Data Engineer (TB Rule Engine, Kafka)
 - 1 ML Engineer (Python, TensorFlow)
 
 ### Frontend Team
@@ -196,21 +196,26 @@ Sistema inteligente de optimización operacional:
 
 ## 📝 Convenciones
 
-### Nomenclatura de Código
-- **Entidades**: `PfWell`, `PoRecommendation`
-- **Servicios**: `PfWellService`, `PoOptimizationService`
-- **DAOs**: `PfWellDao`, `PoKpiDao`
-- **DTOs**: `PfWellDto`, `PoHealthScoreDto`
+### Nomenclatura de Código (Patrón TB Core)
+- **DTOs**: `PfWellDto`, `PoRecommendationDto` (con `ASSET_TYPE` y `ATTR_*` constants)
+- **Wrapper Services**: `PfAssetService`, `PfAttributeService` (wrappers sobre TB APIs)
+- **Domain Services**: `PfWellService`, `PoOptimizationService` (lógica de negocio)
+- **Rule Nodes**: `PfDataQualityNode`, `PfAlarmEvaluationNode`
 - **Controllers**: `PfWellController`, `PoOptimizationController`
 
 ### Paquetes Java
 ```
-org.thingsboard.server.common
-├── data.pf           - Entidades PF
-├── data.po           - Entidades PO
-└── service
-    ├── pf            - Servicios PF
-    └── po            - Servicios PO
+org.thingsboard.nexus
+├── pf
+│   ├── dto           - DTOs con ASSET_TYPE constants
+│   ├── service       - Wrapper Services + Domain Services
+│   ├── controller    - REST Controllers
+│   └── rule          - Custom Rule Nodes
+└── po
+    ├── dto           - DTOs PO
+    ├── service       - Services PO
+    ├── model         - JPA entities (solo pf_recommendation, pf_optimization_result)
+    └── repository    - JPA repos para tablas custom
 ```
 
 ### Rutas API

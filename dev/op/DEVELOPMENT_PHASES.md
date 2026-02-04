@@ -1,10 +1,53 @@
 # DEVELOPMENT PHASES - Detailed Implementation Plan
 
 **Proyecto**: Nexus PF & PO Modules
-**Versión**: 1.0
+**Versión**: 2.1 (Arquitectura ThingsBoard Core)
 **Fecha**: 2026-02-03
+**Última Actualización**: 2026-02-03
 
 Este documento detalla el plan de desarrollo por fases, con user stories, tasks técnicos, y criterios de aceptación específicos para cada sprint.
+
+> **Nota de Arquitectura v2.0**: Los módulos PF y PO utilizan la arquitectura ThingsBoard Core
+> (Assets, Attributes, ts_kv, Alarm System) en lugar de tablas custom. Solo se crean tablas
+> específicas para datos que requieren workflows complejos (po_optimization_result, po_recommendation).
+
+---
+
+## 🚀 ESTADO DE IMPLEMENTACIÓN ACTUAL
+
+### Módulo PF (Production Facilities) - ~70% Backend
+
+| Componente | Estado | Archivos | Notas |
+|------------|--------|----------|-------|
+| DTOs (Well, Wellpad, ESP, PCP, GasLift, RodPump) | ✅ | 14 | Completo |
+| Enums (WellStatus, LiftSystemType, etc.) | ✅ | 5 | Completo |
+| Wrapper Services (PfAssetService, PfAttributeService) | ✅ | 2 | Completo |
+| Domain Services (Well, Wellpad, FlowStation, ESP, PCP, GasLift, RodPump) | ✅ | 10 | Completo |
+| Telemetry & Alarm Services | ✅ | 5 | Usando TB Core |
+| Controllers REST | ✅ | 12 | /api/nexus/pf/* |
+| MQTT Integration | ⚠️ | 2 | Básico |
+| WebSocket | ⚠️ | 2 | Básico |
+| Unit Tests | ❌ | 0 | Pendiente |
+
+**Total: 56 archivos Java, ~11,329 LOC**
+
+### Módulo PO (Production Optimization) - ~60% Backend
+
+| Componente | Estado | Archivos | Notas |
+|------------|--------|----------|-------|
+| DTOs (HealthScore, Recommendation, Optimization, ESP, GasLift, KPI) | ✅ | 8 | Completo |
+| Enums (RecommendationStatus, OptimizationType, HealthLevel) | ✅ | 3 | Completo |
+| JPA Entities (PoOptimizationResult, PoRecommendation) | ✅ | 2 | Tablas custom |
+| Repositories | ✅ | 2 | Spring Data JPA |
+| Wrapper Services (PoAssetService, PoAttributeService) | ✅ | 2 | Completo |
+| Domain Services (Health, Recommendation, Optimization) | ✅ | 4 | Completo |
+| ESP Frequency Optimizer | ✅ | 1 | Algoritmo funcional |
+| Gas Lift Allocator | ⚠️ | 0 | DTO ready, falta algoritmo |
+| Controllers REST | ✅ | 3 | /api/nexus/po/* |
+| Exception Handling | ✅ | 4 | Completo |
+| Unit Tests | ❌ | 0 | Pendiente |
+
+**Total: 27 archivos Java, ~4,481 LOC**
 
 ---
 
@@ -47,7 +90,7 @@ Este documento detalla el plan de desarrollo por fases, con user stories, tasks 
 
 - [ ] Architecture review con CTO
   - [ ] Validar decisiones de tecnología
-  - [ ] Aprobar patrones de arquitectura
+  - [ ] Aprobar patrones de arquitectura (ThingsBoard Core)
   - [ ] Definir non-functional requirements
 
 - [ ] Budget approval por Steering Committee
@@ -60,7 +103,7 @@ Este documento detalla el plan de desarrollo por fases, con user stories, tasks 
   ```bash
   # Dev Environment
   - EC2/VM: 2 × t3.xlarge (backend)
-  - RDS PostgreSQL: db.t3.medium
+  - ThingsBoard: PostgreSQL + ts_kv tables
   - ElastiCache Redis: cache.t3.micro
   - MSK Kafka: kafka.m5.large × 2
 
@@ -69,7 +112,7 @@ Este documento detalla el plan de desarrollo por fases, con user stories, tasks 
 
   # Production Environment
   - Auto-scaling group: 3-10 instances
-  - RDS Multi-AZ
+  - PostgreSQL Multi-AZ (ThingsBoard DB)
   - Redis cluster (3 nodes)
   - Kafka cluster (3 brokers)
   ```
@@ -81,11 +124,11 @@ Este documento detalla el plan de desarrollo por fases, con user stories, tasks 
   - [ ] Docker registry setup
   - [ ] Kubernetes cluster setup (EKS/AKS/GKE)
 
-- [ ] **Databases**
-  - [ ] PostgreSQL 14 instalado
-  - [ ] TimescaleDB extension enabled
-  - [ ] Schema `pf` y `po` creados
-  - [ ] Migration tool configurado (Flyway)
+- [ ] **ThingsBoard Configuration**
+  - [ ] ThingsBoard instalado y configurado
+  - [ ] Asset Types definidos (pf_well, pf_wellpad, etc.)
+  - [ ] Asset Profiles con Alarm Rules configurados
+  - [ ] Rule Chains creadas para PF/PO
   - [ ] Backup policy definido (daily, 30 days retention)
 
 - [ ] **Kafka**
@@ -93,7 +136,6 @@ Este documento detalla el plan de desarrollo por fases, con user stories, tasks 
     ```
     pf.telemetry.raw (partitions: 10, replication: 3)
     pf.telemetry.validated (partitions: 10, replication: 3)
-    pf.alarms (partitions: 5, replication: 3)
     po.recommendations (partitions: 5, replication: 3)
     ```
   - [ ] Consumer groups configurados
@@ -122,7 +164,7 @@ Este documento detalla el plan de desarrollo por fases, con user stories, tasks 
   - [ ] Access to all systems granted
   - [ ] Development environment setup guide
   - [ ] Codebase walkthrough session
-  - [ ] Architecture presentation
+  - [ ] Architecture presentation (ThingsBoard Core pattern)
 
 - [ ] **Kickoff Meeting**
   - [ ] Agenda preparada
@@ -155,79 +197,127 @@ Este documento detalla el plan de desarrollo por fases, con user stories, tasks 
 **Budget**: $600K
 **Go-Live**: Alpha pilot con 5 pozos
 
-### Sprint 1-2: Data Model & APIs Foundation
+### Sprint 1-2: DTOs, Wrapper Services & Rule Chain Foundation
 
 #### Sprint 1 (Mar 11-24)
 
-**Sprint Goal**: Crear fundamentos del módulo PF
+**Sprint Goal**: Crear fundamentos del módulo PF usando ThingsBoard Core
 
 **User Stories**:
 
-**[PF-001] Crear modelo de datos de pozo**
+**[PF-001] Crear PfWellDto y PfAssetService**
 ```
 Como developer
-Quiero crear la entidad PfWell con todos sus atributos
-Para poder persistir información de pozos productores
+Quiero crear DTOs y Wrapper Services para pozos
+Para poder gestionar pozos productores usando TB Assets
 
 Acceptance Criteria:
-- Entity PfWell creada con anotaciones JPA
-- Relación con Wellpad (Many-to-One)
-- Relación con RvWell (One-to-One opcional)
-- Audit fields (created_time, updated_time, created_by)
-- Status enum (PRODUCING, SHUT_IN, UNDER_WORKOVER, ABANDONED)
-- Mapped to table pf.well
+- PfWellDto creado con constantes ASSET_TYPE y ATTR_*
+- PfAssetService como wrapper de TB AssetService
+- PfAttributeService como wrapper de TB AttributesService
+- Relación con Wellpad via TB Relations (Contains)
+- Relación con RvWell via TB Relations (BelongsTo)
+- Status enum stored as SERVER_SCOPE attribute
+
+DTOs Pattern:
+```java
+@Data
+@Builder
+public class PfWellDto {
+    public static final String ASSET_TYPE = "pf_well";
+    public static final String ATTR_API_NUMBER = "api_number";
+    public static final String ATTR_STATUS = "status";
+    public static final String ATTR_LATITUDE = "latitude";
+    public static final String ATTR_LONGITUDE = "longitude";
+
+    private UUID assetId;  // TB Asset ID
+    private String name;
+    private String apiNumber;
+    private WellStatus status;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
+}
+```
 
 Technical Tasks:
-1. Create PfWell.java entity
-2. Create PfWellDao interface
-3. Create database migration V1__create_pf_well_table.sql
-4. Write unit tests for entity mapping
-5. Integration test for CRUD operations
+1. Create PfWellDto.java with ASSET_TYPE and ATTR_* constants
+2. Create PfAssetService.java (wrapper for TB AssetService)
+3. Create PfAttributeService.java (wrapper for TB AttributesService)
+4. Create Asset Profile "pf_well" in ThingsBoard
+5. Write unit tests for wrapper services
+6. Integration test for CRUD operations
 
 Estimation: 5 story points
 Assigned to: Backend Dev 1
 ```
 
-**[PF-002] Crear DTOs y Mappers**
+**[PF-002] Crear Validación y Mappers**
 ```
 Como developer
-Quiero tener DTOs para transferencia de datos
-Para separar capa de persistencia de API
+Quiero tener validación y mappers para DTOs
+Para convertir entre DTOs y datos de TB Assets/Attributes
 
 Acceptance Criteria:
-- PfWellDto creado con validación
-- PfWellMapper (entity <-> DTO) implementado
-- Validación con Jakarta Validation
+- Validación con Jakarta Validation en DTOs
+- Mapper methods en PfWellService para Asset+Attributes → PfWellDto
 - Unit tests para mappers
 
 Technical Tasks:
-1. Create PfWellDto.java
-2. Create PfWellMapper using MapStruct
-3. Add validation annotations (@NotNull, @Size, etc)
+1. Add validation annotations to PfWellDto (@NotNull, @Size, etc)
+2. Create buildAttributeMap() method in PfWellService
+3. Create mapToDto() method to convert Asset+Attributes to DTO
 4. Write unit tests for mapping logic
 
 Estimation: 3 story points
 Assigned to: Backend Dev 1
 ```
 
-**[PF-003] Implementar servicios CRUD**
+**[PF-003] Implementar PfWellService con lógica de negocio**
 ```
 Como developer
-Quiero servicios para operaciones CRUD
+Quiero servicios para operaciones CRUD usando TB Core
 Para encapsular lógica de negocio
 
+Service Pattern:
+```java
+@Service
+@RequiredArgsConstructor
+public class PfWellService {
+    private final PfAssetService pfAssetService;
+    private final PfAttributeService pfAttributeService;
+    private final RelationService relationService;
+
+    public PfWellDto createWell(UUID tenantId, PfWellDto dto) {
+        Asset asset = pfAssetService.createAsset(tenantId,
+            PfWellDto.ASSET_TYPE, dto.getName());
+        dto.setAssetId(asset.getId().getId());
+        pfAttributeService.saveServerAttributes(dto.getAssetId(),
+            buildAttributeMap(dto));
+        return dto;
+    }
+
+    public PfWellDto findById(UUID wellAssetId) {
+        Asset asset = pfAssetService.getAssetById(wellAssetId);
+        List<AttributeKvEntry> attrs = pfAttributeService
+            .getServerAttributes(wellAssetId);
+        return mapToDto(asset, attrs);
+    }
+}
+```
+
 Acceptance Criteria:
-- PfWellService interface y implementation
-- Métodos: create, findById, findAll, update, delete
+- PfWellService implementation using wrapper services
+- Métodos: create, findById, findByTenant, update, delete
 - Validación de business rules
-- Transactional operations
+- Manejo de TB Relations
 - Unit tests con Mockito
 
 Technical Tasks:
 1. Create PfWellService interface
-2. Implement PfWellServiceImpl
+2. Implement PfWellService using wrapper services
 3. Add business validation logic
-4. Write unit tests (coverage > 80%)
+4. Implement relation management (wellpad contains well)
+5. Write unit tests (coverage > 80%)
 
 Estimation: 5 story points
 Assigned to: Backend Dev 1
@@ -249,7 +339,7 @@ Acceptance Criteria:
 
 Technical Tasks:
 1. Create PfWellController
-2. Implement CRUD endpoints
+2. Implement CRUD endpoints using PfWellService
 3. Add @ApiOperation annotations
 4. Create ControllerAdvice for exception handling
 5. Integration tests para cada endpoint
@@ -258,26 +348,35 @@ Estimation: 8 story points
 Assigned to: Backend Dev 1
 ```
 
-**[PF-005] Setup TimescaleDB Hypertables**
+**[PF-005] Configurar Rule Chain para PF Telemetry**
 ```
 Como data engineer
-Quiero hypertables configuradas para telemetría
-Para optimizar queries de series temporales
+Quiero Rule Chain configurada para procesar telemetría PF
+Para optimizar flujo de datos usando infraestructura TB nativa
+
+Architecture:
+```
+MQTT Device → TB Transport → Rule Chain:
+  ├── Message Type Switch
+  ├── PfDataQualityNode (custom)
+  ├── PfAlarmEvaluationNode (custom) → TB Alarm System
+  └── Save Timeseries (ts_kv native)
+```
 
 Acceptance Criteria:
-- Table pf.telemetry creada
-- Hypertable configurada (chunk_time_interval = 1 day)
-- Compression policy (after 7 days)
-- Retention policy (30 days)
-- Indexes optimizados
+- Rule Chain "PF Telemetry Processing" creada
+- Custom Rule Node PfDataQualityNode implementado
+- Datos fluyen a ts_kv nativo de TB
+- Latency < 1 segundo end-to-end
 - Performance test: insert 10K rows/sec
 
 Technical Tasks:
-1. Create migration V2__create_telemetry_hypertable.sql
-2. Configure timescaledb settings
-3. Create indexes on entity_id and key
-4. Create continuous aggregates (1min, 1hour)
+1. Create Rule Chain "PF Telemetry Processing" in TB
+2. Implement PfDataQualityNode (custom Rule Node)
+3. Configure Save Timeseries node
+4. Configure relations to PfAlarmEvaluationNode
 5. Performance testing
+6. Create Grafana dashboard for Rule Chain metrics
 
 Estimation: 8 story points
 Assigned to: Data Engineer
@@ -294,79 +393,167 @@ Assigned to: Data Engineer
 
 #### Sprint 2 (Mar 25 - Apr 7)
 
-**Sprint Goal**: Completar modelo de datos PF y crear entidades relacionadas
+**Sprint Goal**: Completar DTOs y servicios para entidades relacionadas
 
 **User Stories**:
 
-**[PF-006] Crear entidad Wellpad (Macolla)**
-- Similar structure to PF-001
-- Wellpad has Many Wells
-- Geographic coordinates (lat, lon)
+**[PF-006] Crear PfWellpadDto y PfWellpadService**
+```
+Como developer
+Quiero DTOs y servicios para Wellpads
+Para gestionar macollas como TB Assets
+
+Acceptance Criteria:
+- PfWellpadDto con ASSET_TYPE = "pf_wellpad"
+- PfWellpadService usando wrapper services
+- TB Relation: Wellpad Contains Wells
+- Geographic coordinates como SERVER_SCOPE attributes
 - Capacity attributes
 
-**[PF-007] Crear entidad Flow Station**
-- Processing capacity
-- Equipment list
-- Connection to wellpads
+DTO Pattern:
+```java
+@Data @Builder
+public class PfWellpadDto {
+    public static final String ASSET_TYPE = "pf_wellpad";
+    public static final String ATTR_LATITUDE = "latitude";
+    public static final String ATTR_LONGITUDE = "longitude";
+    public static final String ATTR_CAPACITY = "capacity";
+
+    private UUID assetId;
+    private String name;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
+    private Integer capacity;
+}
+```
+
+Technical Tasks:
+1. Create PfWellpadDto.java
+2. Create PfWellpadService.java
+3. Configure TB Relation "Contains" for wellpad-wells
+4. Write unit and integration tests
+```
+
+**[PF-007] Crear PfFlowStationDto y PfFlowStationService**
+```
+Como developer
+Quiero DTOs y servicios para Flow Stations
+Para gestionar estaciones de flujo como TB Assets
+
+Acceptance Criteria:
+- PfFlowStationDto con ASSET_TYPE = "pf_flow_station"
+- Processing capacity como attribute
+- Equipment list como JSON attribute
+- TB Relations para conectar con wellpads
+
+Technical Tasks:
+1. Create PfFlowStationDto.java
+2. Create PfFlowStationService.java
+3. Configure TB Relations
+4. Write unit and integration tests
+```
 
 **[PF-008] Batch import de pozos**
-- CSV import functionality
-- Validation and error handling
-- Bulk insert optimization
+```
+Como operador
+Quiero importar pozos desde CSV
+Para poblar sistema con datos existentes
 
-**[PF-009] Configuración de límites operacionales**
-- Table pf.operational_limits
-- Por variable, por pozo
-- High/Low threshold values
-- Severity classification
+Acceptance Criteria:
+- CSV import functionality usando batch Asset creation
+- Validación y error handling
+- Bulk attribute save optimization
+- Progress reporting
+
+Technical Tasks:
+1. Create PfImportService with batch processing
+2. Implement CSV parser with validation
+3. Batch create assets and attributes
+4. Create error report generation
+5. Integration tests
+```
+
+**[PF-009] Configuración de Alarm Rules en Asset Profiles**
+```
+Como operador
+Quiero límites operacionales configurados en Asset Profiles
+Para recibir alarmas automáticas via TB Alarm System
+
+Architecture (NO custom table):
+```
+Asset Profile "pf_well":
+  └── Alarm Rules:
+      ├── High Pressure (severity: CRITICAL)
+      ├── Low Pressure (severity: WARNING)
+      ├── High Temperature (severity: CRITICAL)
+      └── Vibration Alert (severity: MAJOR)
+```
+
+Acceptance Criteria:
+- Asset Profile "pf_well" con Alarm Rules
+- Por variable, por severity
+- Threshold values configurable via TB UI
+- Alarmas generadas automáticamente por TB Alarm System
+
+Technical Tasks:
+1. Configure Asset Profile "pf_well" in TB
+2. Add Alarm Rules for operational limits
+3. Configure severity levels (CRITICAL, MAJOR, WARNING)
+4. Test alarm generation with sample telemetry
+5. Create documentation for operators
+```
 
 **Definition of Done Sprint 2**:
-- [ ] All CRUD entities complete (Well, Wellpad, FlowStation)
+- [ ] All CRUD DTOs/Services complete (Well, Wellpad, FlowStation)
 - [ ] Batch import functional
-- [ ] Operational limits configuration working
+- [ ] Asset Profiles with Alarm Rules configured
 - [ ] API documentation complete
 - [ ] Load test: 100 concurrent requests
 
-### Sprint 3-4: SCADA Integration & Telemetry
+### Sprint 3-4: SCADA Integration & Telemetry via Rule Engine
 
 #### Sprint 3 (Apr 8-21)
 
-**Sprint Goal**: Integrar con MQTT y procesar telemetría
+**Sprint Goal**: Integrar con MQTT y procesar telemetría via Rule Engine
 
-**[PF-010] MQTT Broker Connection**
+**[PF-010] MQTT Integration via TB Transport**
 ```
 Como sistema
-Quiero conectarme al broker MQTT de campo
+Quiero conectarme al broker MQTT usando TB Transport
 Para recibir telemetría en tiempo real
 
+Architecture:
+```
+Field MQTT Broker → TB MQTT Transport → Rule Engine → ts_kv
+```
+
 Acceptance Criteria:
-- Connection a broker MQTT establecida
-- Subscription a topics configurados
-- Reconnection automático si falla
-- TLS/SSL configurado
+- TB MQTT Transport configurado
+- Device provisioning para pozos
+- Connection segura TLS/SSL
 - QoS 1 (at least once)
-- Monitoring de connection status
+- Monitoring via TB dashboards
 
 Technical Tasks:
-1. Configure Eclipse Paho client
-2. Implement MqttConnectionService
-3. Add connection pooling
-4. Implement retry logic con exponential backoff
-5. Add metrics (connected, messages_received, errors)
-6. Integration test con MockMqttBroker
+1. Configure TB MQTT Transport
+2. Create device provisioning scripts
+3. Configure TLS certificates
+4. Create monitoring dashboard
+5. Integration test con mock broker
+6. Add metrics (connected, messages_received, errors)
 
 Estimation: 13 story points
 Assigned to: Backend Dev 1 + Data Engineer
 ```
 
-**[PF-011] Topic Configuration por Pozo**
+**[PF-011] Topic Configuration per Well**
 ```
 Como operador
 Quiero que cada pozo tenga su topic MQTT
 Para separar streams de telemetría
 
-Topic Structure:
-v1/devices/{wellId}/telemetry
+Topic Structure (TB format):
+v1/devices/{deviceToken}/telemetry
 
 Payload Format:
 {
@@ -381,58 +568,68 @@ Payload Format:
 }
 
 Acceptance Criteria:
-- Topic pattern configurable per well
-- Support for wildcard subscriptions
-- Payload validation (JSON schema)
+- Topic pattern via TB device token
+- Payload validation in Rule Chain
+- Automatic device-to-asset relation
 ```
 
-**[PF-012] Telemetry Processor**
+**[PF-012] Custom Rule Nodes for PF Processing**
 ```
 Como sistema
-Quiero procesar telemetría y almacenar en TimescaleDB
-Para tener histórico de datos
+Quiero Rule Nodes custom para procesamiento PF
+Para aplicar lógica específica del dominio
+
+Custom Rule Nodes:
+1. PfDataQualityNode - Validación de calidad
+2. PfAlarmEvaluationNode - Evaluación de alarmas por reglas de negocio
+3. PfTelemetryEnrichmentNode - Enriquecimiento de datos
 
 Acceptance Criteria:
-- TelemetryProcessor service implementado
-- Parse de payload MQTT
-- Validation de datos
-- Bulk insert a TimescaleDB (batch de 100 registros)
+- 3 custom Rule Nodes implementados
+- Integrados en Rule Chain "PF Telemetry Processing"
+- Datos almacenados en ts_kv nativo
 - Latency < 1 segundo end-to-end
-- Error handling y dead letter queue
+- Error handling con logging
 
 Technical Tasks:
-1. Create TelemetryProcessor service
-2. Implement batch insertion
-3. Add data validation
-4. Create error handling (DLQ)
-5. Performance optimization (async processing)
-6. Monitoring metrics
+1. Create PfDataQualityNode (extends TbAbstractRuleNode)
+2. Create PfAlarmEvaluationNode
+3. Create PfTelemetryEnrichmentNode
+4. Register nodes in TB plugin system
+5. Configure Rule Chain
+6. Performance testing
 
 Estimation: 13 story points
 ```
 
-**[PF-013] Data Quality Validator**
+**[PF-013] Data Quality Validator Node**
 ```
 Como sistema
-Quiero validar calidad de datos recibidos
+Quiero validar calidad de datos en Rule Chain
 Para descartar datos erróneos
 
-Rules:
-- Range validation (ej: temperature 0-500°F)
-- Rate of change validation (max 10% change per minute)
-- Missing data detection
-- Outlier detection (3 sigma rule)
+PfDataQualityNode Implementation:
+```java
+@RuleNode(
+    type = ComponentType.FILTER,
+    name = "PF Data Quality Validator"
+)
+public class PfDataQualityNode extends TbAbstractRuleNode {
+    // Range validation (ej: temperature 0-500°F)
+    // Rate of change validation
+    // Missing data detection
+    // Quality score calculation
+}
+```
 
-Quality Score:
-- 1.0 = perfect data
-- 0.9 = minor issues
-- 0.5 = suspicious
-- 0.0 = invalid
+Quality Score as Attribute:
+- Stored as SERVER_SCOPE attribute "data_quality_score"
+- 1.0 = perfect data, 0.0 = invalid
 
 Acceptance Criteria:
-- DataQualityValidator implementado
-- Quality score calculado
-- Datos con score < 0.7 marcados para review
+- DataQualityNode implementado
+- Quality score saved as attribute
+- Low quality data routed to review queue
 - Dashboard de data quality
 
 Estimation: 8 story points
@@ -441,60 +638,375 @@ Estimation: 8 story points
 #### Sprint 4 (Apr 22 - May 5)
 
 **[PF-014] Real-time Dashboard Backend**
-- WebSocket endpoint para push de datos
-- Kafka consumer para telemetría
-- Redis cache de latest values
-- SSE (Server-Sent Events) como alternativa
+```
+Como operador
+Quiero ver datos en tiempo real
+Para monitorear pozos
+
+Architecture (using TB native):
+```
+ts_kv → TB WebSocket API → Frontend Dashboard
+```
+
+Acceptance Criteria:
+- TB WebSocket subscriptions configuradas
+- Latest values via attribute subscriptions
+- Telemetry history via ts_kv queries
+- Performance optimized
+
+Technical Tasks:
+1. Configure TB WebSocket subscriptions
+2. Create subscription helper services
+3. Implement caching strategy
+4. Performance testing
+```
 
 **[PF-015] Telemetry Query API**
-- GET /wells/{id}/telemetry/latest
-- GET /wells/{id}/telemetry?from=&to=&keys=
-- Aggregation queries (avg, min, max por período)
-- Performance optimization con continuous aggregates
+```
+Como integrador
+Quiero API para consultar telemetría histórica
+Para análisis y reportes
+
+Endpoints (via TB API extension):
+- GET /api/pf/wells/{id}/telemetry/latest
+- GET /api/pf/wells/{id}/telemetry?from=&to=&keys=
+- GET /api/pf/wells/{id}/telemetry/aggregated?interval=&agg=
+
+Acceptance Criteria:
+- Endpoints usando TB TelemetryService
+- Aggregation queries (avg, min, max)
+- Performance optimized
+```
 
 **Definition of Done Sprint 3-4**:
-- [ ] MQTT integration funcional end-to-end
-- [ ] Telemetry flowing a TimescaleDB
-- [ ] Data quality validation operativa
+- [ ] MQTT integration via TB Transport functional
+- [ ] Telemetry flowing to ts_kv
+- [ ] Custom Rule Nodes operativos
+- [ ] Data quality validation working
 - [ ] Latency < 1 segundo medida
 - [ ] Load test: 100 pozos @ 1 msg/sec
-- [ ] Dashboard backend ready para frontend
+- [ ] Dashboard backend ready
 
-### Sprint 5-6: Alarm System
+### Sprint 5-6: Alarm System via TB Alarms
 
-[Similar detailed breakdown for alarm system implementation...]
+#### Sprint 5 (May 6-19)
+
+**[PF-016] Alarm Rules in Asset Profiles**
+```
+Como operador
+Quiero alarmas configuradas en Asset Profiles
+Para recibir notificaciones automáticas
+
+Architecture (NO custom table):
+```
+TB Asset Profile "pf_well":
+  └── Alarm Rules (JSON config):
+      {
+        "highPressure": {
+          "condition": "pressure > threshold",
+          "severity": "CRITICAL",
+          "propagate": true
+        }
+      }
+```
+
+Acceptance Criteria:
+- Asset Profiles con Alarm Rules configurados
+- Severities: CRITICAL, MAJOR, WARNING, INDETERMINATE
+- Alarm propagation to parent assets
+- Alarm lifecycle management via TB
+```
+
+**[PF-017] Custom Alarm Evaluation Node**
+```
+Como sistema
+Quiero evaluación de alarmas con lógica de negocio
+Para generar alarmas contextuales
+
+PfAlarmEvaluationNode:
+```java
+@RuleNode(type = ComponentType.ACTION, name = "PF Alarm Evaluator")
+public class PfAlarmEvaluationNode extends TbAbstractRuleNode {
+    // Evaluates business rules
+    // Creates TB Alarms via AlarmService
+    // Supports complex conditions
+}
+```
+
+Acceptance Criteria:
+- Custom alarm evaluation logic
+- Integration with TB Alarm System
+- Support for multi-condition alarms
+```
+
+**[PF-018] Alarm Notification Service**
+```
+Como operador
+Quiero recibir notificaciones de alarmas
+Para responder rápidamente
+
+Architecture:
+```
+TB Alarm System → Rule Chain → Notification Targets:
+  ├── Email (via TB notification)
+  ├── SMS (via TB notification)
+  └── WebSocket (real-time UI)
+```
+
+Acceptance Criteria:
+- Email notifications configuradas
+- SMS notifications configuradas
+- Real-time updates via WebSocket
+- Notification templates
+```
 
 ### Sprint 7-8: Frontend Dashboards
 
-[Similar detailed breakdown for frontend components...]
+**[PF-019] TB Dashboard Templates**
+```
+Como operador
+Quiero dashboards preconstruidos
+Para monitorear operaciones
+
+TB Dashboards:
+1. Well Overview - Single well monitoring
+2. Wellpad Overview - Multiple wells
+3. Alarm Console - Active alarms
+4. Production Summary - KPIs
+
+Acceptance Criteria:
+- 4 dashboard templates creados
+- Widgets configurados
+- Real-time data subscriptions
+- Mobile-responsive
+```
 
 ### Sprint 9-10: Alpha Pilot
 
-[Similar detailed breakdown for pilot deployment...]
+**[PF-020] Pilot Deployment**
+```
+Como equipo
+Quiero desplegar en piloto
+Para validar con datos reales
+
+Pilot Scope:
+- 5 pozos en producción
+- 1 wellpad
+- Full telemetry integration
+- Alarm monitoring
+
+Acceptance Criteria:
+- 5 wells configured as TB Assets
+- Telemetry flowing via Rule Chain
+- Alarms generating correctly
+- User training completed
+```
 
 ---
 
 ## FASE 2: Lift Systems (3 meses) {#fase-2}
 
-[Detailed breakdown similar to Phase 1, for ESP/PCP/Gas Lift implementation...]
+**Duración**: 1 Ago - 31 Oct 2026
+**Focus**: ESP, PCP, Gas Lift, Rod Pump como TB Assets
+
+### Key Stories
+
+**[PF-021] ESP System as TB Asset**
+```
+DTOs Pattern:
+```java
+@Data @Builder
+public class PfEspSystemDto {
+    public static final String ASSET_TYPE = "pf_esp_system";
+    public static final String ATTR_MOTOR_HP = "motor_hp";
+    public static final String ATTR_STAGES = "stages";
+    public static final String ATTR_FREQUENCY = "frequency";
+    // ...
+}
+```
+
+Relation: Well HasSystem ESP
+Telemetry: Stored in ts_kv
+Attributes: Motor specs, performance params
+```
+
+**[PF-022] PCP System as TB Asset**
+- Similar pattern to ESP
+- ASSET_TYPE = "pf_pcp_system"
+- Specific attributes for PCP
+
+**[PF-023] Gas Lift System as TB Asset**
+- ASSET_TYPE = "pf_gas_lift_system"
+- Injection parameters as attributes
+
+**[PF-024] Rod Pump System as TB Asset**
+- ASSET_TYPE = "pf_rod_pump_system"
+- Dynamometer data via telemetry
 
 ---
 
 ## FASE 3: PO Module Base (4 meses) {#fase-3}
 
-[Detailed breakdown for optimization module...]
+**Duración**: 1 Nov 2026 - 28 Feb 2027
+**Focus**: Optimización usando TB Core + Tablas Custom justificadas
+
+### Architecture Decision
+
+```
+PO Module Storage:
+├── TB Core (for majority of data):
+│   ├── Health Scores → SERVER_SCOPE attributes on well assets
+│   ├── Optimization Status → SERVER_SCOPE attributes
+│   └── Telemetry Analysis → ts_kv
+│
+└── Custom Tables (ONLY for complex workflows):
+    ├── pf_optimization_result (versioned results)
+    └── pf_recommendation (workflow states)
+```
+
+### Key Stories
+
+**[PO-001] PoAssetService y PoAttributeService**
+```
+Como developer
+Quiero wrapper services para PO
+Para acceder a TB Core de forma consistente
+
+Services:
+```java
+@Service
+public class PoAssetService {
+    // Wrapper for TB AssetService
+    // Access to pf_well, pf_esp_system assets
+}
+
+@Service
+public class PoAttributeService {
+    // Save/read health scores as attributes
+    // Save/read optimization status as attributes
+}
+```
+```
+
+**[PO-002] Health Score as TB Attributes**
+```
+Como sistema
+Quiero health scores guardados como atributos
+Para consulta rápida sin tablas custom
+
+Pattern (NO custom table):
+```java
+public static final String ATTR_HEALTH_SCORE = "health_score";
+public static final String ATTR_FAILURE_PROBABILITY = "failure_probability";
+
+public void saveHealthScore(UUID wellAssetId, HealthScoreDto score) {
+    Map<String, Object> attrs = new HashMap<>();
+    attrs.put(ATTR_HEALTH_SCORE, score.getScore());
+    attrs.put(ATTR_FAILURE_PROBABILITY, score.getFailureProbability());
+    poAttributeService.saveServerAttributes(wellAssetId, attrs);
+}
+```
+```
+
+**[PO-003] Custom Table: pf_optimization_result**
+```
+Como sistema
+Quiero tabla custom para resultados de optimización
+Porque requiere versionado y queries complejos
+
+Justification:
+- Multiple versions per well
+- Complex queries for ML training
+- Historical analysis requirements
+
+Entity:
+```java
+@Entity
+@Table(name = "pf_optimization_result")
+public class PfOptimizationResult {
+    @Id private UUID id;
+    private UUID tenantId;
+    private UUID wellAssetId;  // Reference to TB Asset
+    private String optimizationType;
+    private JsonNode parameters;
+    private JsonNode results;
+    private Long timestamp;
+}
+```
+```
+
+**[PO-004] Custom Table: pf_recommendation**
+```
+Como sistema
+Quiero tabla custom para recomendaciones
+Porque tiene workflow de estados
+
+Justification:
+- State machine: PENDING → APPROVED → EXECUTED
+- Audit trail required
+- Complex business logic
+
+Entity:
+```java
+@Entity
+@Table(name = "pf_recommendation")
+public class PfRecommendation {
+    @Id private UUID id;
+    private UUID tenantId;
+    private UUID wellAssetId;  // Reference to TB Asset
+    private String type;
+    private String status;  // PENDING, APPROVED, EXECUTED, REJECTED
+    private JsonNode parameters;
+    private UUID approvedBy;
+    private Long approvedTime;
+}
+```
+```
 
 ---
 
 ## FASE 4: Advanced Analytics (6 meses) {#fase-4}
 
-[Detailed breakdown for ML implementation...]
+**Duración**: 1 Mar - 31 Ago 2027
+**Focus**: ML/AI con datos de TB Core
+
+### Key Stories
+
+**[PO-010] ML Pipeline with TB Data**
+```
+Architecture:
+```
+ts_kv (TB) → Kafka Export → ML Platform → Results:
+  ├── Health Score → attribute_kv (TB)
+  └── Predictions → pf_optimization_result (custom)
+```
+```
+
+**[PO-011] Predictive Failure Models**
+- Read telemetry from ts_kv
+- Train models externally
+- Store predictions as attributes
 
 ---
 
 ## FASE 5: Automation (3 meses) {#fase-5}
 
-[Detailed breakdown for closed-loop control...]
+**Duración**: 1 Sep - 30 Nov 2027
+**Focus**: Closed-loop control via Rule Engine
+
+### Key Stories
+
+**[PO-020] Automated Setpoint Optimization**
+```
+Architecture:
+```
+TB Rule Chain:
+  ├── Read current telemetry
+  ├── PfOptimizationNode (custom)
+  ├── Approval workflow (if required)
+  └── Send RPC to device
+```
+```
 
 ---
 
@@ -587,6 +1099,29 @@ Action items for next sprint
 | Bugs Fixed | | | | |
 | Code Coverage % | | | | |
 | SonarQube Issues | | | | |
+
+---
+
+## Decisión Arquitectónica: Por qué ThingsBoard Core
+
+### Beneficios de usar TB Core vs Tablas Custom
+
+| Aspecto | TB Core | Tablas Custom |
+|---------|---------|---------------|
+| **Time-to-market** | Rápido | Lento |
+| **Mantenimiento** | Bajo | Alto |
+| **Escalabilidad** | Probada | Por implementar |
+| **UI/Dashboards** | Incluidos | Desarrollar |
+| **Alarmas** | Sistema completo | Implementar |
+| **Queries temporales** | Optimizados | Implementar |
+
+### Cuándo usar Tablas Custom
+
+Solo crear tablas custom cuando:
+1. ✅ Se requiere versionado histórico (pf_optimization_result)
+2. ✅ Hay workflow de estados complejo (pf_recommendation)
+3. ✅ Se necesitan JOINs SQL complejos para ML
+4. ❌ NO para datos que TB ya maneja bien (telemetría, atributos, alarmas)
 
 ---
 

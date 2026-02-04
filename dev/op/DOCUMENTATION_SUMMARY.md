@@ -50,7 +50,7 @@ This directory contains **10 comprehensive documents** totaling **~240 KB** of t
 3. **Technology Stack**
    - **Backend**: Spring Boot 3.4 + Java 17 (consistency with existing TB modules)
    - **Frontend**: Angular 18 (consistent with TB UI)
-   - **Time-Series DB**: TimescaleDB (optimized for telemetry)
+   - **Data Layer**: ThingsBoard Core (Assets, Attributes, ts_kv, Alarms)
    - **ML Platform**: Python 3.11 + TensorFlow (industry standard)
    - **Message Broker**: Kafka (event-driven architecture)
 
@@ -62,22 +62,22 @@ This directory contains **10 comprehensive documents** totaling **~240 KB** of t
 
 ### Technical Decisions
 
-1. **Data Architecture**
+1. **Data Architecture (ThingsBoard Core)**
    ```
-   MQTT → Kafka → TimescaleDB
+   MQTT → TB Transport → Rule Engine → ts_kv
    ├─ Real-time telemetry (1 msg/sec per well)
-   ├─ Data quality validation
-   ├─ Hypertable partitioning (1-day chunks)
-   ├─ Compression policy (after 7 days)
-   └─ Retention policy (30 days raw, aggregates longer)
+   ├─ Data quality validation (PfDataQualityNode)
+   ├─ TB native partitioning (time-series)
+   ├─ TB retention policies
+   └─ Assets (pf_well, pf_wellpad) + Attributes (SERVER_SCOPE)
    ```
 
-2. **Alarm System**
-   - Rule-based engine (threshold, rate-of-change, composite)
-   - 4 severity levels: CRITICAL, HIGH, MEDIUM, LOW
-   - Multi-channel notifications (email, SMS, Telegram)
-   - Alarm lifecycle: ACTIVE → ACK → CLEARED
-   - Hysteresis to prevent flapping
+2. **Alarm System (TB Alarm System)**
+   - Asset Profiles with Alarm Rules (threshold, rate-of-change, composite)
+   - TB severity levels: CRITICAL, MAJOR, MINOR, WARNING
+   - TB Notification System (email, SMS, Telegram)
+   - TB Alarm lifecycle: ACTIVE → ACK → CLEARED
+   - Alarm Rules with hysteresis configuration
 
 3. **Machine Learning Models**
    - **ESP Failure Prediction**: LSTM (168-hour lookback)
@@ -135,11 +135,11 @@ This directory contains **10 comprehensive documents** totaling **~240 KB** of t
 ### Key Components
 
 **PF Module Components:**
-- Well, Wellpad, FlowStation entities
-- TelemetryProcessor (handles 100+ wells @ 1 msg/sec)
-- AlarmService (rule-based engine)
-- DataQualityValidator
-- LiftSystemControllers (ESP, PCP, Gas Lift, Rod Pump)
+- Asset Types: pf_well, pf_wellpad, pf_flow_station (TB Assets)
+- PfTelemetryService (wrapper over TB Telemetry API - handles 100+ wells @ 1 msg/sec)
+- PfAlarmService (wrapper over TB Alarm System)
+- PfDataQualityNode (custom Rule Node)
+- LiftSystemServices (ESP, PCP, Gas Lift, Rod Pump)
 
 **PO Module Components:**
 - EspFrequencyOptimizer (nodal analysis)
@@ -223,7 +223,7 @@ This directory contains **10 comprehensive documents** totaling **~240 KB** of t
 - **Language**: Java 17 (LTS)
 - **Framework**: Spring Boot 3.4.10
 - **Security**: Spring Security 6 + JWT
-- **Database**: PostgreSQL 14 + TimescaleDB 2.11
+- **Data Layer**: ThingsBoard Core (PostgreSQL + ts_kv + attribute_kv)
 - **Cache**: Redis 7.0
 - **Messaging**: Apache Kafka 3.3
 - **ML Runtime**: Python 3.11 + TensorFlow 2.15
@@ -299,10 +299,10 @@ This directory contains **10 comprehensive documents** totaling **~240 KB** of t
 **Read First**: [QUICK_START.md](QUICK_START.md) → [PF_MODULE_SPEC.md](PF_MODULE_SPEC.md) → [PO_MODULE_SPEC.md](PO_MODULE_SPEC.md)
 
 **Key Resources**:
-- Entity models (JPA annotations)
-- Service layer patterns
+- DTO patterns with ASSET_TYPE constants (patrón CT/RV)
+- Wrapper Services (PfAssetService, PfAttributeService)
 - REST API contracts
-- Database schema migrations
+- Custom Rule Nodes for Rule Engine
 - Code examples throughout specs
 
 **Time to Read**: 3-4 hours
@@ -323,7 +323,7 @@ This directory contains **10 comprehensive documents** totaling **~240 KB** of t
 **Read First**: [TECHNICAL_STACK.md](TECHNICAL_STACK.md) → [PO_MODULE_SPEC.md](PO_MODULE_SPEC.md) (Section 6-7)
 
 **Key Resources**:
-- TimescaleDB hypertable configuration
+- ThingsBoard ts_kv data access patterns
 - Kafka topic specifications
 - ML model architectures (LSTM, Isolation Forest)
 - Python code examples

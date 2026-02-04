@@ -124,7 +124,7 @@ Secciones principales:
 ### TECHNICAL_STACK.md (27 KB)
 - Frontend: Angular 18 + TypeScript
 - Backend: Spring Boot 3.4 + Java 17
-- Data: PostgreSQL + TimescaleDB + Redis + Kafka
+- Data: ThingsBoard Core (Assets, ts_kv, Attributes) + Redis + Kafka
 - ML: Python + TensorFlow + scikit-learn
 - DevOps: Docker + Kubernetes
 - **Ejemplos de código** y configuraciones
@@ -138,13 +138,13 @@ Secciones principales:
 - Sprint ceremony templates
 
 ### PF_MODULE_SPEC.md (40 KB)
-- Arquitectura del módulo completa
-- **Modelo de datos** con código Java
-- **Schema SQL completo** (PostgreSQL + TimescaleDB)
-- Servicios (PfWellService, TelemetryProcessor, AlarmService)
+- Arquitectura del módulo completa (patrón CT/RV)
+- **Modelo de datos** con DTOs y ASSET_TYPE constants
+- **Asset Types** (pf_well, pf_wellpad, pf_esp_system, etc.)
+- Wrapper Services (PfAssetService, PfAttributeService, PfWellService)
 - **APIs REST** con ejemplos
-- Pipeline de telemetría
-- Sistema de alarmas
+- Pipeline de telemetría via Rule Engine
+- Sistema de alarmas (TB Alarm System)
 - Frontend components (Angular)
 
 ---
@@ -159,16 +159,16 @@ RV (Yacimientos) → PF (Facilities) → PO (Optimization)
 
 **Justificación**: Separación de responsabilidades, escalabilidad
 
-### 2. Event-Driven Architecture
+### 2. Event-Driven Architecture (ThingsBoard Core)
 ```
-Device → MQTT → Kafka → Stream Processor → TimescaleDB → UI
-                  ↓
-                Alarm Service → Notifications
+Device → MQTT → TB Transport → Rule Engine → ts_kv → UI
+                                    ↓
+                              TB Alarm System → Notifications
 ```
 
 ### 3. Stack Alineado con Nexus Existente
-- **Mantiene**: Java, Spring Boot, Angular, PostgreSQL
-- **Extiende**: TimescaleDB (series temporales)
+- **Mantiene**: Java, Spring Boot, Angular, ThingsBoard Core
+- **Extiende**: TB Rule Engine (custom Rule Nodes)
 - **Añade**: Python (ML microservice)
 
 ---

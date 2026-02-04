@@ -1,7 +1,7 @@
 # MASTER PLAN - Production Facilities & Optimization Modules
 
 **Proyecto**: Nexus PF & PO Modules
-**Versión**: 1.0
+**Versión**: 2.0 (Arquitectura ThingsBoard Core)
 **Fecha**: Febrero 2026
 **Estado**: Plan de Diseño
 **Preparado para**: Hector Diaz
@@ -54,7 +54,14 @@ Implementar dos módulos complementarios en la plataforma Nexus:
 - Recomendaciones inteligentes para maximizar producción
 - KPIs de producción y económicos
 
-### 1.3 Beneficios Esperados
+### 1.3 Decisión Arquitectónica Clave
+
+> **Arquitectura ThingsBoard Core**: Los módulos PF y PO utilizan la infraestructura nativa de
+> ThingsBoard (Assets, Attributes, ts_kv, Alarm System, Rule Engine) en lugar de crear tablas
+> custom duplicadas. Esto sigue el patrón exitoso de los módulos CT y RV, reduciendo código
+> duplicado y aprovechando las capacidades probadas de TB.
+
+### 1.4 Beneficios Esperados
 
 | Categoría | Beneficio | Impacto Estimado |
 |-----------|-----------|------------------|
@@ -65,7 +72,7 @@ Implementar dos módulos complementarios en la plataforma Nexus:
 | **Eficiencia** | Automatización de decisiones rutinarias | 70% más rápido |
 | **ROI** | Retorno de inversión | 300%+ en 18 meses |
 
-### 1.4 Inversión Estimada
+### 1.5 Inversión Estimada
 
 | Concepto | Monto (USD) |
 |----------|-------------|
@@ -228,7 +235,7 @@ Implementar dos módulos complementarios en la plataforma Nexus:
 │                                                                     │
 │  ┌────────────────────  PRESENTATION LAYER  ──────────────────────┐ │
 │  │                                                                 │ │
-│  │  Angular 18 Frontend                                           │ │
+│  │  Angular 18 Frontend + ThingsBoard Dashboards                  │ │
 │  │  ├─ PF Dashboards (Wellpads, Flow Stations, Wells)            │ │
 │  │  ├─ PO Dashboards (Optimizers, Recommendations, KPIs)         │ │
 │  │  ├─ Mobile App (Field Operations)                             │ │
@@ -243,9 +250,9 @@ Implementar dos módulos complementarios en la plataforma Nexus:
 │  │  │  (Facilities) │  │ (Optimization)│  │ (Reservoirs)  │      │ │
 │  │  │               │  │               │  │               │      │ │
 │  │  │ • Monitoring  │←─│ • Optimizers  │←─│ • IPR/PVT     │      │ │
-│  │  │ • Telemetry   │  │ • ML Models   │  │ • Decline     │      │ │
-│  │  │ • Alarms      │  │ • Recommends  │  │ • MatBalance  │      │ │
-│  │  │ • SCADA Integ │  │ • Health Score│  │               │      │ │
+│  │  │ • TB Assets   │  │ • ML Models   │  │ • Decline     │      │ │
+│  │  │ • TB Alarms   │  │ • Recommends  │  │ • MatBalance  │      │ │
+│  │  │ • Rule Engine │  │ • Health Score│  │               │      │ │
 │  │  └───────────────┘  └───────────────┘  └───────────────┘      │ │
 │  │                                                                 │ │
 │  │  ┌───────────────┐  ┌───────────────┐                          │ │
@@ -257,25 +264,37 @@ Implementar dos módulos complementarios en la plataforma Nexus:
 │                                   ↕                                  │
 │  ┌────────────────────  SERVICE LAYER  ─────────────────────────────┐│
 │  │                                                                 │ │
-│  │  Business Services (Spring Boot 3.4)                           │ │
-│  │  ├─ PfWellService, PfTelemetryService                          │ │
+│  │  Wrapper Services (Spring Boot 3.4)                            │ │
+│  │  ├─ PfAssetService (wraps TB AssetService)                     │ │
+│  │  ├─ PfAttributeService (wraps TB AttributesService)            │ │
+│  │  ├─ PfTelemetryService (wraps TB TelemetryService)             │ │
 │  │  ├─ PoOptimizationService, PoPredictionService                 │ │
 │  │  ├─ Integration Services (SCADA, ERP, CMMS)                    │ │
-│  │  └─ Rule Engine (Alarm Processing)                             │ │
+│  │  └─ Custom Rule Nodes (PfDataQualityNode, PfAlarmNode)         │ │
 │  │                                                                 │ │
 │  └─────────────────────────────────────────────────────────────────┘ │
 │                                   ↕                                  │
-│  ┌────────────────────  DATA LAYER  ───────────────────────────────┐│
+│  ┌────────────────────  DATA LAYER (ThingsBoard Core)  ────────────┐│
+│  │                                                                 │ │
+│  │  ┌──────────────────────────────────────────────────────┐      │ │
+│  │  │  ThingsBoard Core Tables (PostgreSQL)                │      │ │
+│  │  │  • asset (pf_well, pf_wellpad, pf_esp_system, etc.) │      │ │
+│  │  │  • attribute_kv (SERVER_SCOPE attributes)            │      │ │
+│  │  │  • ts_kv, ts_kv_latest (Time-series telemetry)      │      │ │
+│  │  │  • alarm (TB Alarm System)                           │      │ │
+│  │  │  • relation (Contains, BelongsTo, HasSystem)        │      │ │
+│  │  └──────────────────────────────────────────────────────┘      │ │
+│  │                                                                 │ │
+│  │  ┌──────────────────────────────────────────────────────┐      │ │
+│  │  │  Custom Tables (ONLY 2 - for complex workflows)      │      │ │
+│  │  │  • pf_optimization_result (versioned ML results)     │      │ │
+│  │  │  • pf_recommendation (state machine workflow)        │      │ │
+│  │  └──────────────────────────────────────────────────────┘      │ │
 │  │                                                                 │ │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │ │
-│  │  │ PostgreSQL   │  │ TimescaleDB  │  │    Redis     │          │ │
-│  │  │ (Metadata)   │  │(Time-series) │  │   (Cache)    │          │ │
+│  │  │    Redis     │  │    Kafka     │  │   RocksDB    │          │ │
+│  │  │   (Cache)    │  │  (Messaging) │  │(State Store) │          │ │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘          │ │
-│  │                                                                 │ │
-│  │  ┌──────────────┐  ┌──────────────┐                            │ │
-│  │  │    Kafka     │  │   RocksDB    │                            │ │
-│  │  │  (Messaging) │  │(State Store) │                            │ │
-│  │  └──────────────┘  └──────────────┘                            │ │
 │  │                                                                 │ │
 │  └─────────────────────────────────────────────────────────────────┘ │
 │                                   ↕                                  │
@@ -293,60 +312,85 @@ Implementar dos módulos complementarios en la plataforma Nexus:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.2 Arquitectura de Datos
+### 4.2 Arquitectura de Datos (ThingsBoard Core)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         DATA ARCHITECTURE                           │
+│              DATA ARCHITECTURE (ThingsBoard Core)                   │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
-│  REAL-TIME LAYER (Hot Data)                                        │
+│  THINGSBOARD CORE TABLES (Public Schema)                           │
 │  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  TimescaleDB (Time-Series)                                  │   │
-│  │  • Telemetría en tiempo real (1-10 seg)                     │   │
-│  │  • Retención: 30 días completos                             │   │
-│  │  • Particionado por tiempo (chunks de 1 día)                │   │
-│  │  • Agregaciones automáticas (1min, 5min, 1hr)               │   │
-│  │  • ~100M registros/día en campo de 100 pozos                │   │
+│  │                                                             │   │
+│  │  asset                                                      │   │
+│  │  • type: pf_well, pf_wellpad, pf_flow_station, etc.        │   │
+│  │  • id, tenant_id, name, label, additional_info             │   │
+│  │                                                             │   │
+│  │  attribute_kv (SERVER_SCOPE)                               │   │
+│  │  • Well properties: api_number, status, latitude, longitude│   │
+│  │  • ESP specs: motor_hp, stages, frequency                  │   │
+│  │  • Health scores: health_score, failure_probability        │   │
+│  │  • Operational limits: high_pressure, low_pressure         │   │
+│  │                                                             │   │
+│  │  ts_kv, ts_kv_latest (Time-Series)                         │   │
+│  │  • Real-time telemetry: pressure, temperature, frequency   │   │
+│  │  • Native TB time-series optimizations                     │   │
+│  │  • Partitioning handled by TB automatically                │   │
+│  │                                                             │   │
+│  │  alarm (TB Alarm System)                                   │   │
+│  │  • Configured via Asset Profiles + Alarm Rules             │   │
+│  │  • Severities: CRITICAL, MAJOR, WARNING, INDETERMINATE     │   │
+│  │  • Auto-propagation to parent assets                       │   │
+│  │                                                             │   │
+│  │  relation                                                   │   │
+│  │  • Wellpad Contains Wells                                  │   │
+│  │  • Well HasSystem ESP/PCP/GasLift                          │   │
+│  │  • FlowStation ProcessesFrom Wellpad                       │   │
+│  │                                                             │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 │                                                                     │
-│  WARM DATA LAYER                                                   │
+│  CUSTOM TABLES (Only 2 - for complex workflows)                    │
 │  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  PostgreSQL (Relational)                                    │   │
-│  │  • Metadata de entidades (pozos, equipos, macollas)         │   │
-│  │  • Configuración y límites operacionales                    │   │
-│  │  • Recomendaciones y acciones                               │   │
-│  │  • KPIs calculados (diario/semanal/mensual)                 │   │
-│  │  • Audit logs                                               │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  COLD DATA LAYER (Historical)                                      │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  S3 / Object Storage                                        │   │
-│  │  • Telemetría histórica (>30 días)                          │   │
-│  │  • Compresión: Parquet format                               │   │
-│  │  • Particionado: /year/month/day/                           │   │
-│  │  • Usado para entrenamiento ML y análisis histórico         │   │
+│  │                                                             │   │
+│  │  pf_optimization_result                                     │   │
+│  │  • Versioned ML/optimization results                       │   │
+│  │  • Complex queries for ML training                         │   │
+│  │  • Historical analysis requirements                        │   │
+│  │  • Fields: id, tenant_id, well_asset_id (UUID ref to TB),  │   │
+│  │    optimization_type, parameters (JSON), results (JSON)    │   │
+│  │                                                             │   │
+│  │  pf_recommendation                                          │   │
+│  │  • State machine: PENDING → APPROVED → EXECUTED            │   │
+│  │  • Approval workflow with audit trail                      │   │
+│  │  • Fields: id, tenant_id, well_asset_id, type, status,     │   │
+│  │    parameters, approved_by, executed_time                  │   │
+│  │                                                             │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 │                                                                     │
 │  CACHE LAYER                                                       │
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │  Redis (In-Memory)                                          │   │
-│  │  • Estado actual de pozos                                   │   │
-│  │  • Últimos valores de telemetría                            │   │
-│  │  • Alarmas activas                                          │   │
-│  │  • Session data                                             │   │
-│  │  • TTL: 5 minutos                                           │   │
+│  │  • Latest attribute values (from TB attribute_kv)          │   │
+│  │  • Active alarms (from TB alarm table)                     │   │
+│  │  • Session data                                            │   │
+│  │  • TTL: 5 minutos                                          │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 │                                                                     │
 │  STREAM PROCESSING                                                 │
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │  Apache Kafka                                               │   │
-│  │  • Topic: pf.telemetry                                      │   │
-│  │  • Topic: pf.alarms                                         │   │
-│  │  • Topic: po.recommendations                                │   │
-│  │  • Topic: po.setpoint-changes                               │   │
-│  │  • Retention: 7 días                                        │   │
+│  │  • Topic: pf.telemetry.raw                                 │   │
+│  │  • Topic: po.recommendations                               │   │
+│  │  • Topic: po.setpoint-changes                              │   │
+│  │  • Retention: 7 días                                       │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  COLD DATA (Historical)                                            │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │  S3 / Object Storage                                        │   │
+│  │  • Telemetry export from ts_kv (>30 días)                  │   │
+│  │  • Parquet format for ML training                          │   │
+│  │  • Partitioned: /year/month/day/                           │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
@@ -354,31 +398,57 @@ Implementar dos módulos complementarios en la plataforma Nexus:
 
 ### 4.3 Patrones de Arquitectura
 
-#### Patrón 1: Event-Driven Architecture
+#### Patrón 1: ThingsBoard Rule Engine Processing
 ```
-Device → MQTT → Kafka → Stream Processor → TimescaleDB → WebSocket → UI
-                  ↓
-                Rule Engine → Alarm Service → Notification
-```
-
-#### Patrón 2: CQRS (Command Query Responsibility Segregation)
-```
-WRITE PATH:
-UI → Command → Service → Kafka → Event Store → PostgreSQL
-
-READ PATH:
-UI → Query → Cache (Redis) → Materialized View → PostgreSQL/TimescaleDB
+Device → TB MQTT Transport → Rule Engine:
+    ├── Message Type Switch
+    ├── PfDataQualityNode (custom) → quality_score as attribute
+    ├── PfAlarmEvaluationNode (custom) → TB Alarm System
+    └── Save Timeseries → ts_kv (native)
 ```
 
-#### Patrón 3: Microservices (Phase 5)
+#### Patrón 2: Wrapper Services Pattern
 ```
-API Gateway
-    ├─ PF Service
-    ├─ PO Service
-    ├─ ML Service (Python/Flask)
-    ├─ Notification Service
-    └─ Integration Service
+Controller → PfWellService → PfAssetService → TB AssetService
+                          → PfAttributeService → TB AttributesService
+                          → PfTelemetryService → TB TelemetryService
 ```
+
+#### Patrón 3: Assets vs Custom Tables Decision
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ¿Necesita versionado histórico?                           │
+│       ↓ NO                           ↓ YES                 │
+│  ┌─────────────────┐          ┌─────────────────────┐      │
+│  │ ¿Tiene workflow │          │ Tabla Custom        │      │
+│  │ de estados?     │          │ (pf_optimization_   │      │
+│  │       ↓ NO      │          │  result)            │      │
+│  │ ┌─────────────┐ │          └─────────────────────┘      │
+│  │ │ TB Asset +  │ │                                        │
+│  │ │ Attributes  │ │                                        │
+│  │ └─────────────┘ │                                        │
+│  │       ↓ YES     │                                        │
+│  │ ┌─────────────┐ │                                        │
+│  │ │ Tabla Custom│ │                                        │
+│  │ │(pf_recommend│ │                                        │
+│  │ │ ation)      │ │                                        │
+│  │ └─────────────┘ │                                        │
+│  └─────────────────┘                                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 4.4 Por qué ThingsBoard Core vs Tablas Custom
+
+| Aspecto | TB Core | Tablas Custom |
+|---------|---------|---------------|
+| **Time-to-market** | ✅ Rápido | ❌ Lento |
+| **Mantenimiento** | ✅ Bajo (TB mantiene) | ❌ Alto |
+| **Escalabilidad** | ✅ Probada | ⚠️ Por implementar |
+| **UI/Dashboards** | ✅ Incluidos | ❌ Desarrollar |
+| **Alarmas** | ✅ Sistema completo | ❌ Implementar |
+| **Queries temporales** | ✅ Optimizados | ❌ Implementar |
+| **WebSocket real-time** | ✅ Nativo | ❌ Implementar |
+| **Multi-tenancy** | ✅ Nativo | ⚠️ Implementar |
 
 ---
 
@@ -388,30 +458,30 @@ API Gateway
 
 #### Módulo PF - Production Facilities
 
-**✅ Gestión de Activos**
-- Pozos productores
-- Macollas/Wellpads
-- Estaciones de flujo
-- Separadores
-- Tanques de almacenamiento
-- Líneas de recolección
+**✅ Gestión de Activos (como TB Assets)**
+- Pozos productores (asset type: pf_well)
+- Macollas/Wellpads (asset type: pf_wellpad)
+- Estaciones de flujo (asset type: pf_flow_station)
+- Separadores (asset type: pf_separator)
+- Tanques de almacenamiento (asset type: pf_tank)
+- Líneas de recolección (asset type: pf_pipeline)
 
-**✅ Sistemas de Levantamiento Artificial**
-- ESP (Electric Submersible Pump)
-- PCP (Progressing Cavity Pump)
-- Gas Lift
-- Rod Pump (Bombeo Mecánico)
-- Jet Pump
-- Inyección de diluentes
+**✅ Sistemas de Levantamiento Artificial (como TB Assets)**
+- ESP (asset type: pf_esp_system)
+- PCP (asset type: pf_pcp_system)
+- Gas Lift (asset type: pf_gas_lift_system)
+- Rod Pump (asset type: pf_rod_pump_system)
+- Jet Pump (asset type: pf_jet_pump_system)
+- Inyección de diluentes (asset type: pf_diluent_system)
 
 **✅ Telemetría en Tiempo Real**
-- Integración SCADA (OPC-UA, Modbus)
-- Procesamiento de señales
-- Validación de calidad de datos
-- Almacenamiento en TimescaleDB
+- Integración SCADA via TB MQTT Transport
+- Procesamiento via TB Rule Engine
+- Validación de calidad via custom Rule Nodes
+- Almacenamiento en ts_kv nativo
 
 **✅ Monitoreo y Visualización**
-- Dashboard de campo
+- TB Dashboards nativos + Custom Angular components
 - Vista de macolla/wellpad
 - Vista de estación de flujo
 - Vista de pozo individual
@@ -419,11 +489,11 @@ API Gateway
 - Mapas geográficos
 
 **✅ Alarmas y Eventos**
-- Alarmas por límites (high/low)
-- Alarmas por rate of change
-- Clasificación automática (crítica/alta/media/baja)
-- Notificaciones (email, SMS, push)
-- Registro de eventos
+- TB Alarm System con Asset Profiles
+- Alarm Rules configurables
+- Clasificación por severity (CRITICAL/MAJOR/WARNING)
+- Notificaciones (email, SMS via TB Notification)
+- Alarm propagation a parent assets
 
 #### Módulo PO - Production Optimization
 
@@ -437,24 +507,24 @@ API Gateway
 **✅ Analytics Avanzado**
 - Predicción de fallas con Machine Learning
 - Detección de anomalías
-- Health Score de equipos
+- Health Score de equipos (stored as TB Attributes)
 - Análisis de causa raíz
 - Benchmarking de pozos
 
-**✅ Recomendaciones**
+**✅ Recomendaciones (tabla custom: pf_recommendation)**
 - Generación automática de recomendaciones
 - Simulación de impacto
-- Flujo de aprobación
+- Flujo de aprobación con estado
 - Tracking de efectividad
 - Aprendizaje continuo
 
-**✅ KPIs**
+**✅ KPIs (stored as TB Attributes)**
 - KPIs de producción (uptime, efficiency, deferment)
 - KPIs de equipos (run life, MTBF, MTTR)
 - KPIs económicos (lifting cost, energy cost, ROI)
 
 **✅ Control (Fase 5)**
-- Envío de setpoints a SCADA
+- Envío de setpoints via TB RPC
 - Control en lazo cerrado
 - Rollback automático si falla
 
@@ -465,7 +535,7 @@ API Gateway
 - Módulo RV: Enviar producción real, datos de declinación
 
 **✅ Integración con Sistemas Externos**
-- SCADA/DCS (lectura y escritura)
+- SCADA/DCS via TB MQTT Transport
 - Historian (PI, PHD) - lectura histórica
 - ERP (SAP) - precios, costos, inventarios
 - CMMS (Maximo) - órdenes de trabajo
@@ -499,7 +569,7 @@ API Gateway
 
 1. **Infraestructura SCADA Existente**
    - Los campos ya tienen sistemas SCADA operativos
-   - Protocolos estándar disponibles (OPC-UA, Modbus)
+   - Protocolos estándar disponibles (MQTT, Modbus)
    - RTUs/PLCs con conectividad de red
 
 2. **Datos Disponibles**
@@ -514,7 +584,7 @@ API Gateway
 
 4. **Tecnología**
    - Stack actual (Spring Boot, Angular, PostgreSQL) es adecuado
-   - No se requieren cambios mayores de arquitectura
+   - ThingsBoard Core (Assets, Attributes, ts_kv) es suficiente
    - ThingsBoard 4.3.0 es estable y no requiere upgrade
 
 5. **Acceso y Permisos**
@@ -536,14 +606,14 @@ API Gateway
    - Disaster recovery: RPO < 1 hora, RTO < 4 horas
 
 3. **Seguridad**
-   - Multi-tenant isolation obligatoria
+   - Multi-tenant isolation obligatoria (via TB native)
    - Encriptación de datos en tránsito y en reposo
    - Audit logging de todas las operaciones críticas
 
 4. **Compatibilidad**
    - Debe funcionar con ThingsBoard 4.3.0 (no se puede cambiar versión)
    - Debe seguir arquitectura de módulos existentes (RV, DR, CT)
-   - Debe usar stack tecnológico actual (no nuevos lenguajes)
+   - Debe usar TB Core para datos que TB maneja bien
 
 #### Restricciones de Negocio
 
@@ -579,66 +649,78 @@ API Gateway
 
 **Objetivo**: Monitoreo en tiempo real de infraestructura de producción de superficie
 
+**Arquitectura**: ThingsBoard Core (Assets, Attributes, ts_kv, Alarm System)
+
 **Componentes Principales**:
 
-#### 6.1.1 Asset Management
+#### 6.1.1 Asset Types (TB Assets)
 ```
-org.thingsboard.server.common.data.pf
-├── PfWell (pozo productor)
-├── PfWellpad (macolla/cluster)
-├── PfFlowStation (estación de flujo)
-├── PfSeparator (separador)
-├── PfTank (tanque)
-└── PfPipeline (línea de recolección)
-```
-
-#### 6.1.2 Lift System Management
-```
-org.thingsboard.server.common.data.pf.liftsystem
-├── PfEspSystem
-│   ├── PfEspPump (bomba)
-│   ├── PfEspMotor (motor)
-│   ├── PfEspCable (cable)
-│   └── PfEspVfd (variador de frecuencia)
-├── PfPcpSystem
-│   ├── PfPcpRotor
-│   ├── PfPcpStator
-│   └── PfPcpDrive
-├── PfGasLiftSystem
-│   ├── PfGasLiftValve
-│   └── PfGasLiftManifold
-└── PfRodPumpSystem
-    └── PfRodPumpUnit
+PF Module Asset Types:
+├── pf_well            - Pozo productor
+├── pf_wellpad         - Macolla/Cluster
+├── pf_flow_station    - Estación de flujo
+├── pf_separator       - Separador
+├── pf_tank            - Tanque
+└── pf_pipeline        - Tubería
 ```
 
-#### 6.1.3 Telemetry Processing
+#### 6.1.2 Lift System Asset Types
 ```
-org.thingsboard.server.service.pf.telemetry
-├── TelemetryProcessor (procesador principal)
-├── DataQualityValidator (validación de calidad)
-├── SignalProcessor (filtrado de señales)
-└── AggregationService (agregaciones)
-```
-
-#### 6.1.4 SCADA Integration
-```
-org.thingsboard.server.service.pf.integration
-├── ScadaIntegrationService
-├── OpcUaConnector
-├── ModbusConnector
-└── MqttConnector
+Lift System Asset Types:
+├── pf_esp_system      - Sistema ESP
+├── pf_pcp_system      - Sistema PCP
+├── pf_gas_lift_system - Sistema Gas Lift
+├── pf_rod_pump_system - Sistema Rod Pump
+└── pf_jet_pump_system - Sistema Jet Pump
 ```
 
-#### 6.1.5 Alarm & Event Management
+#### 6.1.3 DTOs y Wrapper Services
 ```
-org.thingsboard.server.service.pf.alarm
-├── AlarmService
-├── AlarmClassifier (clasificación automática)
-├── AlarmEscalationService
-└── NotificationService
+org.thingsboard.nexus.pf
+├── dto/
+│   ├── PfWellDto.java (ASSET_TYPE = "pf_well", ATTR_* constants)
+│   ├── PfWellpadDto.java
+│   ├── PfFlowStationDto.java
+│   └── PfEspSystemDto.java
+├── service/
+│   ├── PfAssetService.java (wraps TB AssetService)
+│   ├── PfAttributeService.java (wraps TB AttributesService)
+│   ├── PfTelemetryService.java (wraps TB TelemetryService)
+│   ├── PfWellService.java (business logic)
+│   └── PfWellpadService.java
+└── controller/
+    ├── PfWellController.java
+    └── PfWellpadController.java
 ```
 
-#### 6.1.6 Frontend Components (Angular)
+#### 6.1.4 Custom Rule Nodes (Rule Engine)
+```
+org.thingsboard.nexus.pf.rule
+├── PfDataQualityNode.java
+│   ├── Range validation
+│   ├── Rate of change validation
+│   ├── Quality score calculation
+│   └── Saves quality_score as SERVER_SCOPE attribute
+├── PfAlarmEvaluationNode.java
+│   ├── Complex business rule evaluation
+│   └── Creates TB Alarms via AlarmService
+└── PfTelemetryEnrichmentNode.java
+    └── Adds calculated fields to telemetry
+```
+
+#### 6.1.5 Asset Profiles (TB Alarm System)
+```
+Asset Profile "pf_well":
+├── Default Rule Chain: "PF Telemetry Processing"
+├── Alarm Rules:
+│   ├── high_pressure_alarm (severity: CRITICAL)
+│   ├── low_pressure_alarm (severity: WARNING)
+│   ├── high_temperature_alarm (severity: CRITICAL)
+│   └── vibration_alarm (severity: MAJOR)
+└── Alarm propagation: to parent wellpad
+```
+
+#### 6.1.6 Frontend Components (Angular + TB Dashboards)
 ```
 ui-ngx/src/app/modules/home/pages/pf/
 ├── wellpad-list/
@@ -646,34 +728,41 @@ ui-ngx/src/app/modules/home/pages/pf/
 ├── flow-station-dashboard/
 ├── well-detail/
 ├── well-trend/
-├── alarm-list/
-└── event-log/
+└── alarm-list/
+
+TB Dashboard Templates:
+├── PF Well Overview
+├── PF Wellpad Overview
+├── PF Alarm Console
+└── PF Production Summary
 ```
 
 **Entregables Fase 1 (PF Base)**:
-- [ ] Modelo de datos completo
-- [ ] APIs REST (/api/nexus/pf/*)
-- [ ] Integración SCADA básica (MQTT, Modbus)
-- [ ] Procesamiento de telemetría
-- [ ] Dashboard de campo
-- [ ] Dashboard de pozo
-- [ ] Sistema de alarmas
+- [ ] DTOs con ASSET_TYPE y ATTR_* constants
+- [ ] Wrapper Services (PfAssetService, PfAttributeService)
+- [ ] Business Services (PfWellService, PfWellpadService)
+- [ ] Custom Rule Nodes para Rule Engine
+- [ ] Asset Profiles con Alarm Rules
+- [ ] TB Dashboard templates
+- [ ] REST Controllers
 
 **Entregables Fase 2 (Lift Systems)**:
-- [ ] Modelos específicos ESP/PCP/Gas Lift
-- [ ] Variables de monitoreo por sistema
+- [ ] Lift System DTOs y Services
+- [ ] Specialized variables per system type
 - [ ] Dashboards especializados por tipo
-- [ ] Librería de límites operacionales
+- [ ] Alarm rules per lift system type
 
 ### 6.2 Módulo PO (Production Optimization)
 
 **Objetivo**: Optimización inteligente de operaciones de producción
 
+**Arquitectura**: TB Core para Health Scores + Custom Tables para Workflows
+
 **Componentes Principales**:
 
 #### 6.2.1 Optimization Engines
 ```
-org.thingsboard.server.service.po.optimizer
+org.thingsboard.nexus.po.optimizer
 ├── EspFrequencyOptimizer
 │   ├── FrequencyCalculator
 │   ├── EfficiencyAnalyzer
@@ -694,7 +783,7 @@ org.thingsboard.server.service.po.optimizer
 
 #### 6.2.2 Machine Learning
 ```
-org.thingsboard.server.service.po.ml
+org.thingsboard.nexus.po.ml
 ├── FailurePredictionModel
 │   ├── EspFailureModel
 │   ├── PcpFailureModel
@@ -708,49 +797,83 @@ org.thingsboard.server.service.po.ml
     └── DeclineForecast
 ```
 
-#### 6.2.3 Recommendation Engine
+#### 6.2.3 Health Score (TB Attributes)
 ```
-org.thingsboard.server.service.po.recommendation
+Health Score stored as SERVER_SCOPE Attributes on well assets:
+├── health_score (BigDecimal 0-100)
+├── health_trend (String: IMPROVING, STABLE, DEGRADING)
+├── failure_probability (BigDecimal 0-1)
+├── next_failure_estimate (Long timestamp)
+└── contributing_factors (JSON array)
+
+Service Pattern:
+```java
+public void saveHealthScore(UUID wellAssetId, HealthScoreDto score) {
+    Map<String, Object> attrs = new HashMap<>();
+    attrs.put(ATTR_HEALTH_SCORE, score.getScore());
+    attrs.put(ATTR_FAILURE_PROBABILITY, score.getFailureProbability());
+    poAttributeService.saveServerAttributes(wellAssetId, attrs);
+}
+```
+```
+
+#### 6.2.4 Recommendation Engine (Custom Table)
+```
+org.thingsboard.nexus.po.recommendation
 ├── RecommendationService
 ├── ImpactSimulator (simular impacto)
 ├── ApprovalWorkflow
 ├── EffectivenessTracker
 └── LearningService (feedback loop)
+
+Custom Table: pf_recommendation
+├── id (UUID)
+├── tenant_id (UUID)
+├── well_asset_id (UUID → TB Asset)
+├── type (String)
+├── status (PENDING, APPROVED, EXECUTED, REJECTED)
+├── parameters (JSONB)
+├── approved_by (UUID)
+├── approved_time (Long)
+├── executed_time (Long)
+└── effectiveness_score (BigDecimal)
 ```
 
-#### 6.2.4 KPI Calculator
+#### 6.2.5 Optimization Results (Custom Table)
 ```
-org.thingsboard.server.service.po.kpi
-├── ProductionKpiCalculator
-│   ├── UptimeCalculator
-│   ├── EfficiencyCalculator
-│   └── DefermentCalculator
-├── EquipmentKpiCalculator
-│   ├── RunLifeCalculator
-│   ├── MtbfCalculator
-│   └── MttrCalculator
-└── EconomicKpiCalculator
-    ├── LiftingCostCalculator
-    ├── EnergyCostCalculator
-    └── RoiCalculator
+Custom Table: pf_optimization_result
+├── id (UUID)
+├── tenant_id (UUID)
+├── well_asset_id (UUID → TB Asset)
+├── optimization_type (String)
+├── version (Integer)
+├── input_parameters (JSONB)
+├── results (JSONB)
+├── timestamp (Long)
+└── model_version (String)
 ```
 
-#### 6.2.5 Health Score Engine
+#### 6.2.6 KPI Calculator (TB Attributes)
 ```
-org.thingsboard.server.service.po.health
-├── HealthScoreCalculator
-├── WeightedScoringModel
-├── TrendAnalyzer
-└── AlertGenerator
-```
+KPIs stored as SERVER_SCOPE Attributes:
+├── uptime_percent
+├── efficiency_percent
+├── deferment_bpd
+├── run_life_days
+├── mtbf_hours
+├── mttr_hours
+├── lifting_cost_per_bbl
+├── energy_cost_per_bbl
+└── roi_percent
 
-#### 6.2.6 Control Service (Fase 5)
+Service Pattern:
+```java
+public void calculateAndSaveKpis(UUID wellAssetId) {
+    KpiDto kpis = kpiCalculator.calculate(wellAssetId);
+    Map<String, Object> attrs = kpiToAttributeMap(kpis);
+    poAttributeService.saveServerAttributes(wellAssetId, attrs);
+}
 ```
-org.thingsboard.server.service.po.control
-├── SetpointController
-├── ClosedLoopController
-├── SafetyInterlockService
-└── RollbackService
 ```
 
 #### 6.2.7 Frontend Components (Angular)
@@ -768,23 +891,23 @@ ui-ngx/src/app/modules/home/pages/po/
 ```
 
 **Entregables Fase 3 (PO Base)**:
-- [ ] Modelo de datos de optimización
-- [ ] APIs REST (/api/nexus/po/*)
+- [ ] PoAssetService, PoAttributeService (wrappers)
 - [ ] Optimizador ESP (frecuencia)
 - [ ] Optimizador Gas Lift (distribución)
-- [ ] Sistema de recomendaciones
+- [ ] Sistema de recomendaciones (pf_recommendation table)
+- [ ] Health Score calculation + TB Attributes storage
 - [ ] Dashboard de optimización
 - [ ] Flujo de aprobación
 
 **Entregables Fase 4 (Advanced Analytics)**:
 - [ ] Modelos ML para predicción de fallas
 - [ ] Detector de anomalías
-- [ ] Health Score calculator
+- [ ] pf_optimization_result table
 - [ ] KPI dashboards
 - [ ] Análisis de causa raíz
 
 **Entregables Fase 5 (Automation)**:
-- [ ] Control en lazo cerrado
+- [ ] Control en lazo cerrado via TB RPC
 - [ ] Integración bidireccional con SCADA
 - [ ] Auto-aprendizaje de modelos
 - [ ] Rollback automático
@@ -846,8 +969,8 @@ POST /api/nexus/rv/wells/{id}/pressure-survey → enviar presión de fondo
 Cuando un pozo termina de perforarse en DR Module:
 1. DR crea entidad de pozo completado
 2. Workflow manual: Operador "promueve" pozo de DR a PF
-3. PF crea nuevo `PfWell` con referencia a pozo de DR
-4. Se configura sistema de levantamiento
+3. PF crea nuevo TB Asset tipo `pf_well` con referencia a pozo de DR
+4. Se configura sistema de levantamiento como TB Asset relacionado
 5. Se inicia monitoreo en PF
 
 ### 7.3 Integración con Módulo CT (Coiled Tubing)
@@ -856,7 +979,7 @@ Cuando un pozo termina de perforarse en DR Module:
 
 Cuando se planea un trabajo de CT en un pozo productor:
 1. CT Module consulta estado de pozo en PF
-2. PF indica si pozo está produciendo o parado
+2. PF indica si pozo está produciendo o parado (via TB Attribute)
 3. Durante trabajo CT, pozo se marca como "Under Workover" en PF
 4. Alarmas de PF se silencian temporalmente
 5. Al finalizar trabajo CT, pozo vuelve a estado productivo en PF
@@ -908,7 +1031,7 @@ Environments:
 **Fase 1 Piloto (PF Module)**:
 ```
 Semana 1-2:   Despliegue en ambiente de pruebas
-Semana 3-4:   Configuración de 5 pozos piloto
+Semana 3-4:   Configuración de 5 pozos como TB Assets
 Semana 5-8:   Operación paralela con sistema legacy
 Semana 9-12:  Validación de datos, ajustes
 Semana 13:    Go-live oficial de piloto
@@ -916,15 +1039,15 @@ Semana 14-16: Monitoreo y soporte intensivo
 ```
 
 **Criterios de Éxito del Piloto**:
-- ✅ 100% de telemetría capturada sin pérdida de datos
+- ✅ 100% de telemetría capturada via TB ts_kv
 - ✅ Latencia < 1 segundo en procesamiento
 - ✅ 0 downtime del sistema
 - ✅ Satisfacción de usuarios > 80%
-- ✅ Todas las alarmas críticas detectadas correctamente
+- ✅ Todas las alarmas críticas detectadas via TB Alarm System
 
 **Rollout a Producción**:
 ```
-Mes 1: Campo piloto (5-10 pozos)
+Mes 1: Campo piloto (5-10 pozos como TB Assets)
 Mes 2: Expansión a 25 pozos
 Mes 3: Expansión a 50 pozos
 Mes 4: Expansión a 100+ pozos (campo completo)
@@ -965,9 +1088,9 @@ Mes 4: Expansión a 100+ pozos (campo completo)
 | Rol | Cantidad | Perfil | Responsabilidad | Dedicación |
 |-----|----------|--------|-----------------|------------|
 | **Tech Lead Backend** | 1 | Senior Java Developer, 8+ años | Arquitectura, code review, mentoring | 100% |
-| **Backend Developer 1** | 1 | Java/Spring Boot, 5+ años | Módulo PF: telemetría, SCADA | 100% |
+| **Backend Developer 1** | 1 | Java/Spring Boot, 5+ años | Módulo PF: DTOs, Services, Rule Nodes | 100% |
 | **Backend Developer 2** | 1 | Java/Spring Boot, 5+ años | Módulo PO: optimizadores, KPIs | 100% |
-| **Data Engineer** | 1 | PostgreSQL, TimescaleDB, Kafka | Pipeline de datos, performance tuning | 80% |
+| **Data Engineer** | 1 | PostgreSQL, Kafka | TB integrations, performance tuning | 80% |
 | **ML Engineer** | 1 | Python, TensorFlow, scikit-learn | Modelos predictivos, anomaly detection | 60% (Fase 4) |
 
 #### Frontend Team
@@ -984,7 +1107,7 @@ Mes 4: Expansión a 100+ pozos (campo completo)
 | Rol | Cantidad | Perfil | Responsabilidad | Dedicación |
 |-----|----------|--------|-----------------|------------|
 | **DevOps Engineer** | 1 | Docker, Kubernetes, CI/CD | Pipelines, monitoring, deployments | 80% |
-| **DBA** | 1 | PostgreSQL, TimescaleDB tuning | Database optimization, backups | 40% |
+| **DBA** | 1 | PostgreSQL tuning | Database optimization, backups | 40% |
 
 #### QA & Testing
 
@@ -1032,7 +1155,7 @@ Mes 4: Expansión a 100+ pozos (campo completo)
 |----------|-------------|
 | **Infraestructura Cloud** | |
 | - Servers (Dev/Stg/Prod) | $80,000 |
-| - Storage (TimescaleDB, S3) | $40,000 |
+| - Storage (PostgreSQL, S3) | $40,000 |
 | - Networking & CDN | $20,000 |
 | **Licencias de Software** | |
 | - IDE Licenses (IntelliJ, WebStorm) | $10,000 |
@@ -1068,14 +1191,14 @@ Mes 4: Expansión a 100+ pozos (campo completo)
 
 | ID | Riesgo | Probabilidad | Impacto | Severidad | Mitigación |
 |----|--------|--------------|---------|-----------|------------|
-| R01 | Datos de SCADA inconsistentes o faltantes | Alta | Alto | 🔴 CRÍTICO | Implementar data quality checks robustos, tener plan B con datos estimados |
-| R02 | Retraso en integración SCADA (protocolos propietarios) | Media | Alto | 🟠 ALTO | Iniciar integración temprano (Fase 0), involucrar vendor de SCADA |
+| R01 | Datos de SCADA inconsistentes o faltantes | Alta | Alto | 🔴 CRÍTICO | Implementar PfDataQualityNode robusto, tener plan B con datos estimados |
+| R02 | Retraso en integración SCADA (protocolos propietarios) | Media | Alto | 🟠 ALTO | Iniciar integración temprano (Fase 0), usar TB MQTT Transport |
 | R03 | Modelos ML no alcanzan accuracy esperado | Media | Medio | 🟡 MEDIO | Empezar con heurísticas, mejorar gradualmente con ML |
 | R04 | Resistencia al cambio de operadores | Alta | Medio | 🟡 MEDIO | Change management robusto, involucrar operadores desde día 1 |
-| R05 | Performance issues con 100+ pozos | Baja | Alto | 🟠 ALTO | Load testing desde Fase 1, arquitectura escalable desde inicio |
+| R05 | Performance issues con 100+ pozos | Baja | Alto | 🟠 ALTO | Aprovechar TB native ts_kv optimizations, load testing |
 | R06 | Pérdida de personal clave (brain drain) | Media | Alto | 🟠 ALTO | Documentación exhaustiva, knowledge sharing, redundancia en roles |
 | R07 | Scope creep (nuevos requerimientos) | Alta | Medio | 🟡 MEDIO | Gestión estricta de cambios, Product Owner fuerte |
-| R08 | Problemas de compatibilidad con ThingsBoard | Baja | Alto | 🟠 ALTO | Proof of concept temprano, involucrar comunidad ThingsBoard |
+| R08 | Problemas de compatibilidad con ThingsBoard | Baja | Alto | 🟠 ALTO | Seguir patrón de CT/RV modules, usar TB APIs estándar |
 | R09 | Downtime de producción durante despliegue | Baja | Crítico | 🔴 CRÍTICO | Despliegues en ventanas de mantenimiento, rollback plan |
 | R10 | Budget overrun | Media | Medio | 🟡 MEDIO | Tracking semanal de costos, contingencia del 15% |
 
@@ -1084,25 +1207,26 @@ Mes 4: Expansión a 100+ pozos (campo completo)
 #### R01: Datos de SCADA Inconsistentes
 **Mitigación**:
 1. **Detección Temprana**:
-   - Implementar data quality validator desde Fase 1
+   - Implementar PfDataQualityNode en Rule Engine desde Fase 1
+   - Quality score saved as TB Attribute
    - Alertas cuando calidad de datos < 90%
 
 2. **Estrategias de Manejo**:
    ```
+   PfDataQualityNode logic:
    if (data_quality < 90%) {
-       use_last_known_good_value();
-       log_warning();
-       notify_operator();
+       save_quality_score_attribute();
+       route_to_review_queue();
    }
 
    if (data_missing > 5_minutes) {
-       use_interpolation();
+       use_last_known_value_from_ts_kv_latest();
        mark_as_estimated();
    }
 
    if (data_missing > 30_minutes) {
        disable_optimization();
-       alert_supervisor();
+       create_tb_alarm(severity=MAJOR);
    }
    ```
 
@@ -1312,7 +1436,7 @@ Una historia de usuario está DONE cuando:
 |-----|--------|----------|
 | **System Uptime** | 99.5%+ | Monitoring 24/7 con Grafana |
 | **API Latency (p95)** | < 200ms | Application Performance Monitoring |
-| **Telemetry Processing** | < 1 segundo | Kafka lag monitoring |
+| **Telemetry Processing** | < 1 segundo | TB Rule Engine metrics |
 | **Test Coverage** | > 80% | SonarQube |
 | **Code Quality (SonarQube)** | A rating | SonarQube scan |
 | **Critical Bugs** | 0 in production | Jira dashboard |
@@ -1540,6 +1664,10 @@ Una historia de usuario está DONE cuando:
 | **OPC-UA** | Open Platform Communications Unified Architecture |
 | **MTBF** | Mean Time Between Failures |
 | **MTTR** | Mean Time To Repair |
+| **TB Asset** | ThingsBoard Asset - Entidad core de TB para representar equipos |
+| **TB Attribute** | ThingsBoard Attribute - Propiedades de assets (SERVER_SCOPE) |
+| **ts_kv** | ThingsBoard time-series key-value tables |
+| **Rule Engine** | Motor de procesamiento de mensajes de ThingsBoard |
 
 ### 14.2 Referencias
 
@@ -1548,6 +1676,8 @@ Una historia de usuario está DONE cuando:
 3. Módulo RV: `/nexus/common/rv-module/`
 4. Módulo DR: `/nexus/common/dr-module/`
 5. Módulo CT: `/nexus/common/ct-module/`
+6. CTAssetService (patrón de referencia): `/common/ct-module/src/main/java/org/thingsboard/nexus/ct/service/CTAssetService.java`
+7. CTAttributeService (patrón de referencia): `/common/ct-module/src/main/java/org/thingsboard/nexus/ct/service/CTAttributeService.java`
 
 ### 14.3 Contactos
 
@@ -1557,7 +1687,7 @@ Una historia de usuario está DONE cuando:
 
 ---
 
-**Fin del Master Plan v1.0**
+**Fin del Master Plan v2.0**
 
 **Próximos Pasos**:
 1. Review con Steering Committee → Semana del 10 Feb 2026
